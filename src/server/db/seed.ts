@@ -35,7 +35,16 @@ export const DEMO_DRAFT_RUN_ID = 'run_demo_november';
 /** The final vault's active workflow (Phase 16: revision 3, two in sequence, automatic release). */
 export const SEED_WORKFLOW = { revision: 3, txHash: 'GvJxnx9eyVnKz6rLKa2C7stMoLoEb1YaM6JPNCyu4Ruc' } as const;
 
-export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = {}) {
+export interface SeedOptions {
+  now?: Date;
+  env?: SeedEnv;
+  /** Add the "November contractors (demo)" draft (default true). */
+  demoDraft?: boolean;
+  /** Import the real testnet runs from db/seed/testnet-history.json (default true). */
+  testnetHistory?: boolean;
+}
+
+export async function seedDemo(db: Db, options: SeedOptions = {}) {
   const env = options.env ?? process.env;
   if (env.DEMO_MODE !== 'true') throw new Error('Refusing to seed demo users: DEMO_MODE is not "true".');
   const now = options.now ?? new Date();
@@ -62,7 +71,7 @@ export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = 
   }
 
   const draft = db.select({ id: payrollRuns.id }).from(payrollRuns).where(eq(payrollRuns.id, DEMO_DRAFT_RUN_ID)).get();
-  if (!draft) {
+  if (!draft && options.demoDraft !== false) {
     createRun(db, { id: DEMO_DRAFT_RUN_ID, makerUserId: 'usr_maker', title: 'November contractors (demo)', postingMode: 'detailed', source: 'manual', now });
     replaceDraft(db, {
       runId: DEMO_DRAFT_RUN_ID, makerUserId: 'usr_maker', expectedRevision: 0, now,
@@ -75,7 +84,7 @@ export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = 
     created.push('demo draft run');
   }
 
-  const history = importTestnetHistory(db, readTestnetHistory());
+  const history = options.testnetHistory === false ? 0 : importTestnetHistory(db, readTestnetHistory());
   if (history) created.push(`${history} testnet runs from db/seed/testnet-history.json`);
   return created;
 }

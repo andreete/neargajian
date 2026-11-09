@@ -45,7 +45,12 @@ export interface VaultClient {
   txOutcome(txHash: string, role: ChainRole): Promise<TxOutcome>;
   /** Timestamp of the block that includes the transaction (what the explorer shows), or null if unknown yet. */
   txBlockTime(txHash: string, role: ChainRole): Promise<Date | null>;
+  /** True when this server holds the role's signer key (a judge's local copy has none). */
+  canSign(role: ChainRole): boolean;
 }
+
+/** Shown when a chain action is attempted on a copy without signer keys. Nothing is recorded. */
+export const NO_SIGNER_MESSAGE = 'This copy of GAJIAN has no signer keys, so it cannot send transactions to NEAR. Nothing was recorded. The live runs can be verified read-only with npm run judge:verify.';
 
 const ENV_KEY: Record<ChainRole, { account: string; key: string }> = {
   maker: { account: 'MAKER_ACCOUNT_ID', key: 'MAKER_SIGNER_PRIVATE_KEY' },
@@ -97,6 +102,15 @@ export class NearVaultClient implements VaultClient {
     const account = this.env[ENV_KEY[role].account];
     if (!account || account.startsWith('replace-me')) throw new Error(`${ENV_KEY[role].account} is not configured`);
     return account;
+  }
+
+  canSign(role: ChainRole): boolean {
+    try {
+      this.accountFor(role);
+      return Boolean(this.env[ENV_KEY[role].key]);
+    } catch {
+      return false;
+    }
   }
 
   private keyFor(role: ChainRole): KeyPair {

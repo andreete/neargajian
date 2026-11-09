@@ -25,6 +25,35 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 15 Reproducibility and targeted regression tests | Done | read-only: `npm run judge:verify` re-checks the live evidence (22/22) |
 | 16 Live testnet rehearsal | Done, approved by Andre (independently verified on testnet) | **Yes**: final locked vault, fund migration, demo, maker release, duplicate refusal, Awaiting funding (docs/TESTNET.md) |
 | 16b Paid time from the chain; run page actions | Done | read-only backfill of 16 block times from the chain; `judge:verify` 115/115 |
+| 17 README, video runbook and release candidate | Done | none (docs; judge-mode check reads the vault's workflow read-only) |
+
+---
+
+## Phase 17 · README, video runbook and release candidate (9 Nov 2026)
+
+- **README for judges** (machine and human readers, Q-017):
+  - what GAJIAN is, the problem, how it works;
+  - a key-facts table;
+  - "do X, see Y" steps without keys: checks, `judge:verify`, plain-RPC vault checks, rebuild and compare, local demo, browser tests;
+  - what is real and what is limited (trust model, test token, caps, sandbox-only paths);
+  - the hackathon window and diff (Q-003);
+  - third-party software and AI use (Q-005); troubleshooting; commands.
+- **Read-only copy for judges (found while writing step 5):** without signer keys, `submitRun` used to freeze a version and then fail at signing, leaving it "submitting" forever; decisions, cancel and release had the same shape. Now every chain action checks `VaultClient.canSign(role)` **before** recording anything and answers "This copy of GAJIAN has no signer keys … Nothing was recorded." The app shows a "Read-only copy" note, and the worker exits if it has no key. Tests: regression (nothing recorded, no transaction) and `npm run test:judge-mode` (Playwright against a fresh demo database with all keys blank: banner, upload of 1,000 rows, review, submit refused, run still a draft).
+- **Clean demo database:** `npm run demo:reset` (`scripts/demo-reset.ts`).
+  - It refuses while the app or the worker runs.
+  - It **moves** the current database into `data/backups/gajian-<UTC>.sqlite` after a WAL checkpoint (never deleted) and checks that the moved copy has the same row counts.
+  - It creates a fresh database with the 4 demo users and the final vault's current workflow, read from the chain and refused if it differs from the seed. No draft, no rehearsal runs, no imported history.
+  - Every reset is logged in `data/backups/RESET-LOG.jsonl`. It was tested on a copy of the real database.
+- **Docs:**
+  - `docs/VIDEO.md`: 2:30 script with clicks and on-screen results, run "November 2026 contractors", 0.08 / 0.05 / 0.07 tUSDC, file `docs/video/november-2026-contractors.csv`; pre-recording checklist; 0.20 tUSDC and about 0.003 NEAR per take.
+  - `docs/X-POST.md`: draft, 275/280 characters, ends with a question.
+  - `docs/HOSTING.md`: Fly.io plan, keys, damage limits, judge sign-in, uptime until 18 Nov (ideally 25 Nov), Andre's steps; plan only.
+  - `docs/SUBMISSION.md`: every requirement from the live guide re-read on 9 Nov; deadline 2026-11-14 23:59 UTC = 2026-11-15 06:59 WIB; open items marked Andre's.
+  - `docs/JUDGE.md` updated; `AGENTS.md` points Codex at `docs/QA-HANDOFF.md`.
+- Evidence:
+  - `npm run lint`, `npm run typecheck` pass; `npm test` **159/159**; `npm run samples:check` no diff; `npm run build` pass.
+  - `npm run test:e2e` **22/22**, with keys and with all keys blank (as in CI).
+  - `npm run test:judge-mode` **1/1**; `npm run secret-scan` clean.
 
 ---
 

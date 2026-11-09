@@ -772,3 +772,4 @@ table.data.review td.who .trunc { max-width: 230px; }
 table.data.review td.acct { max-width: 290px; }
 .pager .btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
 table.data.review.payouts th, table.data.review.payouts td { padding-left: 10px; padding-right: 10px; }
+.readonly-note { margin-bottom: 20px; }

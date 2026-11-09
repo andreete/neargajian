@@ -74,6 +74,8 @@ npm run worker                   # release worker, its own process; run only whe
 nice -n 19 npm run live:phase13  # LIVE testnet flow through the app (needs server + worker on 8092); real transactions, on purpose only
 nice -n 19 npm run live:phase16  # LIVE Phase 16 rehearsal (one step at a time with --grep); real transactions, on purpose only
 npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
+npm run demo:reset               # move data/gajian.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)
+nice -n 19 npm run test:judge-mode  # Playwright: fresh demo DB and no signer keys (read-only copy)
 npm run judge:deployment         # read-only: vault2 code_hash = local release Wasm, no full-access key
 npm run secret-scan              # credential scan: worktree + full Git history (--staged before commits)
 

@@ -12,7 +12,8 @@
  */
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { buildPayoutTree, proofFor, toHex } from '../commitments.ts';
-import type { VaultClient } from '../chain/vault-client.ts';
+import { NO_SIGNER_MESSAGE, type VaultClient } from '../chain/vault-client.ts';
+import { DomainError } from '../runs/repository.ts';
 import type { Db } from '../db/client.ts';
 import { auditEvents, payoutActions, runVersions, versionRows } from '../db/schema.ts';
 import { claimPayoutAction, updatePayoutAction, type PayoutAction } from './actions.ts';
@@ -46,6 +47,7 @@ export async function requestRelease(db: Db, client: VaultClient, v: Version, op
   const now = opts.now ?? new Date();
   if (v.status !== 'approved') return { status: v.status };
   assertSameVault(v, client);
+  if (!client.canSign(opts.role)) throw new DomainError('conflict', NO_SIGNER_MESSAGE);
   const claim = claimPayoutAction(db, { versionId: v.id, kind: 'release', rowIndex: null, workerId: opts.workerId, now, leaseMs: LEASE_MS });
   if (!claim.claimed) {
     await reconcileActions(db, client, v, now);
@@ -81,6 +83,7 @@ export async function payRows(db: Db, client: VaultClient, v: Version, opts: { r
   const now = opts.now ?? new Date();
   if (v.status !== 'releasing') return { paid: 0 };
   assertSameVault(v, client);
+  if (!client.canSign(opts.role)) throw new DomainError('conflict', NO_SIGNER_MESSAGE);
   await reconcileActions(db, client, v, now);
   const { rows, tree } = proofsFor(db, v);
   const latest = latestPerRow(actionsOf(db, v.id, 'pay_row'));

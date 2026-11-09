@@ -22,4 +22,4 @@ The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex incl
 
 ## QA role (Phase 18)
 
-When asked for independent QA: review only. Follow the README from a clean checkout, verify acceptance checks A01–A08 from `docs/build/01-PRD.md`, report pass/fail/blocked per check with repro steps, severity and paths. Ask before any action that sends a testnet transaction. Never publish or submit anything.
+When asked for independent QA: review only. Start from **`docs/QA-HANDOFF.md`** (self-contained: release candidate, setup, what to test with expected results, live evidence, known issues, scope). Follow the README from a clean checkout, verify acceptance checks A01–A08 from `docs/build/01-PRD.md`, report pass/fail/blocked per check with repro steps, severity and paths. Ask before any action that sends a testnet transaction. Never publish or submit anything.

@@ -12,6 +12,8 @@ export interface AppConfig {
   explorerAccountUrl: string;
   vaultContractId: string;
   tokenContractId: string;
+  /** All five restricted signer keys are configured (false on a judge's local copy: read-only). */
+  chainWritesEnabled: boolean;
 }
 
 let cached: AppConfig | undefined;
@@ -35,6 +37,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
     explorerAccountUrl: 'https://testnet.nearblocks.io/address/',
     vaultContractId: env.VAULT_CONTRACT_ID ?? 'vault2.gajian-payroll.testnet',
     tokenContractId: env.TUSDC_CONTRACT_ID ?? 'tusdc.gajian-payroll.testnet',
+    chainWritesEnabled: ['MAKER', 'APPROVER1', 'APPROVER2', 'WORKER', 'ADMIN'].every((r) => Boolean(env[`${r}_SIGNER_PRIVATE_KEY`])),
   };
 }
 

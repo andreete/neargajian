@@ -36,7 +36,9 @@
     "judge:verify": "./scripts/with-tmp.sh node scripts/judge/verify-testnet.mjs",
     "qa:pages": "QA_SHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/pages.spec.ts",
     "live:phase16": "./scripts/with-tmp.sh playwright test -c playwright.live.config.ts tests/live/phase16.spec.ts",
-    "judge:deployment": "./scripts/with-tmp.sh node scripts/judge/verify-deployment.mjs"
+    "judge:deployment": "./scripts/with-tmp.sh node scripts/judge/verify-deployment.mjs",
+    "demo:reset": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/demo-reset.ts",
+    "test:judge-mode": "./scripts/with-tmp.sh playwright test -c playwright.judge.config.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

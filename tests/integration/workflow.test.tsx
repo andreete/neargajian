@@ -36,6 +36,7 @@ class FakeVault implements VaultClient {
     return this.mode === 'unknown-landed' ? { txHash, status: 'unknown' } : { txHash, status: 'success', value: this.wf };
   }
   async txBlockTime(): Promise<Date | null> { return null; }
+  canSign() { return true; }
   async txOutcome(txHash: string): Promise<TxOutcome> {
     return this.mode === 'unknown-lost' ? { txHash, status: 'failure', error: 'transaction expired' } : { txHash, status: 'success' };
   }

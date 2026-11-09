@@ -31,6 +31,10 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
 logLine('started', { intervalMs, vault: process.env.VAULT_CONTRACT_ID ?? 'vault2.gajian-payroll.testnet' });
 const db = getDb();
 const client = getVaultClient();
+if (!client.canSign('worker')) {
+  logLine('no_signer', { message: 'WORKER_SIGNER_PRIVATE_KEY is not configured: this copy cannot send transactions. Exiting.' });
+  process.exit(1);
+}
 while (!stopping) {
   try {
     const s = await workerTick(db, client, { workerId, maxRowsPerTick: Number(process.env.WORKER_MAX_ROWS ?? 5) });

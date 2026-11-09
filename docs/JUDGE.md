@@ -9,7 +9,7 @@ git clone https://github.com/andreete/neargajian.git && cd neargajian
 npm ci
 npm run lint              # no output from ESLint = pass
 npm run typecheck         # generates route types, then tsc --noEmit: no errors
-npm test                  # Test Files 21 passed (21) · Tests 158 passed (158)
+npm test                  # Test Files 21 passed (21) · Tests 159 passed (159)
 npm run samples:check     # regenerates the four sample files; no git diff (checksums in docs/SAMPLE-DATA.md)
 npm run secret-scan       # secret-scan: clean (working tree + N commits)
 ```
@@ -20,7 +20,8 @@ npm run secret-scan       # secret-scan: clean (working tree + N commits)
 npx playwright install chromium        # once
 export SESSION_SECRET=$(openssl rand -hex 32)
 npm run build
-npm run test:e2e                       # 21 passed
+npm run test:e2e                       # 22 passed
+npm run test:judge-mode                # 1 passed: fresh demo database, no signer keys (read-only copy)
 ```
 
 `test:e2e` starts the build on 127.0.0.1:8092 with an isolated database under `.tmp/e2e`. The test-only fixture (`scripts/e2e-fixture.ts`) adds runs in every state against a stand-in vault, so no testnet access is needed.
@@ -65,12 +66,12 @@ npm run judge:deployment
 ## 4. Run the app locally (demo mode)
 
 ```sh
-cp .env.example .env      # set SESSION_SECRET to a random 32+ character value; DEMO_MODE=true
-npm run db:seed
+cp .env.example .env      # set SESSION_SECRET to a random 32+ character value (openssl rand -hex 32)
+npm run demo:reset        # fresh database: 4 demo users + the vault's current workflow (read from the chain)
 npm run build && npm run start          # http://127.0.0.1:8092
 ```
 
-Demo sign-ins (password `12345678`): `maker@gajian.my.id`, `app1@gajian.my.id`, `app2@gajian.my.id`, `admin@gajian.my.id`. Without the signer keys (which never leave our machine), you can browse dashboards, build and upload runs, review them and see the imported testnet history. Submitting to the vault needs the restricted signer keys, so judges verify the live flow through step 3 and the recorded screenshots (`docs/screenshots/phase-13/`) instead.
+Demo sign-ins (password `12345678`): `maker@gajian.my.id`, `app1@gajian.my.id`, `app2@gajian.my.id`, `admin@gajian.my.id`. Without the signer keys (which never leave our machine) the app shows a "Read-only copy" note: you can sign in, build and upload runs and review them, and Submit answers "This copy of GAJIAN has no signer keys … Nothing was recorded." (`npm run test:judge-mode` checks exactly this). The live flow is verified by step 3, the screenshots (`docs/screenshots/phase-13/`, `docs/screenshots/phase-16/`) and the demo video.
 
 ## 5. Contracts (optional, Rust toolchain)
 

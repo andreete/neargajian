@@ -120,6 +120,34 @@ describe('approval order enforced end to end', () => {
   });
 });
 
+describe('a copy without signer keys (judge mode)', () => {
+  it('refuses submit, decisions, cancel and release before recording anything', async () => {
+    const counts = () => JSON.stringify(['run_versions', 'version_rows', 'approval_events', 'payout_actions'].map((t) => (h.sqlite.prepare(`select count(*) as n from ${t}`).get() as { n: number }).n));
+    fake.noKeys.add('maker');
+    RUN = createRun(h.db, { makerUserId: maker.id, title: 'No keys', postingMode: 'detailed', source: 'upload', now: new Date() });
+    uploadToDraft(h.db, maker, RUN, { filename: 'live-3-rows.csv', bytes: FILE, expectedRevision: 0, now: new Date() });
+    const before = counts();
+    await expect(submitRun(h.db, fake, maker, RUN, { expectedRevision: 1 })).rejects.toThrow(/no signer keys.*Nothing was recorded/);
+    expect(counts()).toBe(before); // no frozen version stuck in "submitting"
+    expect(fake.calls).toEqual([]);
+    fake.noKeys.clear();
+    await submitRun(h.db, fake, maker, RUN, { expectedRevision: 1 });
+    await reconcileVersion(h.db, fake, v().id);
+    fake.noKeys.add('approver1');
+    const mid = counts();
+    await expect(decide(h.db, fake, app1, RUN, { versionId: v().id, decision: 'approve' })).rejects.toThrow(/no signer keys/);
+    expect(counts()).toBe(mid); // no pending approval without a transaction
+    fake.noKeys.clear();
+    await approve(app1);
+    await approve(app2);
+    fake.noKeys.add('worker');
+    const calls = fake.calls.length;
+    await expect(requestRelease(h.db, fake, v(), { role: 'worker', workerId: 'w' })).rejects.toThrow(/no signer keys/);
+    expect(fake.calls.length).toBe(calls);
+    expect(h.sqlite.prepare("select count(*) as n from payout_actions").get()).toEqual({ n: 0 });
+  });
+});
+
 describe('vault switch', () => {
   it('a version submitted to another vault is never reconciled, decided, released or paid through this one', async () => {
     await submitted();

@@ -407,3 +407,17 @@ Andre verified the key transactions and balances independently on testnet.
 
 - The run header is a three-column grid: back link | title and chips (the title wraps inside its column) | actions (top right, on the title row). It is the same for every run state, at 1280 and 1440 px.
 
+## Phase 17 decisions (9 Nov 2026)
+
+### D-096 · No chain action is recorded without a signer key
+
+- Every action that signs (submit, approve/reject, cancel, release, payouts, workflow change) checks the role's key first and changes nothing if it is missing. A copy without keys is an honest read-only copy with a visible note; the worker refuses to start without its key.
+
+### D-097 · Demo reset moves, never deletes
+
+- `npm run demo:reset` moves the database into `data/backups/` (checked row counts) and starts a clean one with the vault's current workflow read from the chain. Live evidence stays in `docs/TESTNET.md`, `docs/evidence/` and the backup.
+
+### D-098 · Hosting plan: Fly.io, one machine, restricted host-only keys
+
+- Web and worker share the SQLite volume on one machine. The host gets its own function-call keys (no admin key by default), small allowances, a small vault balance, optional lower caps and a recipient allowlist. Nothing is created until Andre says so.
+

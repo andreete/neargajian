@@ -56,6 +56,9 @@ export class FakeVault implements VaultClient {
   }
 
   accountFor(role: ChainRole) { return `${role}.gajian-payroll.testnet`; }
+  /** Roles whose signer key is missing (simulates a judge's copy without keys). */
+  noKeys = new Set<ChainRole>();
+  canSign(role: ChainRole) { return !this.noKeys.has(role); }
 
   async view<T>(method: string, args: Record<string, unknown>): Promise<T> {
     if (method === 'get_workflow') return structuredClone(this.wf) as T;

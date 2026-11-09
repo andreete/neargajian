@@ -10,7 +10,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
-import type { ChainWorkflow, TxOutcome, VaultClient } from '../chain/vault-client.ts';
+import { NO_SIGNER_MESSAGE, type ChainWorkflow, type TxOutcome, type VaultClient } from '../chain/vault-client.ts';
 import type { Db } from '../db/client.ts';
 import { activeWorkflowWhere } from './vault.ts';
 import { auditEvents, users, workflowConfigs, type ReleaseMode, type WorkflowKind } from '../db/schema.ts';
@@ -112,6 +112,7 @@ export async function updateWorkflow(db: Db, client: VaultClient, adminUserId: s
   if (db.select({ id: workflowConfigs.id }).from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'pending')).get()) {
     return { status: 'conflict', message: 'A workflow change is still waiting for confirmation on NEAR. Refresh its status first.' };
   }
+  if (!client.canSign('admin')) return { status: 'conflict', message: NO_SIGNER_MESSAGE };
   const active = db.select().from(workflowConfigs).where(activeWorkflowWhere()).get();
   if (!active || active.revision !== input.expectedRevision) {
     return { status: 'conflict', message: 'The workflow changed since you opened this page. Reload and try again.' };

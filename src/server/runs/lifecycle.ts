@@ -8,7 +8,7 @@
  */
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { can, type Principal, type RunContext } from '../auth/policy.ts';
-import { roleForAccount, type VaultClient } from '../chain/vault-client.ts';
+import { NO_SIGNER_MESSAGE, roleForAccount, type VaultClient } from '../chain/vault-client.ts';
 import type { Db } from '../db/client.ts';
 import {
   approvalEvents, auditEvents, payoutActions, payrollRuns, runVersions, users, versionRows, type VersionStatus,
@@ -110,6 +110,7 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
   }
   const snapshot = activeSnapshot(db);
   if (!snapshot) throw new DomainError('invalid', 'No active approval workflow. Ask the admin to set one.');
+  if (!client.canSign('maker')) throw new DomainError('conflict', NO_SIGNER_MESSAGE);
   const rows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
   const version = createVersion(db, {
     runId, makerUserId: principal.id, rows, workflow: snapshot, postingMode: run.postingMode, now, vaultContractId: client.vaultId,
@@ -225,6 +226,7 @@ export async function cancelVersion(db: Db, client: VaultClient, principal: Prin
   const v = latestVersion(db, runId);
   if (!v || (v.status !== 'pending_approval' && v.status !== 'approved')) throw new DomainError('conflict', 'Only a version that is waiting for approval or approved can be cancelled.');
   assertSameVault(v, client);
+  if (!client.canSign('maker')) throw new DomainError('conflict', NO_SIGNER_MESSAGE);
   audit(db, principal.id, 'run.cancel_requested', v.id, {}, now);
   const outcome = await client.call('maker', 'cancel_run', { run_id: v.chainRunId }, { gasTgas: 30 });
   if (outcome.status === 'failure') throw new DomainError('conflict', `The vault refused the cancellation: ${outcome.error ?? 'unknown reason'}.`);
@@ -293,6 +295,7 @@ export async function decide(db: Db, client: VaultClient, principal: Principal, 
   const reason = input.reason?.trim() ?? '';
   if (input.decision === 'reject' && (reason.length < 3 || reason.length > MAX_REASON)) throw new DomainError('invalid', `Give a reason for the rejection (3–${MAX_REASON} characters).`);
   const account = snap.approvers[step - 1]!.chainAccountId;
+  if (!client.canSign(roleForAccount(client, account))) throw new DomainError('conflict', NO_SIGNER_MESSAGE);
   const id = `${v.id}:${principal.id}:${now.getTime()}`;
   try {
     db.insert(approvalEvents).values({
