@@ -4,6 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 // with an isolated, freshly seeded database. One worker: the host is shared.
 export default defineConfig({
   testDir: './tests/e2e',
+  // Screenshot specs run only via `npm run screenshots` (SCREENSHOTS=1).
+  testIgnore: process.env.SCREENSHOTS === '1' ? [] : ['**/screenshots-*.spec.ts'],
   outputDir: './.tmp/playwright-results',
   fullyParallel: false,
   workers: 1,

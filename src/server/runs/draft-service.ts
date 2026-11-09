@@ -9,6 +9,7 @@ import type { Db } from '../db/client.ts';
 import { payrollRuns, workflowConfigs, type PostingMode } from '../db/schema.ts';
 import { validateRows, type Limits, type RawRow, type ValidationSummary } from '../payroll/validate.ts';
 import { DomainError, getDraftRows, replaceDraft, type DraftRowInput } from './repository.ts';
+import { importPayrollFile } from '../payroll/import.ts';
 
 export function activeLimits(db: Db): Limits {
   const wf = db.select().from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'active')).get();
@@ -84,4 +85,30 @@ export function confirmValidSubset(db: Db, principal: Principal, runId: string, 
     rows: keep.map((r) => fromRaw(r, r.sourceLine)),
   });
   return { revision, removed: invalid.length, summary: validateRows(keep, activeLimits(db)) };
+}
+
+/**
+ * Upload: validate the whole file first; only an accepted file replaces the draft (atomic,
+ * with file name, SHA-256 and each row's source line). A rejected file changes nothing.
+ */
+export function uploadToDraft(db: Db, principal: Principal, runId: string, input: {
+  filename: string; bytes: Uint8Array; expectedRevision: number; now: Date;
+}) {
+  const run = editableRun(db, principal, runId);
+  if (run.source !== 'upload') throw new DomainError('invalid', 'This run uses manual entry. Create an upload run to import a file.');
+  if (run.draftRevision !== input.expectedRevision) throw new DomainError('conflict', 'The draft changed in another window. Reload and upload again.');
+  const result = importPayrollFile({ filename: input.filename, bytes: input.bytes, limits: activeLimits(db) });
+  if (!result.ok) return { result, revision: run.draftRevision };
+  const revision = replaceDraft(db, {
+    runId, makerUserId: principal.id, expectedRevision: input.expectedRevision, now: input.now,
+    rows: result.rows.map((r) => fromRaw(r.raw, r.line)),
+    file: { filename: result.filename, sha256: result.sha256 },
+    meta: { source: 'upload' },
+  });
+  return { result, revision };
+}
+
+export function setPostingMode(db: Db, principal: Principal, runId: string, postingMode: PostingMode, now: Date) {
+  editableRun(db, principal, runId);
+  db.update(payrollRuns).set({ postingMode, updatedAt: now }).where(eq(payrollRuns.id, runId)).run();
 }

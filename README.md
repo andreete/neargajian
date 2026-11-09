@@ -4,7 +4,7 @@
 
 GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 06 of 18.** Contracts with live testnet payouts, the database model, the landing page, sign-in and role dashboards exist. Building, approving and releasing runs in the app come in Phases 07–12. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 09 of 18.** Contracts with live testnet payouts, the database model, sign-in and role dashboards, the admin workflow editor (chain-confirmed), the manual builder and the CSV/TXT upload with templates exist. Submitting, approving and releasing runs in the app come in Phases 10–12. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
@@ -19,8 +19,9 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | --- | --- | --- |
 | Sample files reproduce byte-for-byte | `npm run samples:check` | 4/4 SHA-256 checksums match `docs/SAMPLE-DATA.md`, no git diff |
 | Lint, typecheck | `npm run lint`, `npm run typecheck` | pass |
-| Unit + integration tests | `npm test` | 78/78 pass |
-| Browser tests (Chromium, production build) | `npm run test:e2e` | 11/11 pass |
+| Unit + integration tests | `npm test` | 113/113 pass |
+| Browser tests (Chromium, production build) | `npm run test:e2e` | 15/15 pass |
+| Upload of the three sample files | `npm test` (import tests) | 56.690860 / 56.690860 / 10.000000 tUSDC, 1,000 rows each |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
 | Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
@@ -97,6 +98,10 @@ npm run db:status    # row counts per table
 The seed also imports the real Phase 02/04 testnet runs from `db/seed/testnet-history.json` (exported from the chain by `scripts/testnet/export-history.mjs`; `--check` re-verifies against testnet), shown in the app as "Testnet run".
 
 Schema: `src/server/db/schema.ts`; integrity triggers: `db/migrations/0001_integrity.sql` (submitted versions and their rows can never change, one live payout action per row). To start over locally, stop the app and delete `data/gajian.sqlite*`.
+
+## Templates
+
+The run builder offers four downloads: `gajian-payroll-template-blank.csv`, `gajian-payroll-template.xlsx` (macro-free; Instructions + Payroll sheet with the 1,000 sample rows; account, amount and phone columns formatted as Text), `gajian-payroll-sample-1000.csv` and `gajian-payroll-sample-1000.txt`. Regenerate the Excel file with `npm run templates:xlsx`. Excel with regional settings that save semicolon-separated CSV is detected automatically; amounts must use a dot as decimal separator.
 
 ## Sample data
 

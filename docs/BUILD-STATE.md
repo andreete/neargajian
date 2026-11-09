@@ -14,7 +14,29 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 06b Design review fixes | Done | read-only: history export from testnet RPC |
 | 07 Admin setup and approval map | Done | **Yes**: 2 workflow updates through the app, see docs/TESTNET.md |
 | 08 Manual payroll builder | Done | none (local) |
-| 09 Template and upload | Not started | — |
+| 09 Template and upload | **Done, awaiting Andre's review** | none (local) |
+| 10 Read-only preview and immutable submission | Not started (stop requested) | — |
+
+---
+
+## Phase 09 · Template and upload service (9 Nov 2026)
+
+### Built
+
+- **Importer** `src/server/payroll/import.ts`: `.csv`/`.txt`/`.tsv`, ≤ 2 MiB, strict UTF-8 (BOM allowed), separator detected from the header row (comma, **semicolon** for regional Excel settings, tab), standard RFC 4180 parser (`csv-parse` 7.0.3: quotes, escaped quotes, quoted newlines), exact header set (missing / duplicate / unknown / empty columns reported), only trailing empty records ignored (an empty row in the middle is an error), ≤ 1,000 data records, per-row validation with the shared rules, run cap. Every problem carries the **spreadsheet row** (physical start line, header = row 1), the data-record number and the column. Comma decimals give "Use a dot as the decimal separator, e.g. 1500.50", including the case where an unquoted comma decimal split a comma-separated row. All-or-nothing: nothing is written unless the whole file passes.
+- **Upload service**: `uploadToDraft` replaces the draft atomically (file name, SHA-256, source line per row) only for an accepted file under the expected revision; a rejected file changes nothing. `POST /api/runs/[id]/upload` (multipart, maker owner only; 413 over 2 MB), `POST /api/runs/[id]/posting-mode`.
+- **Error report** `src/server/payroll/error-report.ts`: CSV with BOM, columns file / spreadsheet_row / data_row / column / problem, formula-injection escaping, no row contents. Downloaded from the error panel.
+- **Excel template** `public/templates/gajian-payroll-template.xlsx` from `npm run templates:xlsx` (`scripts/generate-xlsx-template.mjs`, ExcelJS 4.4.0 dev-only): no macros, "Instructions" sheet (fill-in rules, dot decimals, Save As CSV UTF-8 or Text (Tab delimited), regional settings) and "Payroll" sheet with the six headers + the 1,000 sample rows; `near_account_id`, `amount`, `mobile_phone` are Text columns written as strings.
+- **UI** (upload runs): downloads area (blank CSV, Excel template, sample CSV, sample TXT), drag-and-drop zone + file picker with limits up front, validating progress, accepted summary (rows, exact total, separator, duplicate-wallet note), error panel (count, first-error sentence, "previous version remains active" or "Nothing was imported", first 100 problems, full CSV report), read-only review table (50 rows per page in file order, source row numbers, First/Previous/page select/Next/Last, sticky header), posting mode + posting preview.
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npm test` | **113/113**: `tests/integration/import.test.ts` (16): **the three sample files accepted with 56.690860 / 56.690860 / 10.000000 tUSDC** (carry-over from Phase 01), lines 2–1001; **1,000 rows accepted, 1,001 rejected**; **one invalid row after row 50** rejected with row 56 + column, no partial accept; **malformed CSV**; **quoted multiline field** (line numbers of later rows kept, line break in a name rejected, escaped quotes parsed); **wrong currency**; semicolon detection and comma decimals; split comma decimal; BOM/LF/TSV; header, empty, non-UTF-8, extension and size errors; trailing vs middle empty rows; duplicate wallet warning and run cap; error report escaping; Excel template (2 sheets, 1,001 rows, Text format `@` and string values for account/amount/phone, no `vbaProject`); upload API: accept → **failed replacement keeps the earlier draft** (same revision, 1,000 rows, source line 51 for record 50) → stale revision 409; approver/admin 403, manual run 422 |
+| `npm run test:e2e` | **15/15** (screenshot specs excluded unless `SCREENSHOTS=1`): + upload flow in the browser (template link, accept 1,000 rows, 50 per page, row numbers 2 and 52, reject with 2 problems and "previous version remains active", error report download, reload keeps the accepted file) |
+| `npm run screenshots` | 9 PNGs in `docs/screenshots/phase-09/` (workflow editor sequence + parallel, manual builder with one invalid row, upload drop zone, rejected file with error panel, accepted 1,000 rows + full first page with page controls, posting preview consolidated + detailed) |
+| `npm audit --audit-level=high` | pass: 0 high/critical; production 0; 14 moderate dev-only (+ `uuid` via ExcelJS) |
 
 ---
 

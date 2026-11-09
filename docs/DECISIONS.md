@@ -289,3 +289,17 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-071 · One validation module everywhere
 
 - The browser imports the same `validate.ts` as the server for instant feedback; the server always re-validates with the active workflow's caps.
+
+## Phase 09 decisions (9 Nov 2026, by the agent)
+
+### D-072 · Importer rules
+
+- "Row N" always means the spreadsheet row (physical start line; header is row 1), which is what the user sees in Excel; the data-record number is in the error report too. Column order may vary but the header set must be exact. Only trailing empty records are ignored. Names with line breaks are rejected (parsed correctly, then refused with a clear message).
+
+### D-073 · Libraries
+
+- `csv-parse` 7.0.3 (runtime, standard RFC 4180 parser with line info). `exceljs` 4.4.0 (dev-only, template generation; brings a moderate `uuid` advisory in dev only). The template is generated, committed, and checked by a test.
+
+### D-074 · Screenshot specs are opt-in
+
+- `npm run test:e2e` skips `tests/e2e/screenshots-*.spec.ts`; `npm run screenshots` (Phase 09 set) and `npm run screenshots:06b` run them with `SCREENSHOTS=1`, so review screenshots are never overwritten by a normal test run.

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-async function signIn(page: import('@playwright/test').Page, email: string) {
+async function signInLocal(page: import('@playwright/test').Page, email: string) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
@@ -10,7 +10,7 @@ async function signIn(page: import('@playwright/test').Page, email: string) {
 }
 
 test('maker builds a manual run, sees inline errors and keeps only the valid rows after confirming', async ({ page }) => {
-  await signIn(page, 'maker@gajian.my.id');
+  await signInLocal(page, 'maker@gajian.my.id');
   await page.waitForURL('**/maker');
   await page.getByRole('link', { name: 'New run' }).first().click();
   await page.getByLabel('Run title').fill('E2E manual run');

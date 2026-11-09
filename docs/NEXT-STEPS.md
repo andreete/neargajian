@@ -4,7 +4,9 @@ Updated: Mon 9 Nov 2026, end of Phase 01. Schedule: on track (kickoff section 8:
 
 ## Single next action
 
-Phases 06b, 07 and 08 are done. Continue with **Phase 09** (template and upload), then take the Phase 09 screenshots, start the production build for Andre's review and STOP (do not start Phase 10).
+**Andre reviews Phases 06b–09** (stop requested; do not start Phase 10 until approved). Screenshots: `docs/screenshots/phase-06b/` and `docs/screenshots/phase-09/`. The production build runs on http://127.0.0.1:8092 (database `data/gajian.sqlite`; demo logins in README).
+
+After approval: **Phase 10** (read-only preview and immutable submission: freeze the draft into a version with `activeSnapshot` + `createVersion`, submit `create_run` through the maker's restricted key with the tx hash stored first, honest pending state, reconcile before opening approvals, new versions with `supersedes`, maker cancellation).
 
 ## Phase 16 follow-ups (from Andre's Phases 02–04 review, D-050)
 
@@ -21,4 +23,4 @@ Contract freeze until then (D-051).
 
 ## Resume prompt
 
-> Read CLAUDE.md, docs/NEXT-STEPS.md and docs/BUILD-STATE.md. Andre has approved the Phase 06 design. Execute Phase 07 from docs/build/04-BUILD-PHASES.md as adjusted by docs/build/00-KICKOFF.md, then continue phase by phase.
+> Read CLAUDE.md, docs/NEXT-STEPS.md and docs/BUILD-STATE.md. Andre has reviewed Phases 06b–09. Execute Phase 10 from docs/build/04-BUILD-PHASES.md as adjusted by docs/build/00-KICKOFF.md, then continue phase by phase.

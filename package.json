@@ -27,7 +27,9 @@
     "db:status": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts status",
     "db:generate": "./scripts/with-tmp.sh drizzle-kit generate",
     "test:e2e": "./scripts/with-tmp.sh playwright test",
-    "screenshots": "./scripts/with-tmp.sh playwright test tests/e2e/screenshots.spec.ts"
+    "screenshots": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase09.spec.ts",
+    "templates:xlsx": "./scripts/with-tmp.sh node scripts/generate-xlsx-template.mjs",
+    "screenshots:06b": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase06b.spec.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
@@ -48,6 +50,7 @@
     "drizzle-kit": "0.31.11",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.3",
+    "exceljs": "4.4.0",
     "typescript": "6.0.3",
     "vitest": "5.0.5"
   },
