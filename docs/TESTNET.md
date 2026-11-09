@@ -310,6 +310,21 @@ Vault2 held 0.24 tUSDC; the admin minted 1.76 test tUSDC (mock token, zero value
 
 NEAR across all our accounts: 9.87311 → 9.87234 = 0.00077 NEAR.
 
+## Phase 19b: live run drafted by the payroll assistant (9 Nov 2026 22:57 UTC = 10 Nov WIB)
+
+The maker typed "Create a disbursement for the Sales division, 0.03 tUSDC each, called November commissions, detailed posting" into the payroll assistant (Claude API, `claude-opus-5-5`). The app resolved the Sales division from the recipient directory (Daniel Hall, Emma Clark), showed the preview, and created the draft on **Create draft**. The maker submitted it; approver 1 and approver 2 approved in the browser; the release worker paid both rows. Run `gjn-6e2922fcf5cd4d0f91f1-v1` ("November commissions", detailed posting), 2 × 0.03 = **0.06 tUSDC**. Driven by `npm run live:phase19 -- --grep p19-live-run`; added to `judge:verify` with `scripts/testnet/record-run-evidence.ts`.
+
+| Step | Signer | Tx | Block time (UTC) |
+| --- | --- | --- | --- |
+| Maker submits (`create_run`) | maker | [`EsainJwc…`](https://testnet.nearblocks.io/txns/EsainJwcdpWnsv4zR4x7goLrddc2sRK9oJfVtP23V6SC) | 22:57 |
+| Approver 1 approves in the browser | approver1 | [`Fv3DyjAg…`](https://testnet.nearblocks.io/txns/Fv3DyjAg16VW4excXozsWFy5iiuwAFaHo8GQxa1RyTpk) | 22:57 |
+| Approver 2 approves in the browser | approver2 | [`22Mnsqx8…`](https://testnet.nearblocks.io/txns/22Mnsqx8D23ekg8RS9RD2YhRCm5XrfZRy53iF3WyovcQ) | 22:57 |
+| Worker `start_release` | worker | [`Faz6XQ7c…`](https://testnet.nearblocks.io/txns/Faz6XQ7cUBVwYpaDvx3NAmhezrAuVFbSCo3L89DgWrkJ) | 22:57:36 |
+| Worker `pay_row` 0 → recipient2 (Daniel Hall) 0.03 | worker | [`66wCkXeo…`](https://testnet.nearblocks.io/txns/66wCkXeotoNK4y5tw3qoZbQobruAPyR3y6axYsLnPAHU) | 22:57:41 |
+| Worker `pay_row` 1 → recipient1 (Emma Clark) 0.03 | worker | [`9CgyGev6…`](https://testnet.nearblocks.io/txns/9CgyGev62WfbPd1DdQ6VPACRqbXVYvFHe1BAV6ehKN7r) | 22:57:46 |
+
+Balances (`node scripts/testnet/balances.mjs`, RPC `final`): vault2 2.000000 → **1.940000**, recipient1 0.490000 → 0.520000, recipient2 0.470000 → 0.500000 tUSDC: exactly the paid amounts. NEAR across all our accounts 9.87234 → 9.87007 = **0.00227 NEAR**. (One balance read during the run reported recipient2 as "does not exist"; a re-read seconds later showed it normally: a transient RPC answer, not an account change.) Screenshots: `docs/screenshots/phase-19/03`–`06`.
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -321,5 +336,6 @@ NEAR across all our accounts: 9.87311 → 9.87234 = 0.00077 NEAR.
 | 9 Nov 2026 | Phase 13: live app run (submit, 2 approvals, release, 3 payouts) | 3 | 0.120000 | 0.00297 | Phase 13 table |
 | 9 Nov 2026 | Phase 16: final vault deploy + lock + 5 keys, fund migration (6 txs), 3 app runs (demo, maker release, awaiting funding), 2 workflow changes, duplicate proof, funding | 9 | 0.960000 to recipients (+0.70 migrated) | 0.02182 | Phase 16 tables |
 | 10 Nov 2026 | Phase 19: vault2 top-up (mint 1.76 + `ft_transfer_call`) | — | — (vault2 0.24 → 2.00) | 0.00077 | Phase 19 table |
+| 10 Nov 2026 | Phase 19b: assistant-drafted run through the app (submit, 2 approvals, release, 2 payouts) | 2 | 0.060000 | 0.00227 | Phase 19b table |
 
-**Total testnet NEAR burned so far: ≈ 0.128 NEAR** (10.00000 → 9.87234 across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.130 NEAR** (10.00000 → 9.87007 across all our accounts; storage deposits and contract storage stay inside our accounts).

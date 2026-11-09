@@ -61,7 +61,7 @@ npm run judge:deployment
 # PASS  no full-access key on vault2.gajian-payroll.testnet (0 keys in total)
 ```
 
-`npm run judge:verify` (step 3) also checks the deployed `code_hash` against the recorded hash and the absence of full-access keys without building anything. It covers Phase 13 and every Phase 16 run (demo, maker release, Awaiting funding, fund migration), the deployment operations, eight on-chain refusals, the Phase 19 vault2 top-up (mint + `ft_transfer_call`, vault2 2.00 tUSDC) and every paid time in the exported CSVs (`docs/evidence/exports/`) against the block of its payout transaction: 117 checks in total.
+`npm run judge:verify` (step 3) also checks the deployed `code_hash` against the recorded hash and the absence of full-access keys without building anything. It covers Phase 13 and every Phase 16 run (demo, maker release, Awaiting funding, fund migration), the deployment operations, eight on-chain refusals, the Phase 19 vault2 top-up (mint + `ft_transfer_call`, vault2 2.00 tUSDC) and every paid time in the exported CSVs (`docs/evidence/exports/`) against the block of its payout transaction, and the Phase 19b assistant-drafted run: 130 checks in total.
 
 ## 4. Run the app locally (demo mode)
 

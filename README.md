@@ -53,7 +53,7 @@ npm run secret-scan                   # secret-scan: clean (working tree + N com
 npm run judge:verify
 ```
 
-See: about 120 lines starting with `PASS`, ending with `All testnet evidence checks passed.` It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
+See: about 130 lines starting with `PASS`, ending with `All testnet evidence checks passed.` It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
 - every run's status, total and paid rows;
 - every transaction's signer, receiver and success;
 - every payout's `ft_transfer` event (receiver and amount);

@@ -292,6 +292,58 @@
           "signer": "worker.gajian-payroll.testnet"
         }
       ]
+    },
+    {
+      "phase": "19",
+      "label": "Payroll assistant draft for the Sales division (0.03 tUSDC each), approved by both approvers in the browser, paid automatically (final vault)",
+      "vault": "vault2.gajian-payroll.testnet",
+      "runId": "gjn-6e2922fcf5cd4d0f91f1-v1",
+      "status": "Paid",
+      "total": "60000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient2.gajian-payroll.testnet",
+          "amount": "30000"
+        },
+        {
+          "index": 1,
+          "receiver": "recipient1.gajian-payroll.testnet",
+          "amount": "30000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "signer": "maker.gajian-payroll.testnet",
+          "hash": "EsainJwcdpWnsv4zR4x7goLrddc2sRK9oJfVtP23V6SC"
+        },
+        {
+          "step": "approve (approver 1)",
+          "signer": "approver1.gajian-payroll.testnet",
+          "hash": "Fv3DyjAg16VW4excXozsWFy5iiuwAFaHo8GQxa1RyTpk"
+        },
+        {
+          "step": "approve (approver 2)",
+          "signer": "approver2.gajian-payroll.testnet",
+          "hash": "22Mnsqx8D23ekg8RS9RD2YhRCm5XrfZRy53iF3WyovcQ"
+        },
+        {
+          "step": "start_release (worker)",
+          "signer": "worker.gajian-payroll.testnet",
+          "hash": "Faz6XQ7cUBVwYpaDvx3NAmhezrAuVFbSCo3L89DgWrkJ"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "signer": "worker.gajian-payroll.testnet",
+          "hash": "66wCkXeotoNK4y5tw3qoZbQobruAPyR3y6axYsLnPAHU"
+        },
+        {
+          "step": "pay_row 1 (worker)",
+          "signer": "worker.gajian-payroll.testnet",
+          "hash": "9CgyGev62WfbPd1DdQ6VPACRqbXVYvFHe1BAV6ehKN7r"
+        }
+      ]
     }
   ],
   "expectedFailures": [

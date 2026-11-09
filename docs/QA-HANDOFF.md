@@ -54,7 +54,7 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm test` | `Test Files 23 passed (23)`, `Tests 179 passed (179)` |
 | `npm run samples:check` | regenerates the sample files; `git diff` is empty |
 | `npm run secret-scan` | `secret-scan: clean (working tree + N commits)` |
-| `npm run judge:verify` | about 117 `PASS` lines and `All testnet evidence checks passed.` |
+| `npm run judge:verify` | about 130 `PASS` lines and `All testnet evidence checks passed.` |
 | `npm audit --audit-level=high` | exit 0 (14 moderate advisories known; none high or critical) |
 | `npx playwright install chromium && npm run build && npm run test:e2e` | `29 passed` (isolated DB, test-only fixture, stand-in vault, labelled assistant test stub; no testnet writes, no API key) |
 | `npm run test:judge-mode` | `1 passed` (fresh demo DB, no keys: read-only note, upload, review, submit refused, run stays a draft) |
@@ -174,7 +174,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 9. **CI status on GitHub was not checked from the build machine** (no GitHub CLI there). Locally, the same steps pass, including the browser tests with all keys blank. Please check the Actions tab for the phase-19 commit.
 10. **Demo passwords are public by design** (demo mode only). Failed sign-ins are rate-limited.
 11. **The recipient directory is an app guardrail, not a contract rule.** The vault does not know it (vault2 cannot change). A maker key used outside the app could commit rows outside the directory; approvers are the check (README, SECURITY).
-12. **The payroll assistant needs the team's `ANTHROPIC_API_KEY`;** the live assistant run on testnet is pending that key (`docs/ACCEPTANCE.md` A10). Browser tests use a labelled stub model.
+12. **The payroll assistant needs the team's `ANTHROPIC_API_KEY`;** the live assistant run was done in Phase 19b with the team's key (`docs/TESTNET.md`). Browser tests use a labelled stub model.
 13. **Sample employees share some names with the live recipients** (for example a second "Daniel Hall" in Engineering). The assistant asks which division instead of guessing.
 14. **Adding a recipient makes one read-only RPC call** to FastNEAR; offline it shows "Could not reach NEAR testnet: check again".
 
