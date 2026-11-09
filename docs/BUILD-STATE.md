@@ -13,8 +13,26 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 06 Landing, login and role boundaries | Done; design review by Andre → 06b | none |
 | 06b Design review fixes | Done | read-only: history export from testnet RPC |
 | 07 Admin setup and approval map | Done | **Yes**: 2 workflow updates through the app, see docs/TESTNET.md |
-| 08 Manual payroll builder | Not started | — |
+| 08 Manual payroll builder | Done | none (local) |
 | 09 Template and upload | Not started | — |
+
+---
+
+## Phase 08 · Manual payroll builder (9 Nov 2026)
+
+### Built
+
+- `src/server/payroll/validate.ts` (pure, shared by browser, server and the Phase 09 importer): six required fields, NEAR account syntax (lowercase hint), name length/control characters, currency must be `tUSDC`, exact amount parsing with the active per-row cap and the comma-decimal hint, phone 7–15 digits with optional `+` (spaces, dashes, brackets ignored), email shape; run-level checks (≥ 1 row, ≤ 1,000 rows, per-run cap); exact total of valid rows; duplicate wallets flagged as warnings.
+- `src/server/runs/draft-service.ts`: owner-only draft view, manual save (rows kept as entered, invalid ones included, optimistic revision, title and posting mode), and **explicit valid-subset confirmation**: the client sends exactly the row indexes to remove; the server removes them only if they equal its own set of invalid rows (otherwise 409, nothing changes).
+- API: `POST /api/runs` (maker), `GET|PUT /api/runs/[id]/draft`, `POST /api/runs/[id]/draft/confirm-subset` (maker owner only; other makers get 404, approvers and admin 403).
+- UI: `/maker/runs/new` (title, entry method, posting mode), `/maker/runs/[id]` manual builder (editable table, inline errors after touch, duplicate-wallet note, add/remove rows, sticky summary with counts and exact total, save state, "Continue with N valid rows" confirmation dialog listing the rows to remove, posting-mode cards with a live posting preview). Sidebar "New run" enabled; draft runs link to the builder.
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npm test` | **97/97**: `tests/unit/validate.test.ts` (7: exact precision incl. 0.000001 and 0.999999, 7 decimals, comma decimal, zero, cap, exponent; all required fields; account/currency/phone/email/name rules; valid total without dropping rows; duplicate wallet = warning; run cap and 1,000-row limit) and `tests/integration/builder-api.test.ts` (3: create → save with an invalid row kept → stale revision 409 → mismatched removal sets 409 with all rows intact → exact confirmation removes only the invalid row; other maker 404, approver/admin 403; create validation and no manual edits to an upload run) |
+| `npm run test:e2e` | 13/13: + manual builder flow in the browser (inline error, live posting preview, confirmation dialog, persisted after reload) |
 
 ---
 

@@ -4,7 +4,7 @@ Updated: Mon 9 Nov 2026, end of Phase 01. Schedule: on track (kickoff section 8:
 
 ## Single next action
 
-Phases 06b and 07 are done. Continue with **Phase 08** (manual builder) and **09** (template and upload), then take the Phase 09 screenshots, start the production build for Andre's review and STOP (do not start Phase 10).
+Phases 06b, 07 and 08 are done. Continue with **Phase 09** (template and upload), then take the Phase 09 screenshots, start the production build for Andre's review and STOP (do not start Phase 10).
 
 ## Phase 16 follow-ups (from Andre's Phases 02–04 review, D-050)
 

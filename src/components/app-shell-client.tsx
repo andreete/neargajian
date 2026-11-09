@@ -28,7 +28,7 @@ export function NavItems({ items }: { items: NavItem[] }) {
             </span>
           );
         }
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = pathname === item.href || (pathname.startsWith(`${item.href}/`) && !items.some((o) => o.href !== item.href && o.href.length > item.href.length && pathname.startsWith(o.href)));
         return (
           <Link key={item.href} href={item.href} className="nav-item" aria-current={active ? 'page' : undefined}>
             <Icon size={18} />{item.label}

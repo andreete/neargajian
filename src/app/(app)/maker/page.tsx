@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { FileIcon, PlusIcon } from '@/components/icons';
 import { StatusChip } from '@/components/status-chip';
 import { getDb } from '@/server/db/client';
@@ -15,8 +16,7 @@ const KIND = { one: 'One approver', two_sequential: 'Two in sequence', two_paral
 function NewRunButton() {
   return (
     <div className="page-head-actions">
-      <button type="button" className="btn btn-primary" disabled aria-describedby="new-run-hint"><PlusIcon size={18} />New run</button>
-      <span id="new-run-hint" className="hint">Run builder: coming soon (Phase 08).</span>
+      <Link className="btn btn-primary" href="/maker/runs/new"><PlusIcon size={18} />New run</Link>
     </div>
   );
 }
@@ -32,7 +32,7 @@ export default async function MakerDashboard() {
   const rows = [
     ...runs.map((r) => ({ key: r.id, at: r.updatedAt, node: (
       <tr key={r.id}>
-        <td><div className="title">{r.title}</div><div className="sub">{r.source === 'upload' ? 'Upload' : 'Manual'} · {r.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'}{r.versionNo ? ` · Version ${r.versionNo}` : ''}</div></td>
+        <td><div className="title">{r.status === 'draft' ? <Link href={`/maker/runs/${r.id}`}>{r.title}</Link> : r.title}</div><div className="sub">{r.source === 'upload' ? 'Upload' : 'Manual'} · {r.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'}{r.versionNo ? ` · Version ${r.versionNo}` : ''}</div></td>
         <td><StatusChip status={r.status} /></td>
         <td className="amount">{r.rowCount.toLocaleString('en-US')}{r.invalidRows ? <div className="sub">{r.invalidRows} invalid</div> : null}</td>
         <td className="amount">{displayAmount(r.total)}</td>
@@ -77,7 +77,7 @@ export default async function MakerDashboard() {
               <div className="empty-icon"><FileIcon size={22} /></div>
               <h3>No payroll runs yet</h3>
               <p>Create a run by adding rows or uploading a CSV. It stays a draft until you submit it for approval.</p>
-              <div className="empty-action"><button type="button" className="btn btn-primary btn-sm" disabled>New run</button><span className="hint">Coming soon (Phase 08)</span></div>
+              <div className="empty-action"><Link className="btn btn-primary btn-sm" href="/maker/runs/new">New run</Link></div>
             </div>
           ) : (
             <div className="table-wrap" role="region" aria-labelledby="runs-title" tabIndex={0}>

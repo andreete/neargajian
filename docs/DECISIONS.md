@@ -275,3 +275,17 @@ Andre verified the key transactions and balances independently on testnet.
 
 - The vault is the source of truth for the active workflow. The app writes a `pending` revision, signs `update_workflow`, and activates only after `get_workflow` matches. If the app and the vault disagree, changes are refused until an operator reconciles. Failed attempts stay in the table for audit and do not block a retry.
 - Release-mode and approver changes apply to new runs only; each run version copies the active snapshot (`activeSnapshot`).
+
+## Phase 08 decisions (9 Nov 2026, by the agent)
+
+### D-069 · Valid-subset confirmation is an exact contract
+
+- The maker confirms the exact row indexes to remove; the server recomputes the invalid set and applies the removal only if both match, under the draft revision the maker saw. Drafts keep invalid rows until then (PRD J03: no silent omissions).
+
+### D-070 · Entry method fixed per run
+
+- A run is created as **manual** (editable rows) or **upload** (read-only imported rows, replaced only by a new accepted file). Switching means creating another run. This keeps PRD J04's "accepted rows are read-only" simple to enforce.
+
+### D-071 · One validation module everywhere
+
+- The browser imports the same `validate.ts` as the server for instant feedback; the server always re-validates with the active workflow's caps.

@@ -65,3 +65,24 @@ export function requireMutation(request: Request, roles?: readonly Role[]): Guar
 export function clientKey(request: Request): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'local';
 }
+
+/** Maps domain errors to HTTP responses (not_found 404, forbidden 403, conflict 409, invalid 422). */
+export function domainErrorResponse(error: unknown): Response {
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    const code = String((error as { code: unknown }).code);
+    const message = String((error as { message: unknown }).message);
+    const status = code === 'not_found' ? 404 : code === 'forbidden' ? 403 : code === 'conflict' ? 409 : code === 'invalid' ? 422 : 500;
+    if (status !== 500) return problem(status, code, message);
+  }
+  throw error;
+}
+
+export async function readJson<T>(request: Request, maxBytes = 1_000_000): Promise<T | Response> {
+  const text = await request.text();
+  if (text.length > maxBytes) return problem(413, 'too_large', 'Request body too large.');
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return problem(400, 'bad_json', 'Malformed JSON.');
+  }
+}

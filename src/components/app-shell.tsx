@@ -10,7 +10,7 @@ export function navFor(role: SessionUser['role']): NavItem[] {
     case 'maker':
       return [
         { href: '/maker', label: 'My runs', icon: 'runs' },
-        { href: '/maker/runs/new', label: 'New run', icon: 'plus', soon: 'Phase 08' },
+        { href: '/maker/runs/new', label: 'New run', icon: 'plus' },
         { href: '/history', label: 'History and reports', icon: 'reports', soon: 'Phase 13' },
       ];
     case 'approver':

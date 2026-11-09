@@ -68,6 +68,7 @@ function ownedRun(db: Queryable, runId: string, makerUserId: string) {
 export function replaceDraft(db: Db, input: {
   runId: string; makerUserId: string; expectedRevision: number; rows: DraftRowInput[];
   file?: { filename: string; sha256: string } | null; now: Date;
+  meta?: { title?: string; postingMode?: PostingMode; source?: 'manual' | 'upload' };
 }): number {
   if (input.rows.length > 1000) throw new DomainError('invalid', 'A run has at most 1,000 rows.');
   return db.transaction((tx) => {
@@ -80,7 +81,12 @@ export function replaceDraft(db: Db, input: {
       tx.insert(draftRows).values({ runId: input.runId, position, ...r, sourceLine: r.sourceLine ?? null }).run();
     });
     const next = run.draftRevision + 1;
+    const title = input.meta?.title?.trim();
+    if (title !== undefined && (title.length < 1 || title.length > 120)) throw new DomainError('invalid', 'Title must be 1-120 characters.');
     tx.update(payrollRuns).set({
+      ...(title ? { title } : {}),
+      ...(input.meta?.postingMode ? { postingMode: input.meta.postingMode } : {}),
+      ...(input.meta?.source ? { source: input.meta.source } : {}),
       draftRevision: next, updatedAt: input.now,
       draftFilename: input.file?.filename ?? null, draftFileSha256: input.file?.sha256 ?? null,
     }).where(and(eq(payrollRuns.id, input.runId), eq(payrollRuns.draftRevision, input.expectedRevision))).run();
