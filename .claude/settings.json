@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(sudo)",
+      "Bash(sudo *)",
+      "Bash(*sudo *)",
+      "Bash(docker)",
+      "Bash(docker *)",
+      "Bash(*docker *)",
+      "Bash(tailscale)",
+      "Bash(tailscale *)",
+      "Bash(*tailscale *)",
+      "Bash(ngrok *)",
+      "Bash(cloudflared *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * +*)",
+      "Bash(*mainnet*)",
+      "Read(~/.near-credentials/**)"
+    ]
+  }
+}

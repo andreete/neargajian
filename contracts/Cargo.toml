@@ -1,0 +1,33 @@
+[workspace]
+resolver = "3"
+members = ["smoke"]
+# Phase 02 adds: "tusdc" (mock NEP-141 test token) and "vault" (payroll vault).
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+near-sdk = "=5.30.1"
+# Sandbox test stack, same versions as the cargo-near 0.23.0 project template.
+near-sandbox = "=0.4.0"
+near-api = "0.8"
+cargo-near-build = "0.11.0"
+tokio = { version = "1.12.0", features = ["full"] }
+testresult = "0.4.1"
+
+[workspace.lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(near)']
+
+# Same release profile as the cargo-near template: small Wasm, abort on panic,
+# and arithmetic overflow checks kept ON in release builds (money safety).
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true

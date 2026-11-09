@@ -1,0 +1,47 @@
+{
+  "name": "gajian",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GAJIAN: payroll batches with contract-enforced approvals and NEAR testnet wallet payouts",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=26.13.0 <27",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 8092",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 8092",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "samples:check": "node scripts/generate-sample-payroll.mjs && git diff --exit-code -- public/templates docs/SAMPLE-DATA.md",
+    "contracts:build": "cd contracts && cargo near build non-reproducible-wasm --manifest-path smoke/Cargo.toml --locked",
+    "contracts:test": "cd contracts && cargo test --workspace --locked",
+    "contracts:lint": "cd contracts && cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings"
+  },
+  "dependencies": {
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.4",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "drizzle-kit": "0.31.11",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.3",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  },
+  "allowScripts": {
+    "better-sqlite3": false,
+    "esbuild": false
+  }
+}

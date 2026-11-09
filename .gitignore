@@ -1,0 +1,48 @@
+# Secrets: never commit. Keys live in ~/.near-credentials (outside the repo) and .env.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+**/near-credentials/
+**/.near-credentials/
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Rust
+target/
+contracts/**/target/
+
+# Databases (SQLite and friends)
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+
+# Tests
+coverage/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Logs and OS noise
+*.log
+npm-debug.log*
+.DS_Store
+
+# Local Claude Code overrides (shared rules live in .claude/settings.json)
+.claude/settings.local.json

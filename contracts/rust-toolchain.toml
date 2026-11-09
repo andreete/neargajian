@@ -1,0 +1,9 @@
+# Pinned to the toolchain of the official `cargo near new` template (cargo-near 0.23.0),
+# which matches near-sdk 5.30's rust-version and the rustc that built testnet's nearcore
+# 2.14.0-rc.5. Do not bump without a sandbox deploy (see docs/DECISIONS.md D-019).
+# rust-analyzer from the template is left out to save disk and memory on the shared server.
+[toolchain]
+channel = "1.95.0"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]
+profile = "minimal"
