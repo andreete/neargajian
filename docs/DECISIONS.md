@@ -124,3 +124,21 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 ### D-038 · Testnet authority for Phases 02–04
 
 - Andre authorised account creation, contract deploys and testnet transactions without asking first. One faucet-funded master account; sub-accounts per role (tusdc, vault, admin, maker, approver1, approver2, worker, 2–3 recipients). Payouts 0.01–0.10 tUSDC. Keys only in `~/.near-credentials` and `.env` (written by a script, never printed).
+
+## Phase 02 decisions (9 Nov 2026, by the agent)
+
+### D-039 · Smoke canary retired
+
+- The Phase 01 smoke contract proved the toolchain. The tusdc and vault sandbox tests now deploy real Wasm on nearcore 2.14.0 in every `cargo test`, which repeats that proof, so `contracts/smoke` was removed to save build time and memory.
+
+### D-040 · Vault API conventions
+
+- `run_id` is chosen by the app (1–64 chars `[a-z0-9_-]`, deterministic per run version) and unique on-chain, so a retried create is idempotent: the duplicate fails and the app reconciles by reading `get_run`.
+- One recipient per `pay_row` call (PRD §5.4: start with one, tune after measuring). Memo `gajian:<run_id>:<index>` (no PII). `ft_transfer` gets 15 Tgas, the callback 10 Tgas; callers attach 100 Tgas. Measured on testnet: pay_row 2.50 + ft_transfer 1.83 + on_payout 1.77 Tgas.
+- Outcome rule: the callback treats the transfer as paid unless the receipt **failed** (`PromiseError::Failed`). A failed receipt is a proven failure (NEP-141 `ft_transfer` panics before moving tokens). Only proven failures are retryable.
+- Funding uses `ft_transfer_call` → `ft_on_transfer` (only from the configured token, keeps the full amount). A plain `ft_transfer` into the vault would not be credited to the books and stays outside the payout accounting.
+
+### D-041 · Testnet account layout
+
+- Master `gajian-payroll.testnet` (faucet service, 10 NEAR) and sub-accounts `tusdc`, `vault`, `admin`, `maker`, `approver1`, `approver2`, `worker`, `recipient1..3`. Budget: contracts 2.2 / 2.6 NEAR (≈1.6 NEAR storage each), signers 0.4–0.5, recipients 0.05; ~2.9 NEAR kept on the master for redeploys. Explorer links use `testnet.nearblocks.io`.
+- A later vault with an incompatible state layout is deployed by deleting and recreating `vault.gajian-payroll.testnet` (storage NEAR returns to the master) rather than creating new accounts.

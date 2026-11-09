@@ -5,8 +5,42 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | Phase | Status | Live testnet evidence |
 | --- | --- | --- |
 | 00 Handoff commit | Done (`e66a953`) | n/a |
-| 01 Repository and toolchain | **Done, awaiting Andre's review** | none (no testnet activity in Phase 01) |
-| 02 Single-payout walking skeleton | Not started | — |
+| 01 Repository and toolchain | Done, approved by Andre 9 Nov (`e4cae2d`, follow-ups `phase-01: review follow-ups`) | none |
+| 02 Single-payout walking skeleton | Done | **Yes**: first contract-controlled payout `p02-run-1`, see docs/TESTNET.md |
+| 03 Commitments and money math | Not started | — |
+| 04 Contract policy and payout recovery | Not started | — |
+
+---
+
+## Phase 02 · Single-payout walking skeleton (9 Nov 2026)
+
+### Built
+
+- `contracts/tusdc`: NEP-141 + NEP-145 + NEP-148 via `near-contract-standards` 5.30.1; 6 decimals, symbol `tUSDC`, zero initial supply, owner-only `mint` to registered accounts.
+- `contracts/vault` (skeleton): config `admin, token, maker, approver, worker` (maker/approver/worker must be distinct); `ft_on_transfer` credits the books only from the configured token; `create_run` (maker, app-chosen `run_id`, 1–10 rows stored on-chain, approver snapshotted); `approve` (assigned approver only, once); `start_release` (worker; reserves the full total from the available balance or fails "awaiting funding"); `pay_row` (worker; marks the row `InFlight`, `ft_transfer` with 1 yocto, then private `on_payout` callback records `Paid` or proven `Failed`); views `get_config`, `get_balances`, `get_run`, `get_row_status`. A row in flight or paid cannot be paid again; only a proven failure can be retried; committed (in flight + paid) can never exceed the reservation.
+- `contracts/smoke` retired (D-039). `scripts/build-contracts.sh` builds tusdc + vault.
+- Testnet tooling: `scripts/testnet/near.sh` (refuses anything but `network-config testnet`, TMPDIR in `.tmp/`, redacts key-like strings and seed-phrase lines from output), `scripts/testnet/phase02-single-payout.sh` (operator sequence), `scripts/testnet/balances.mjs`, `scripts/testnet/tx-receipts.mjs` (read-only RPC).
+
+### Sandbox / local evidence
+
+| Command | Result |
+| --- | --- |
+| `cargo test --lib` (contracts) | tusdc **3/3**, vault **10/10** unit tests pass (happy path, proven failure keeps the reservation and allows retry, maker cannot approve own run, approver cannot create, release before approval, release without funding, duplicate pay while in flight, wrong token cannot fund, run_id reuse, distinct roles) |
+| `cargo test --test sandbox` (vault) | **1/1 pass** in 41 s, peak RSS 755 MB. On a local nearcore 2.14.0 sandbox with real Wasm: fund via `ft_transfer_call`; **wrong token** (second token instance) rejected and refunded to the sender, vault books unchanged; non-maker create fails; duplicate `run_id` fails; **premature** `start_release` and `pay_row` fail; maker cannot approve; double approve fails; non-worker release fails; payout succeeds (`true`, recipient +50000); **duplicate payout** fails; 2-row run: row 0 paid, repeat fails "already paid"; row 1 to an **unregistered account: the real async `ft_transfer` fails, the callback returns `false`, row `Failed`, run stays `Releasing`, 10000 stays reserved**; after registration the retry pays and the run is `Paid`; vault books equal the token ledger |
+| `npm run contracts:lint` | fmt + clippy `-D warnings` clean |
+| `npm run contracts:build` | tusdc 153,849 B `fd5a0b9a…`; vault 157,596 B (`ee8d9b7b…` before fmt, `9145511b…` after) |
+
+### Live testnet evidence (separate from sandbox)
+
+Accounts, deploys and every transaction are in `docs/TESTNET.md`. Summary: master `gajian-payroll.testnet` (faucet) + 10 role sub-accounts; tUSDC and vault deployed; vault and recipient1 registered; 1 tUSDC minted and transferred into the vault; run `p02-run-1` (0.05 tUSDC → recipient1): premature release **failed on-chain**, approve ok, reserve ok, **`pay_row` paid** (tx `7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL`, receipt chain `pay_row → ft_transfer (NEP-141 event, memo gajian:p02-run-1:0) → on_payout = true`), duplicate payout **failed on-chain**. Books (0.95 total, 0 reserved) match the token ledger. Gas: 0.0712 NEAR for account setup, 0.0053 NEAR for the whole Phase 02 flow.
+
+Not run live (sandbox only): wrong-token funding and the unregistered-recipient failure path; they need no live proof beyond the sandbox and would only spend NEAR.
+
+### Limits of the skeleton (addressed next)
+
+- Rows are stored on-chain, max 10 per run → Phase 03 Merkle commitment (1,000 rows).
+- One approver, worker-only release, no reject/cancel, no admin config updates → Phase 04.
+- `on_payout` failing (e.g. out of gas) would leave a row `InFlight`; recovery is designed in Phase 04.
 
 ---
 

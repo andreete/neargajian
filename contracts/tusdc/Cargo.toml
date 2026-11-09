@@ -1,6 +1,6 @@
 [package]
-name = "gajian-smoke"
-description = "Toolchain canary: proves the pinned Rust/cargo-near/near-sdk produce Wasm the NEAR runtime accepts"
+name = "gajian-tusdc"
+description = "tUSDC: GAJIAN's zero-value NEP-141 test token (6 decimals, owner-only mint, NEAR testnet only)"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
@@ -12,14 +12,10 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk.workspace = true
+near-contract-standards.workspace = true
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
-near-sandbox.workspace = true
-near-api.workspace = true
-cargo-near-build.workspace = true
-tokio.workspace = true
-testresult.workspace = true
 
 [lints]
 workspace = true

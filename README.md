@@ -4,16 +4,16 @@
 
 GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 01 of 18 (repository and toolchain).** There are no application features yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 02 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
 - **NEAR testnet only.** No mainnet configuration exists in this repository.
-- **Token:** `tUSDC`, our own mock NEP-141 token with 6 decimals and zero value, deployed by us on testnet (from Phase 02).
+- **Token:** `tUSDC`, our own mock NEP-141 token with 6 decimals and zero value, deployed by us on testnet at `tusdc.gajian-payroll.testnet`. Vault: `vault.gajian-payroll.testnet`.
 - **Data:** synthetic only. Sample files use reserved phone ranges and `example.com` emails.
 - **Trust model (prototype):** the server will hold restricted, function-call-only testnet signer keys for the maker, approvers, release worker and admin, and relay authenticated actions. The contract checks which account signed each action. This is acceptable for a testnet demo but is **not** production custody. A mainnet version would use user-held wallets or a multisig/MPC signer.
 
-## What works today (Phase 01)
+## What works today
 
 | Check | Command | Result on 9 Nov 2026 |
 | --- | --- | --- |
@@ -22,7 +22,8 @@ GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manu
 | Unit tests | `npm test` | 9/9 pass |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
-| Contract toolchain canary | `npm run contracts:test` | Wasm deployed to a local nearcore 2.14.0 sandbox; owner call succeeds, unauthorized call fails |
+| Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
+| Contracts (live testnet) | `scripts/testnet/phase02-single-payout.sh` | First contract-controlled payout of 0.05 tUSDC, see `docs/TESTNET.md` |
 
 ## Requirements
 
@@ -65,7 +66,7 @@ On a shared or small machine, prefix heavy commands with `nice -n 19` and set `C
 
 ```
 src/app/        Next.js routes (App Router)       src/server/   domain code
-contracts/      Rust workspace (smoke canary now; vault + tUSDC from Phase 02)
+contracts/      Rust workspace: tusdc (NEP-141 test token), vault (payroll vault)
 tests/          unit tests (Vitest)                scripts/      sample-data generator
 public/         logo and payroll templates         docs/         PRD, build plan, decisions, build state
 ```

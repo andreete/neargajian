@@ -1,0 +1,26 @@
+[package]
+name = "gajian-vault"
+description = "GAJIAN payroll vault: contract-enforced approvals and tUSDC payouts (NEAR testnet only)"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk.workspace = true
+near-contract-standards.workspace = true
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }
+near-sandbox.workspace = true
+near-api.workspace = true
+cargo-near-build.workspace = true
+tokio.workspace = true
+testresult.workspace = true
+
+[lints]
+workspace = true

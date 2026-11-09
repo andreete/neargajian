@@ -1,7 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["smoke"]
-# Phase 02 adds: "tusdc" (mock NEP-141 test token) and "vault" (payroll vault).
+members = ["tusdc", "vault"]
 
 [workspace.package]
 edition = "2024"
@@ -11,6 +10,7 @@ publish = false
 
 [workspace.dependencies]
 near-sdk = "=5.30.1"
+near-contract-standards = "=5.30.1"
 # Sandbox test stack, same versions as the cargo-near 0.23.0 project template.
 near-sandbox = "=0.4.0"
 near-api = "0.8"

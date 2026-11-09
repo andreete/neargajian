@@ -46,7 +46,9 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 | Rust | 1.95.0 + `wasm32-unknown-unknown` | rustup, `contracts/rust-toolchain.toml` |
 | cargo-near | 0.23.0 | `~/.cargo/bin` |
 | near-cli-rs (`near`) | 0.31.1 | `~/.cargo/bin` |
-| near-sdk / near-sandbox | 5.30.1 / 0.4.0 (nearcore 2.14.0) | `contracts/Cargo.toml` |
+| near-sdk / near-contract-standards / near-sandbox | 5.30.1 / 5.30.1 / 0.4.0 (nearcore 2.14.0) | `contracts/Cargo.toml` |
+
+Testnet: accounts and contracts in `docs/TESTNET.md`. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`.
 
 If `cargo` is not on PATH in a non-login shell: `. ~/.cargo/env`.
 
@@ -71,7 +73,7 @@ nice -n 19 npm run contracts:lint    # fmt + clippy -D warnings
 ```
 src/app/        Next.js routes and pages        src/server/   domain code (money, import, auth, db, chain)
 src/worker/     release/reconciliation worker   db/           migrations (Drizzle)
-contracts/      Cargo workspace (smoke canary; vault + tusdc from Phase 02)
+contracts/      Cargo workspace: tusdc (NEP-141 test token), vault
 tests/          unit/, integration/, e2e/       scripts/      sample-data generator, seed/deploy scripts
 public/         brand/, templates/              docs/         build docs + second brain
 ```
