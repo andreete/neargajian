@@ -5,7 +5,7 @@
 const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
 const master = process.argv[2] ?? 'gajian-payroll.testnet';
-const roles = ['', 'tusdc', 'vault', 'admin', 'maker', 'approver1', 'approver2', 'worker',
+const roles = ['', 'tusdc', 'vault', 'vault2', 'admin', 'maker', 'approver1', 'approver2', 'worker',
   'recipient1', 'recipient2', 'recipient3'];
 
 async function rpc(method, params) {

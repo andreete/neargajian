@@ -9,7 +9,7 @@ git clone https://github.com/andreete/neargajian.git && cd neargajian
 npm ci
 npm run lint              # no output from ESLint = pass
 npm run typecheck         # generates route types, then tsc --noEmit: no errors
-npm test                  # Test Files 20 passed (20) · Tests 154 passed (154)
+npm test                  # Test Files 20 passed (20) · Tests 155 passed (155)
 npm run samples:check     # regenerates the four sample files; no git diff (checksums in docs/SAMPLE-DATA.md)
 npm run secret-scan       # secret-scan: clean (working tree + N commits)
 ```
@@ -48,6 +48,19 @@ All testnet evidence checks passed.
 ```
 
 Every transaction is also linked from `docs/TESTNET.md` (NearBlocks testnet explorer).
+
+## 3b. Verify the deployed vault's code and lock
+
+```sh
+npm run contracts:build                 # Rust 1.95.0 + cargo-near 0.23.0 (see README)
+sha256sum contracts/target/near/gajian_vault/gajian_vault.wasm
+# 38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0
+npm run judge:deployment
+# PASS  deployed code_hash equals the locally built Wasm
+# PASS  no full-access key on vault2.gajian-payroll.testnet (0 keys in total)
+```
+
+`npm run judge:verify` (step 3) also checks the deployed `code_hash` against the recorded hash and the absence of full-access keys without building anything. It covers Phase 13 and every Phase 16 run (demo, maker release, Awaiting funding, fund migration), the deployment operations and eight on-chain refusals, 93 checks in total.
 
 ## 4. Run the app locally (demo mode)
 

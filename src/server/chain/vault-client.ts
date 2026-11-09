@@ -87,7 +87,7 @@ export class NearVaultClient implements VaultClient {
     const url = env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
     if (!/testnet/.test(url)) throw new Error('NEAR_RPC_URL must be a testnet endpoint');
     this.provider = new JsonRpcProvider({ url });
-    this.vaultId = env.VAULT_CONTRACT_ID ?? 'vault.gajian-payroll.testnet';
+    this.vaultId = env.VAULT_CONTRACT_ID ?? 'vault2.gajian-payroll.testnet';
     this.env = env;
   }
 

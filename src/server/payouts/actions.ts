@@ -51,7 +51,8 @@ export function updatePayoutAction(db: Db, id: string, update: {
     status: update.status, updatedAt: update.now,
     ...(update.txHash !== undefined ? { txHash: update.txHash } : {}),
     ...(update.error !== undefined ? { error: update.error } : {}),
-  }).where(update.status === 'succeeded' ? eq(payoutActions.id, id) : and(eq(payoutActions.id, id), ne(payoutActions.status, 'succeeded'))).run();
-  // A succeeded record is final: a late "unknown" or "already paid" answer for an action that
-  // reconciliation has already confirmed from the vault leaves it untouched.
+  }).where(and(eq(payoutActions.id, id), ne(payoutActions.status, 'succeeded'))).run();
+  // A succeeded record is final, including its time (the paid-at time in history and exports):
+  // the first confirmation wins. A late answer from the worker after reconciliation already
+  // confirmed the payout from the vault (or a late "unknown") leaves it untouched.
 }

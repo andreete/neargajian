@@ -82,7 +82,9 @@ describe('uniqueness and constraints', () => {
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w1', revision: 4, kind: 'two_sequential', approver1UserId: 'usr_app1', approver2UserId: 'usr_app1', chainStatus: 'pending' }).run(), /CHECK/);
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w2', revision: 5, kind: 'one', approver1UserId: 'usr_app1', approver2UserId: 'usr_app2', chainStatus: 'pending' }).run(), /CHECK/);
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w3', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'active' }).run(), /UNIQUE/);
-    expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w4', revision: 5, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run(), /UNIQUE/);
+    expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w4', revision: 3, vaultContractId: 'vault2.gajian-payroll.testnet', kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run(), /UNIQUE/);
+    // Revisions restart in a new vault: the same number in another vault is a different revision.
+    h.db.insert(workflowConfigs).values({ ...base, id: 'w4b', revision: 3, vaultContractId: 'vault.gajian-payroll.testnet', kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'superseded' }).run();
     // A failed attempt does not block a retry of the same revision.
     h.db.insert(workflowConfigs).values({ ...base, id: 'w5', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'failed' }).run();
     h.db.insert(workflowConfigs).values({ ...base, id: 'w6', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run();

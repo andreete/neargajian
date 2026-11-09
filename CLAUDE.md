@@ -52,7 +52,7 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 | near-cli-rs (`near`) | 0.31.1 | `~/.cargo/bin` |
 | near-sdk / near-contract-standards / near-sandbox | 5.30.1 / 5.30.1 / 0.4.0 (nearcore 2.14.0) | `contracts/Cargo.toml` |
 
-Testnet: accounts and contracts in `docs/TESTNET.md`. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`. App signers use the restricted function-call keys in `.env` (`node scripts/testnet/write-env.mjs` rewrites it; never print it). Recovery rules: `docs/RECOVERY.md`. Commitment format: `docs/COMMITMENTS.md`.
+Testnet: accounts and contracts in `docs/TESTNET.md`. **The app uses the final vault `vault2.gajian-payroll.testnet`** (Phase 16: release build, no full-access key, cannot be redeployed); `vault.gajian-payroll.testnet` is retired. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`. App signers use the restricted function-call keys in `.env` (`node scripts/testnet/write-env.mjs` rewrites it; never print it). Recovery rules: `docs/RECOVERY.md`. Commitment format: `docs/COMMITMENTS.md`.
 
 Server code (`src/server`) must stay runnable by Node directly: relative imports with `.ts` extensions, erasable TypeScript only (D-047).
 
@@ -72,6 +72,10 @@ nice -n 19 npm run test:e2e      # Playwright vs the production build (port 8092
 nice -n 19 npm run screenshots   # docs/screenshots/phase-06
 npm run worker                   # release worker, its own process; run only when payouts are needed, stop with SIGTERM/Ctrl+C
 nice -n 19 npm run live:phase13  # LIVE testnet flow through the app (needs server + worker on 8092); real transactions, on purpose only
+nice -n 19 npm run live:phase16  # LIVE Phase 16 rehearsal (one step at a time with --grep); real transactions, on purpose only
+npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
+npm run judge:deployment         # read-only: vault2 code_hash = local release Wasm, no full-access key
+npm run secret-scan              # credential scan: worktree + full Git history (--staged before commits)
 
 # Contracts (one at a time, never alongside Node work)
 nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm (tusdc, vault)

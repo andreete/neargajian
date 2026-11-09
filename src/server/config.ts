@@ -33,7 +33,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
     network: 'testnet',
     explorerTxUrl: env.NEAR_EXPLORER_TX_URL ?? 'https://testnet.nearblocks.io/txns/',
     explorerAccountUrl: 'https://testnet.nearblocks.io/address/',
-    vaultContractId: env.VAULT_CONTRACT_ID ?? 'vault.gajian-payroll.testnet',
+    vaultContractId: env.VAULT_CONTRACT_ID ?? 'vault2.gajian-payroll.testnet',
     tokenContractId: env.TUSDC_CONTRACT_ID ?? 'tusdc.gajian-payroll.testnet',
   };
 }

@@ -1,0 +1,4 @@
+near_account_id,receiver_name,currency,amount,mobile_phone,email
+recipient1.gajian-payroll.testnet,Emma Clark,tUSDC,0.05,+44 7700 900101,emma.clark@example.com
+recipient2.gajian-payroll.testnet,Daniel Hall,tUSDC,0.03,+44 7700 900102,daniel.hall@example.com
+recipient3.gajian-payroll.testnet,Grace Lewis,tUSDC,0.04,+44 7700 900103,grace.lewis@example.com

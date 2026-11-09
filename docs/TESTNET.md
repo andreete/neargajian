@@ -16,7 +16,8 @@ One faucet-funded master; every role is a sub-account funded by the master (D-03
 | --- | --- | --- | --- |
 | Master (faucet-funded, creates sub-accounts) | [`gajian-payroll.testnet`](https://testnet.nearblocks.io/address/gajian-payroll.testnet) | [`7U6z9xpb…`](https://testnet.nearblocks.io/txns/7U6z9xpboTrwrGXKi5DkxKNoYCDGbLezfJQNknLsqGUH) | 10 NEAR from the faucet service; full-access key |
 | tUSDC token contract | [`tusdc.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/tusdc.gajian-payroll.testnet) | [`7CkMT8dU…`](https://testnet.nearblocks.io/txns/7CkMT8dULfMh3xwtvUZ59yEA2NGQ51ed8AvKUCjde6s9) | funded 2.2 NEAR; NEP-141, 6 decimals, owner = admin |
-| Vault contract (recreated in Phase 04) | [`vault.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/vault.gajian-payroll.testnet) | [`Efcy6kUe…`](https://testnet.nearblocks.io/txns/Efcy6kUes8dwHcZ76v38AX4sMTemVp76znfC13J9Fs3Z) | funded 2.6 NEAR |
+| **Final vault (Phase 16, used by the app)** | [`vault2.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/vault2.gajian-payroll.testnet) | [`FFUnH2wU…`](https://testnet.nearblocks.io/txns/FFUnH2wUUeR5XVKsZzZyfyM6QUEQAu4L21gsjWuyMJ6B) | funded 2.4 NEAR; release build, **no full-access key** (code locked) |
+| Phase 04 vault (retired in Phase 16, kept readable) | [`vault.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/vault.gajian-payroll.testnet) | [`Efcy6kUe…`](https://testnet.nearblocks.io/txns/Efcy6kUes8dwHcZ76v38AX4sMTemVp76znfC13J9Fs3Z) | funded 2.6 NEAR; balance moved to the final vault, 0 tUSDC left |
 | Admin signer (token owner, workflow admin) | [`admin.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/admin.gajian-payroll.testnet) | [`3pSa8YYr…`](https://testnet.nearblocks.io/txns/3pSa8YYro5zVckhVtasbG2QbNjzg9ukZt8yYut2wwTEU) | 0.5 NEAR |
 | Maker signer | [`maker.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/maker.gajian-payroll.testnet) | [`BQ4H6f2t…`](https://testnet.nearblocks.io/txns/BQ4H6f2tNNgMoU26nxWGy7dcKjjRwLouVMdihfiKtR6R) | 0.4 NEAR |
 | Approver 1 signer | [`approver1.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/approver1.gajian-payroll.testnet) | [`GVqzpYD1…`](https://testnet.nearblocks.io/txns/GVqzpYD1QuiJXDQfXHYF2XTREFVFgG66rDvWM4d2FPpT) | 0.4 NEAR |
@@ -34,7 +35,10 @@ Creating the 10 sub-accounts cost 0.071 NEAR in gas (10.000 → 9.929 NEAR acros
 | --- | --- | --- | --- | --- | --- |
 | tUSDC (`gajian-tusdc` 0.1.0) | `tusdc.gajian-payroll.testnet` | `fd5a0b9a3aa46e2da097b1e7920e25184c08ff789574f9c41f5ef221761dd28d` | 153,849 B | 02 | [`MU9UKTdR…`](https://testnet.nearblocks.io/txns/MU9UKTdR4QGjZMMk8jHbAM3KvvtS77FjTz6rKYMiYoS) |
 | ~~Vault (`gajian-vault` Phase 02 skeleton)~~ deleted in Phase 04 | `vault.gajian-payroll.testnet` | `ee8d9b7b5cf4b6479f0518e34e32de569b7282b5b4782a57d5ab197dce811e8d` | 157,596 B | 02 (built before `cargo fmt`; the formatted source builds `9145511b…` because panic line numbers moved, same logic) | [`8QwaP4gK…`](https://testnet.nearblocks.io/txns/8QwaP4gKC4Lxdkt9X3CpeMnMkQfzYuGfrZo9gHGgR4fN) |
-| **Vault (`gajian-vault` Phase 04)** | `vault.gajian-payroll.testnet` (recreated) | `306c7f15a6ecf34d9e77fe4e51e53ad6b646a345af55ab3fbbe5d3d38849162a` | 214,632 B | 04 | [`DKWoV943…`](https://testnet.nearblocks.io/txns/DKWoV9435TLRc4rfUe62gxp3b7z7dByq4TJZKnG2GmjT) |
+| Vault (`gajian-vault` Phase 04), retired in Phase 16 | `vault.gajian-payroll.testnet` (recreated) | `306c7f15a6ecf34d9e77fe4e51e53ad6b646a345af55ab3fbbe5d3d38849162a` | 214,632 B | 04 | [`DKWoV943…`](https://testnet.nearblocks.io/txns/DKWoV9435TLRc4rfUe62gxp3b7z7dByq4TJZKnG2GmjT) |
+| **Vault (`gajian-vault`, final)**, release commit `cf4d9a1` | `vault2.gajian-payroll.testnet` | `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0` (on-chain `code_hash` `4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP`) | 214,272 B | 16 | [`7vEa2kTt…`](https://testnet.nearblocks.io/txns/7vEa2kTthxwp5SUWGWgqUUw4y61H6GutrUStnhCvidV) |
+
+The Phase 16 vault has the same source as Phase 04 (contract freeze, D-051). Only the build changed: machine paths are remapped (`scripts/build-contracts.sh`), so the bytes no longer depend on the checkout path or user. Two clean clones of `cf4d9a1` at different paths with separate target directories built byte-identical Wasm (sha256 above).
 
 ## Phase 02 live run: first contract-controlled payout (9 Nov 2026)
 
@@ -169,6 +173,98 @@ Balances (`node scripts/testnet/balances.mjs`, RPC `final`), before → after:
 
 Every balance changed by exactly the paid amount. History shows the run in both views (consolidated 0.12 = detailed 0.12, references `GJN-UP6YUKW8`, lines `-0001..-0003`); the company CSV and the recipient-detail CSV were downloaded from the app. Screenshots: `docs/screenshots/phase-13/`. NEAR spent: 9.89790 → 9.89493 = **0.00297 NEAR** (gas only).
 
+## Phase 16: final vault and live rehearsal through the app (9 Nov 2026)
+
+Everything below is on NEAR testnet. App steps were driven in a browser (`npm run live:phase16`, `tests/live/phase16.spec.ts`) against the production build and the release worker on 127.0.0.1:8092. Operations outside the app's normal flow used `scripts/testnet/phase16-deploy.sh` and `scripts/testnet/phase16.ts`. Vault actions were always signed with the role's restricted function-call key. Re-check everything read-only with `npm run judge:verify` (93/93 checks pass) and `npm run judge:deployment`.
+
+### 16a · Final vault from the release commit, locked
+
+| # | Step | Signer | Tx | Result |
+| --- | --- | --- | --- | --- |
+| 1 | Create `vault2.gajian-payroll.testnet` (2.4 NEAR) | master | [`FFUnH2wU…`](https://testnet.nearblocks.io/txns/FFUnH2wUUeR5XVKsZzZyfyM6QUEQAu4L21gsjWuyMJ6B) | ok |
+| 2 | Deploy the release Wasm (sha256 `38953891…`) + `new` (two in sequence, automatic release, caps 1 / 100 tUSDC) | vault2 | [`7vEa2kTt…`](https://testnet.nearblocks.io/txns/7vEa2kTthxwp5SUWGWgqUUw4y61H6GutrUStnhCvidV) | ok, workflow revision 1 |
+| 3 | Register vault2 with tUSDC | admin | [`6p72Zqxw…`](https://testnet.nearblocks.io/txns/6p72ZqxwNW1u9HvZrUycP2oq8bxhiM7SSW6qiSK2pDBZ) | ok |
+| 4 | **Delete vault2's only full-access key** (`ed25519:FHHqhwmx…`) | vault2 | [`8FxcRfsL…`](https://testnet.nearblocks.io/txns/8FxcRfsL8ushQhPFfNvqjo51qHVj6KVkaZW1jvYTDWYF) | ok: 0 keys left, code can never change |
+| 5–9 | Restricted function-call keys on vault2 for maker, approver 1, approver 2, worker, admin | each role | [`T3iBajyn…`](https://testnet.nearblocks.io/txns/T3iBajyng9f116e3AobSTp1DZnuQxSzK4fvL4AFgX7e) [`AGYQp3qH…`](https://testnet.nearblocks.io/txns/AGYQp3qH4qM4ctVcpSBzjLptX1tcFWpLvY8rMHDh9vrs) [`D6j3VYDJ…`](https://testnet.nearblocks.io/txns/D6j3VYDJv5fMTcPuByAmerLBNC5jDcFhGfNLsa8UQidx) [`5ViLoMh2…`](https://testnet.nearblocks.io/txns/5ViLoMh2sV1ir1V6DgJy6QwN7MgNFfUqUBW2SsPv4abj) [`8NEZkMY9…`](https://testnet.nearblocks.io/txns/8NEZkMY9rjdpi4ZnfeFEqi3MCXCAyEp1rcb6C6j9HAir) | ok (same method lists as Phase 04) |
+| 10 | Migration run `p16-migrate-202611091439` on the **old** vault: create (maker) | maker | [`3s3fNvET…`](https://testnet.nearblocks.io/txns/3s3fNvETpko2aHD7oAow7Nc1YF2pRbCHHbGBmtDyebyn) | ok, 1 row: 0.70 tUSDC → admin |
+| 11 | approve (approver 1) | approver1 | [`3ywfE8xJ…`](https://testnet.nearblocks.io/txns/3ywfE8xJUpUht7ivbCFS3vm7JcbFz2xH3ubUsBdJUouJ) | `"PendingApproval"` |
+| 12 | approve (approver 2) | approver2 | [`HvjeydQC…`](https://testnet.nearblocks.io/txns/HvjeydQCTHqo2KY69kRbdTmzHxPd5aexj1GxJZZLVq3G) | `"Approved"` |
+| 13 | start_release (worker) | worker | [`Eci9LLv4…`](https://testnet.nearblocks.io/txns/Eci9LLv469KAxE6x3rLXhSDnGZeGryLnNAc6Lv66aFfR) | `"Releasing"` |
+| 14 | pay_row 0 → admin (worker) | worker | [`7wgi6HNZ…`](https://testnet.nearblocks.io/txns/7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ) | `true`, old vault 0 tUSDC |
+| 15 | Admin funds vault2 with 0.70 tUSDC (`ft_transfer_call`, the only way the vault books funds) | admin | [`A6UfQojC…`](https://testnet.nearblocks.io/txns/A6UfQojCmXQ338DMKsS3JNuQpLf9yzVYCdBcfb6QimZQ) | `"700000"` used; vault2 books 0.70 |
+
+The app was then pointed at vault2 (`node scripts/testnet/write-env.mjs` rewrote `.env` with the vault2 keys; `scripts/testnet/switch-vault.ts` mirrored vault2's workflow revision 1 into the app database and superseded the old vault's revision 5). The migration run is listed in the app as an **operations transfer**, never as payroll.
+
+### 16e · Full demo through the app: detailed posting, automatic release
+
+Run "Phase 16 rehearsal: November contractors", vault run `gjn-b3bbdf502fcd477d958b-v1`, rows 0.05 / 0.03 / 0.04 = 0.12 tUSDC.
+
+| Step | Signer | Tx |
+| --- | --- | --- |
+| Maker submits (`create_run`) | maker | [`9zn7zAv8…`](https://testnet.nearblocks.io/txns/9zn7zAv89zf4PRmLWsZX28DGBexP6ZEfe5YpEpt6xfUQ) |
+| Approver 1 approves in the browser | approver1 | [`39qXFDVH…`](https://testnet.nearblocks.io/txns/39qXFDVHyz3xBd5avEZjoq8pUhXPXaPZExvowB28qhTV) |
+| Approver 2 approves in the browser | approver2 | [`28kxEMbG…`](https://testnet.nearblocks.io/txns/28kxEMbGAeMTDmyPFG2PVgowHaGZ9mAzgoTKdBE2LX8n) |
+| Worker `start_release` | worker | [`BhiKobSB…`](https://testnet.nearblocks.io/txns/BhiKobSBJdaaK73UmhhLMwBiZSn1uw6T6qjoJ28dur1o) |
+| `pay_row` 0 / 1 / 2 → recipient1 / 2 / 3 | worker | [`1BKKAueP…`](https://testnet.nearblocks.io/txns/1BKKAueP99jyq3HrqARzNSp93fRXK4ZAjphyztkjepc) [`CbbvUE7p…`](https://testnet.nearblocks.io/txns/CbbvUE7pbyNXhDtBKdQ1P5ojU2epmHYSzRkBHHMMQkVM) [`6xjYGwVY…`](https://testnet.nearblocks.io/txns/6xjYGwVYmQEqPNSzUjdqBAKD3qUnbAdFn65QFrtgxHME) |
+
+Paid 3 of 3 in the app with explorer links; history shows it in the consolidated and detailed views. The company CSV and the recipient-detail CSV were downloaded; their lines match the UI (references `GJN-UHZFZX9V-0001..0003`, 0.050000 / 0.030000 / 0.040000).
+
+### 16c · Maker release through the app (and back to automatic)
+
+| Step | Signer | Tx |
+| --- | --- | --- |
+| Admin switches to "Maker releases" in the app (workflow revision 2) | admin | [`6qn1L6VT…`](https://testnet.nearblocks.io/txns/6qn1L6VTiP8hzc7hnKWi38P1v3wPAhqH9mqG3tfNX3SJ) |
+| Maker submits "Phase 16 rehearsal: maker release" (consolidated, 0.02 / 0.04 / 0.03 = 0.09), `gjn-b8686812506e46a58811-v1` | maker | [`HSqGAcBj…`](https://testnet.nearblocks.io/txns/HSqGAcBjyWtAVB3FNfQu4nWCE3iSosxVVLLNd91akheq) |
+| Approver 1 / approver 2 approve in the browser | approver1, approver2 | [`25ZSZ2R7…`](https://testnet.nearblocks.io/txns/25ZSZ2R7wbcrD1TqCbJG816a8np3o7ptrUxLwHH2dcFh) [`4zhhcLMQ…`](https://testnet.nearblocks.io/txns/4zhhcLMQjDSjpR5BXXgwLJ2833Kgt6HY51CX7MigUoMz) |
+| **Maker clicks "Release payments"** (`start_release` with the maker's key) | maker | [`Cor9XzgL…`](https://testnet.nearblocks.io/txns/Cor9XzgLdty47newTqZWzbPKofj9AVRN5cgHz3ySH5g9) |
+| Worker `pay_row` 0 / 1 / 2 | worker | [`4uKNnqpD…`](https://testnet.nearblocks.io/txns/4uKNnqpD6snGDUBrs6kCUU8TrzRYPtJ52WcPBKNH6NrE) [`9r5NuZpL…`](https://testnet.nearblocks.io/txns/9r5NuZpLVV6xnXThbRvFUJufwsB8PCabX9jdd5CcGmj) [`5ocd2h98…`](https://testnet.nearblocks.io/txns/5ocd2h98tu7T7bE7vUvF3oNZq8hEqGXH9TwrTodSNHv6) |
+| Admin switches back to "Automatic release" in the app (workflow revision 3, active now) | admin | [`GvJxnx9e…`](https://testnet.nearblocks.io/txns/GvJxnx9eyVnKz6rLKa2C7stMoLoEb1YaM6JPNCyu4Ruc) |
+
+### 16b · Live row-level duplicate payout refused
+
+While the maker-release run was still **Releasing with 1 of 3 rows paid**, `scripts/testnet/phase16.ts duplicate gjn-b8686812506e46a58811-v1 0` sent `pay_row` for the already-paid row 0 again, with the worker's restricted key and the row's real proof:
+
+| Step | Signer | Tx | Result |
+| --- | --- | --- | --- |
+| Duplicate `pay_row` 0 | worker | [`65Bfb7cj…`](https://testnet.nearblocks.io/txns/65Bfb7cjk6U19wTWYiTijb9yeL1W5gV1L2VM4N9S81tD) | **rejected as expected**: `Row is already paid`; run still Releasing, paid count unchanged (1) |
+
+(The Phase 04 duplicate attempt was refused with `Run is not releasing`, because that run had already finished. This one proves the row-level guard inside a live, releasing run.)
+
+### 16d · Awaiting funding, funded by the admin, paid automatically
+
+Vault2 held 0.49 tUSDC. Run "Phase 16 rehearsal: November bonuses" (`gjn-648622d67c1e4c47a8b3-v1`, detailed, 0.30 / 0.25 / 0.20 = 0.75 tUSDC; every row within 0.01–1.00, the run within the 100 tUSDC cap):
+
+| Step | Signer | Tx | Result |
+| --- | --- | --- | --- |
+| Maker submits | maker | [`y4m6PGjM…`](https://testnet.nearblocks.io/txns/y4m6PGjMHdcg1gef7GdE1ouiL3pus63JTLAk7xw8qxK) | ok |
+| Approver 1 / approver 2 approve in the browser | approver1, approver2 | [`Bg51f2GM…`](https://testnet.nearblocks.io/txns/Bg51f2GM6QEksReJNquCsX25Wp3aeFtCUotW5o6fSVKj) [`CdNojjaU…`](https://testnet.nearblocks.io/txns/CdNojjaUB7JhsNUpBvJZHRnZaxkmQJWQmbcUWcSW25gj) | Approved |
+| Worker `start_release` (attempt 1) | worker | [`7g7TouYY…`](https://testnet.nearblocks.io/txns/7g7TouYYt46zHV4GZiV1thEAa7Y8joJTNqVS62WXMq3S) | **refused**: `Insufficient vault balance: awaiting funding`; the app shows **Awaiting funding** (run page and list) |
+| Admin mints 0.50 test tUSDC (mock token) | admin | [`8MEZ3sio…`](https://testnet.nearblocks.io/txns/8MEZ3sioG9dhJ3hY8yA2cYUyuLq8QzwPVeLi85AZgEC2) | ok |
+| Admin funds vault2 with 0.50 tUSDC (`ft_transfer_call`) | admin | [`F2f721YJ…`](https://testnet.nearblocks.io/txns/F2f721YJ4sNvi2P5jt2pcebBym4u3fY4HLvJcNPUEsm1) | vault2 books 0.99 |
+| Worker `start_release` (attempt 2, retried automatically after 60 s) | worker | [`Hu2czk1h…`](https://testnet.nearblocks.io/txns/Hu2czk1hR6w21qaseoagxZ3DL59dNz4wu2n1bfaCgmb3) | Releasing |
+| Worker `pay_row` 0 / 1 / 2 | worker | [`56UPmkwb…`](https://testnet.nearblocks.io/txns/56UPmkwb4fyhnyBaimqCjoZvG17Lbo9dv1zBUyjzYAQT) [`93Yp7k4g…`](https://testnet.nearblocks.io/txns/93Yp7k4gyHxXXeWJxsaJe8dUmjD6qDSCUHuyMF164hjv) [`Hnaz3p3P…`](https://testnet.nearblocks.io/txns/Hnaz3p3PtRQeBYU1gQvRMuoFPRNPvvbn94LLdjUo5wfv) | Paid 3 of 3 |
+
+### 16e · 1,000-row import check (app, not on-chain)
+
+`public/templates/gajian-payroll-uniform-1000.csv` uploaded in the running app as a draft ("Phase 16 import check: 1,000 rows (not submitted)"): accepted, 1,000 rows, exact total 10.00 tUSDC, first 50 rows in file order. It was not submitted (1,000 payouts are out of scope for the rehearsal). The accounting fixture (1 consolidated entry vs 1,000 detailed entries, both 10.000000) is checked by `tests/integration/reports.test.ts`.
+
+### Balances (`node scripts/testnet/balances.mjs`, RPC `final`)
+
+| Account | Before Phase 16 | After | Change | Explained by |
+| --- | --- | --- | --- | --- |
+| vault (Phase 04) | 0.700000 | 0.000000 | −0.700000 | migration run |
+| vault2 (final) | (did not exist) | 0.240000 | +0.240000 | +0.70 migrated +0.50 funded −0.12 −0.09 −0.75 paid |
+| admin | 0.000000 | 0.000000 | 0 | received 0.70 and minted 0.50, forwarded both to vault2 |
+| recipient1 | 0.120000 | 0.490000 | +0.370000 | 0.05 + 0.02 + 0.30 |
+| recipient2 | 0.150000 | 0.470000 | +0.320000 | 0.03 + 0.04 + 0.25 |
+| recipient3 | 0.080000 | 0.350000 | +0.270000 | 0.04 + 0.03 + 0.20 |
+
+Every balance changed by exactly the paid amounts. NEAR across all our accounts: 9.89493 → 9.87311 = **0.02182 NEAR spent** in Phase 16 (mostly the 214 KB deploy; the 2.4 NEAR that funds vault2's storage stays inside our accounts).
+
+### Not done on testnet (labelled)
+
+The old vault (`vault.gajian-payroll.testnet`) keeps its full-access key; it is retired and holds no tUSDC. The tUSDC token was not redeployed (unchanged since Phase 02). Paths proven only locally or in the sandbox: an unknown transaction outcome (landed or lost), two release workers at once, a failed token transfer with bounded retries, and a worker crash between claim and signing. They need fault injection that testnet does not allow safely.
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -178,5 +274,6 @@ Every balance changed by exactly the paid amount. History shows the run in both 
 | 9 Nov 2026 | Phase 04: retire old vault (drain 10 × 0.095 to admin, delete), recreate + deploy, 3 registrations, fund, 5 function-call keys, 3 live runs (25 steps) | 5 | 0.180000 to recipients (+0.950000 returned to admin) | 0.0253 | Phase 04 tables |
 | 9 Nov 2026 | Phase 07: 2 workflow updates via the app | — | — | ≈ 0.0005 | Phase 07 table |
 | 9 Nov 2026 | Phase 13: live app run (submit, 2 approvals, release, 3 payouts) | 3 | 0.120000 | 0.00297 | Phase 13 table |
+| 9 Nov 2026 | Phase 16: final vault deploy + lock + 5 keys, fund migration (6 txs), 3 app runs (demo, maker release, awaiting funding), 2 workflow changes, duplicate proof, funding | 9 | 0.960000 to recipients (+0.70 migrated) | 0.02182 | Phase 16 tables |
 
-**Total testnet NEAR burned so far: ≈ 0.105 NEAR** (10.00000 → 9.89493 across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.127 NEAR** (10.00000 → 9.87311 across all our accounts; storage deposits and contract storage stay inside our accounts).

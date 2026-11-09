@@ -49,9 +49,23 @@ for (const run of ev.runs) {
       const ok = transfer && transfer.new_owner_id === want.receiver && transfer.amount === want.amount;
       check(Boolean(ok), `${tx.step}: ft_transfer event ${transfer ? `${tusdc(transfer.amount)} tUSDC → ${transfer.new_owner_id}` : 'missing'}`);
     }
-    check(!failed && out.transaction.signer_id === tx.signer && out.transaction.receiver_id === run.vault, `${tx.step} ${tx.hash.slice(0, 8)}… final, signed by ${out.transaction.signer_id}`);
+    check(!failed && out.transaction.signer_id === tx.signer && out.transaction.receiver_id === (tx.receiver ?? run.vault), `${tx.step} ${tx.hash.slice(0, 8)}… final, signed by ${out.transaction.signer_id}`);
   }
 }
+for (const op of ev.operations ?? []) {
+  const out = await rpc('EXPERIMENTAL_tx_status', { tx_hash: op.hash, sender_account_id: op.signer, wait_until: 'FINAL' });
+  const failed = JSON.stringify(out.status).includes('Failure') || out.receipts_outcome.some((o) => 'Failure' in (o.outcome.status ?? {}));
+  check(!failed && out.transaction.signer_id === op.signer && (!op.receiver || out.transaction.receiver_id === op.receiver), `${op.step} ${op.hash.slice(0, 8)}… final, signed by ${out.transaction.signer_id}`);
+}
+if (ev.finalVault) {
+  const fv = ev.finalVault;
+  console.log(`\n== Final vault ${fv.account} (release commit ${fv.releaseCommit.slice(0, 7)})`);
+  const acc = await rpc('query', { request_type: 'view_account', finality: 'final', account_id: fv.account });
+  check(acc.code_hash === fv.codeHashBase58, `code_hash ${acc.code_hash} = base58(sha256) of the release Wasm (sha256 ${fv.wasmSha256.slice(0, 12)}…)`);
+  const { keys } = await rpc('query', { request_type: 'view_access_key_list', finality: 'final', account_id: fv.account });
+  check(!keys.some((k) => k.access_key.permission === 'FullAccess'), `no full-access key (${keys.length} keys): the code can never change`);
+}
+console.log('\n== On-chain refusals');
 for (const f of ev.expectedFailures ?? []) {
   const out = await rpc('EXPERIMENTAL_tx_status', { tx_hash: f.hash, sender_account_id: f.signer, wait_until: 'FINAL' });
   const text = JSON.stringify(out.status) + JSON.stringify(out.receipts_outcome.map((o) => o.outcome.status));

@@ -37,7 +37,7 @@ describe('submission', () => {
     expect(r).toMatchObject({ versionNo: 1, status: 'submitting', txHash: 'TX1' });
     const v = latestVersion(h.db, DEMO_DRAFT_RUN_ID)!;
     expect(v).toMatchObject({ status: 'submitting', submitTxHash: 'TX1', rowCount: 3, total: 150_000n });
-    expect(fake.calls).toEqual([expect.objectContaining({ role: 'maker', method: 'create_run', args: expect.objectContaining({ run_id: v.chainRunId, workflow_revision: 5, row_count: 3, total: '150000', payout_root: v.payoutRoot, supersedes: null }) })]);
+    expect(fake.calls).toEqual([expect.objectContaining({ role: 'maker', method: 'create_run', args: expect.objectContaining({ run_id: v.chainRunId, workflow_revision: 3, row_count: 3, total: '150000', payout_root: v.payoutRoot, supersedes: null }) })]);
     expect((await reconcileVersion(h.db, fake, v.id)).status).toBe('pending_approval');
     // A retry cannot create a second run.
     await expect(submit()).rejects.toThrow(/still waiting for approval/);

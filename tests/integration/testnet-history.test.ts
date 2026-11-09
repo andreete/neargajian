@@ -1,4 +1,4 @@
-/** 09b: operations transfers are labelled and excluded from payroll counts and totals. */
+/** 09b + 16: operations transfers (vault retirement, vault migration) are labelled and excluded from payroll counts and totals. */
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -15,7 +15,7 @@ describe('imported testnet history', () => {
   it('separates the vault retirement as an operations transfer and keeps it out of payroll totals', async () => {
     const h = openDatabase(join(dir, 'h.sqlite'));
     await seedDemo(h.db, { env: { DEMO_MODE: 'true' } });
-    expect(operationsTransfers(h.db).map((r) => [r.id, r.category, r.total])).toEqual([['p02-drain', 'operations', 950_000n]]);
+    expect(operationsTransfers(h.db).map((r) => [r.id, r.category, r.total])).toEqual([['p16-migrate-202611091439', 'operations', 700_000n], ['p02-drain', 'operations', 950_000n]]);
     expect(allTestnetRuns(h.db).filter((r) => r.category === 'payroll').map((r) => r.id).sort()).toEqual(['p02-run-1', 'p04-par-202611091047', 'p04-rej-202611091047', 'p04-seq-202611091047']);
     expect(testnetTotals(h.db)).toMatchObject({ paidRuns: 3, payouts: 6, paidTotal: 230_000n, rejectedRuns: 1 });
     expect(makerTestnetRuns(h.db, 'usr_maker').find((r) => r.id === 'p02-drain')?.lastPaidTxHash).toBe('EaqSFT61e1vXPatfps9cDz38yhcarRqqdfieteHcHrGn');

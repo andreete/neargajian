@@ -11,7 +11,7 @@
 //       Repeats pay_row for a row that is already paid, in a run that is still Releasing, with
 //       the worker's key and the row's real proof (from the app database). Must be refused.
 //   node scripts/testnet/phase16.ts fund <amount-tusdc>
-//       The admin funds the final vault (ft_transfer_call).
+//       The admin mints test tUSDC (mock token) and funds the final vault (ft_transfer_call).
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { buildPayoutTree, newReviewSalt, proofFor, reviewDigest, toHex, type PayoutLeaf } from '../../src/server/commitments.ts';
@@ -108,5 +108,10 @@ const [cmd, a, b] = process.argv.slice(2);
 if (!String(MASTER).endsWith('.testnet')) throw new Error('testnet only');
 if (cmd === 'migrate') await migrate();
 else if (cmd === 'duplicate' && a && b) await duplicate(a, Number(b));
-else if (cmd === 'fund' && a) adminTokenCall(`admin funds ${VAULT} with ${a} tUSDC (ft_transfer_call)`, 'ft_transfer_call', { receiver_id: VAULT, amount: tusdc(a).toString(), msg: '' }, '1 yoctoNEAR');
+else if (cmd === 'fund' && a) {
+  const amount = tusdc(a).toString();
+  adminTokenCall(`admin mints ${a} test tUSDC to itself (mock token)`, 'mint', { account_id: ROLES.admin, amount }, '0 NEAR', '30 Tgas');
+  adminTokenCall(`admin funds ${VAULT} with ${a} tUSDC (ft_transfer_call)`, 'ft_transfer_call', { receiver_id: VAULT, amount, msg: '' }, '1 yoctoNEAR');
+  console.log(JSON.stringify({ final: await view(VAULT, 'get_balances', {}) }));
+}
 else { console.error('usage: phase16.ts migrate | duplicate <chain-run-id> <index> | fund <amount>'); process.exitCode = 2; }

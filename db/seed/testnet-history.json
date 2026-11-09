@@ -712,6 +712,94 @@
           }
         }
       ]
+    },
+    {
+      "runId": "p16-migrate-202611091439",
+      "vault": "vault.gajian-payroll.testnet",
+      "vaultGeneration": "phase-04 (retired in Phase 16)",
+      "title": "Vault migration: funds moved to the final vault (via the admin)",
+      "category": "operations",
+      "kind": "two_sequential",
+      "releaseMode": "automatic",
+      "approvers": [
+        "approver1.gajian-payroll.testnet",
+        "approver2.gajian-payroll.testnet"
+      ],
+      "status": "paid",
+      "rejectionReason": null,
+      "maker": "maker.gajian-payroll.testnet",
+      "total": "700000",
+      "rowCount": 1,
+      "payoutRoot": "6ba0482b8f689df839cc4b6db5cb5e84045134382adca82fe881bc0f2c45f5ea",
+      "reviewDigest": "2cf49eca55e598e593f8e8e119560099e17c2514a5e747f0b742650d3ae775f7",
+      "createdAt": "2026-11-09T14:39:57.255Z",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "admin.gajian-payroll.testnet",
+          "amount": "700000",
+          "paidTxHash": "7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ",
+          "paidAt": "2026-11-09T14:40:19.086Z"
+        }
+      ],
+      "events": [
+        {
+          "txHash": "3s3fNvETpko2aHD7oAow7Nc1YF2pRbCHHbGBmtDyebyn",
+          "signer": "maker.gajian-payroll.testnet",
+          "method": "create_run",
+          "at": "2026-11-09T14:39:57.255Z",
+          "success": true,
+          "error": null,
+          "args": {
+            "index": null
+          }
+        },
+        {
+          "txHash": "3ywfE8xJUpUht7ivbCFS3vm7JcbFz2xH3ubUsBdJUouJ",
+          "signer": "approver1.gajian-payroll.testnet",
+          "method": "approve",
+          "at": "2026-11-09T14:40:02.834Z",
+          "success": true,
+          "error": null,
+          "args": {
+            "index": null
+          }
+        },
+        {
+          "txHash": "HvjeydQCTHqo2KY69kRbdTmzHxPd5aexj1GxJZZLVq3G",
+          "signer": "approver2.gajian-payroll.testnet",
+          "method": "approve",
+          "at": "2026-11-09T14:40:08.870Z",
+          "success": true,
+          "error": null,
+          "args": {
+            "index": null
+          }
+        },
+        {
+          "txHash": "Eci9LLv469KAxE6x3rLXhSDnGZeGryLnNAc6Lv66aFfR",
+          "signer": "worker.gajian-payroll.testnet",
+          "method": "start_release",
+          "at": "2026-11-09T14:40:14.250Z",
+          "success": true,
+          "error": null,
+          "args": {
+            "index": null
+          }
+        },
+        {
+          "txHash": "7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ",
+          "signer": "worker.gajian-payroll.testnet",
+          "method": "pay_row",
+          "at": "2026-11-09T14:40:19.086Z",
+          "success": true,
+          "error": null,
+          "args": {
+            "index": 0
+          },
+          "paidReturned": true
+        }
+      ]
     }
   ]
 }

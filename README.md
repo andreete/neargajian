@@ -4,12 +4,12 @@
 
 GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 13 of 18.** The complete payroll flow works in the app on NEAR testnet: build or upload a run, review and submit it to the vault, approve it in the browser (one or two approvers, in sequence or in parallel), the release worker pays every recipient from the vault, and history shows the paid run in consolidated and detailed posting with company and recipient-detail CSV exports. Proven live through the app on 9 Nov 2026 (`docs/TESTNET.md`, Phase 13). This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 16 of 18.** The complete payroll flow works in the app on NEAR testnet against the **final vault `vault2.gajian-payroll.testnet`**: deployed from release commit `cf4d9a1` with a reproducible Wasm hash and **no full-access key**, so its code can never change. You can build or upload a run, submit it, and approve it in the browser (one or two approvers, in sequence or in parallel). Release is automatic or by the maker, and the release worker pays each recipient from the vault. Runs that exceed the vault balance wait as "Awaiting funding" and pay once funded. History shows consolidated and detailed posting, with company and recipient-detail CSV exports. Rehearsed live through the app on 9 Nov 2026 (`docs/TESTNET.md`, Phases 13 and 16); re-check it read-only with `npm run judge:verify`.
 
 ## Network, token and trust model
 
 - **NEAR testnet only.** No mainnet configuration exists in this repository.
-- **Token:** `tUSDC`, our own mock NEP-141 token with 6 decimals and zero value, deployed by us on testnet at `tusdc.gajian-payroll.testnet`. Vault: `vault.gajian-payroll.testnet`.
+- **Token:** `tUSDC`, our own mock NEP-141 token with 6 decimals and zero value, deployed by us on testnet at `tusdc.gajian-payroll.testnet`. Vault: **`vault2.gajian-payroll.testnet`** (final, locked: no full-access key; verify below). The earlier `vault.gajian-payroll.testnet` (Phases 04–13) is retired, kept readable, and its funds were moved to the final vault through an approved run.
 - **Data:** synthetic only. Sample files use reserved phone ranges and `example.com` emails.
 - **Trust model (prototype):** the server holds restricted, function-call-only testnet signer keys (scoped to the vault and to each role's methods) for the maker, approvers, release worker and admin, and relays authenticated actions. The contract checks which account signed each action. This is acceptable for a testnet demo but is **not** production custody. A mainnet version would use user-held wallets or a multisig/MPC signer.
 
@@ -19,10 +19,10 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | --- | --- | --- |
 | Sample files reproduce byte-for-byte | `npm run samples:check` | 4/4 SHA-256 checksums match `docs/SAMPLE-DATA.md`, no git diff |
 | Lint, typecheck | `npm run lint`, `npm run typecheck` | pass |
-| Unit + integration tests | `npm test` | 154/154 pass (lifecycle, decisions, release worker incl. restart / unknown outcome / two workers, reports, run page in every payout state, API permission matrix, file integrity) |
+| Unit + integration tests | `npm test` | 155/155 pass (lifecycle, decisions, release worker incl. restart / unknown outcome / two workers, reports, run page in every payout state, API permission matrix, file integrity) |
 | Browser tests (Chromium, production build) | `npm run test:e2e` | 21/21 pass (incl. every page at 1280x720 and 1440x900, dialogs, copy actions) |
 | Credential scan | `npm run secret-scan` | clean: working tree + full Git history |
-| Live evidence, read-only | `npm run judge:verify` | 22/22 checks: runs, rows, tx outcomes, ft_transfer events and on-chain refusals (see `docs/JUDGE.md`) |
+| Live evidence, read-only | `npm run judge:verify` | 93/93 checks: runs, rows, tx outcomes, ft_transfer events, operations, the final vault's code hash and keys, on-chain refusals (see `docs/JUDGE.md`) |
 | Upload of the three sample files | `npm test` (import tests) | 56.690860 / 56.690860 / 10.000000 tUSDC, 1,000 rows each |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
@@ -30,7 +30,42 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | Money math and payout commitments | `npm test` | Exact 6-decimal parsing; Merkle commitments with shared Rust/TypeScript vectors (`docs/COMMITMENTS.md`); 1,000-row sample proofs generated and verified in ~40 ms |
 | Contracts (live testnet) | `scripts/testnet/phase02-single-payout.sh`, `node scripts/testnet/phase04-live.ts` | First contract-controlled payout (0.05 tUSDC); then runs with two approvers in sequence (automatic release) and in parallel (maker release), and a rejection, all signed with restricted function-call keys. See `docs/TESTNET.md` |
 | Complete flow through the app (live testnet) | `npm run live:phase13` (needs the production server and `npm run worker` running) | Upload 3 rows, submit, approver 1 then approver 2 in the browser, worker pays 0.04 / 0.06 / 0.02 tUSDC, run Paid with explorer links, history in both views, both CSVs; balances changed by exactly the paid amounts. See `docs/TESTNET.md` |
+| Live rehearsal through the app (final vault) | `npm run live:phase16` (server + worker running; real transactions) | Detailed and consolidated posting, automatic and maker release, Awaiting funding then funded and paid, duplicate `pay_row` on a paid row refused on-chain, 1,000-row import; balances changed by exactly the paid amounts. See `docs/TESTNET.md` Phase 16 |
 | Approval policies and recovery (sandbox) | `npm run contracts:test` | 1 / 2-sequential / 2-parallel approvals, reject, cancel, supersede, workflow snapshot, release modes, reservations, stuck-row recovery (`docs/RECOVERY.md`) |
+
+## Verify the deployed vault
+
+The final vault runs the Wasm built from release commit `cf4d9a1` (`npm run contracts:build`: pinned Rust 1.95.0 and cargo-near 0.23.0, `--locked`, machine paths remapped, so any checkout path builds the same bytes). Its only full-access key was deleted after deployment, so nobody can redeploy it.
+
+```sh
+git checkout cf4d9a1 && npm run contracts:build
+sha256sum contracts/target/near/gajian_vault/gajian_vault.wasm
+# 38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0
+npm run judge:deployment          # read-only RPC
+# PASS  deployed code_hash equals the locally built Wasm      (4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP)
+# PASS  no full-access key on vault2.gajian-payroll.testnet (0 keys in total)
+```
+
+Without Node, the same facts via plain RPC (`code_hash` is base58 of the Wasm's sha256; the key list must be empty):
+
+```sh
+RPC=https://rpc.testnet.fastnear.com
+curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_account","finality":"final","account_id":"vault2.gajian-payroll.testnet"}}'
+curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"vault2.gajian-payroll.testnet"}}'
+```
+
+The official `cargo near build reproducible-wasm` (NEP-330 metadata) needs Docker, which this project's build host does not allow; the pinned-toolchain build above is reproducible across checkouts and users on Linux x86-64 with the same toolchain.
+
+## Tested only locally or in the sandbox
+
+These recovery paths are proven by automated tests (`tests/integration/release.test.ts`, `tests/integration/run-page-states.test.tsx`, contract sandbox tests, `docs/RECOVERY.md`), **not** on testnet, because they need fault injection that testnet does not allow safely:
+
+- an **unknown transaction outcome** (landed, or never landed) reconciled from the vault before any retry;
+- **two release workers at once** never paying a row twice;
+- a **failed token transfer** retried a bounded number of times, then Needs attention (never a false Paid);
+- a **worker crash** between claiming a payout and signing it.
+
+Everything else in the main flow, including the duplicate-payout refusal and Awaiting funding, also ran live (`docs/TESTNET.md`).
 
 ## Requirements
 

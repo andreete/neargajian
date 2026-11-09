@@ -16,8 +16,8 @@ interface Run {
 }
 
 export class FakeVault implements VaultClient {
-  vaultId = 'vault.gajian-payroll.testnet';
-  wf: ChainWorkflow = { revision: 5, kind: 'TwoSequential', approvers: ['approver1.gajian-payroll.testnet', 'approver2.gajian-payroll.testnet'], release_mode: 'Automatic', maker: 'maker.gajian-payroll.testnet', worker: 'worker.gajian-payroll.testnet', max_row_amount: '1000000', max_run_total: '100000000' };
+  vaultId = 'vault2.gajian-payroll.testnet';
+  wf: ChainWorkflow = { revision: 3, kind: 'TwoSequential', approvers: ['approver1.gajian-payroll.testnet', 'approver2.gajian-payroll.testnet'], release_mode: 'Automatic', maker: 'maker.gajian-payroll.testnet', worker: 'worker.gajian-payroll.testnet', max_row_amount: '1000000', max_run_total: '100000000' };
   runs = new Map<string, Run>();
   rows = new Map<string, { status: 'InFlight' | 'Paid' | 'Failed'; receiver_id: string; amount: string; attempts: number }>();
   balance = 1_000_000n;

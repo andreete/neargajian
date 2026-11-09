@@ -10,6 +10,7 @@ import type { Db } from './client.ts';
 import { payrollRuns, users, workflowConfigs, type Role } from './schema.ts';
 import { createRun, replaceDraft } from '../runs/repository.ts';
 import { importTestnetHistory, readTestnetHistory } from './testnet-history.ts';
+import { currentVaultId } from '../workflow/vault.ts';
 
 export type SeedEnv = Readonly<Record<string, string | undefined>>;
 
@@ -31,7 +32,8 @@ export const DEMO_DRAFT_RUN_ID = 'run_demo_november';
 
 /** Mirrors the live vault's active workflow (docs/TESTNET.md): revision 5, set through the
  *  app's admin workflow editor on 9 Nov 2026 (two approvers in sequence, automatic release). */
-export const SEED_WORKFLOW = { revision: 5, txHash: '2sQjKbtVha9g5oSdrPycsyNp829TxZbc6yiCFyWRsvAv' } as const;
+/** The final vault's active workflow (Phase 16: revision 3, two in sequence, automatic release). */
+export const SEED_WORKFLOW = { revision: 3, txHash: 'GvJxnx9eyVnKz6rLKa2C7stMoLoEb1YaM6JPNCyu4Ruc' } as const;
 
 export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = {}) {
   const env = options.env ?? process.env;
@@ -53,7 +55,7 @@ export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = 
       releaseMode: 'automatic',
       maxRowAmount: BigInt(env.DEMO_CAP_PER_ROW_BASE_UNITS ?? '1000000'),
       maxRunTotal: BigInt(env.DEMO_CAP_PER_RUN_BASE_UNITS ?? '100000000'),
-      chainStatus: 'active', chainTxHash: SEED_WORKFLOW.txHash,
+      chainStatus: 'active', chainTxHash: SEED_WORKFLOW.txHash, vaultContractId: currentVaultId(env),
       createdByUserId: 'usr_admin', createdAt: now, activatedAt: now,
     }).run();
     created.push(`workflow revision ${SEED_WORKFLOW.revision}`);

@@ -154,9 +154,13 @@ describe('run page payout states (one consistent state)', () => {
     consistent(r);
     expect(handle.sqlite.prepare('select count(*) as n from report_entries where version_id = ?').get(version().id)).toEqual({ n: 3 });
 
-    // The worker's late answer cannot change the confirmed record, and nothing is paid twice.
+    // The worker's late answer cannot change the confirmed record (not even its paid-at time,
+    // which exports show), and nothing is paid twice.
+    const confirmedAt = () => handle.sqlite.prepare('select updated_at as t from payout_actions where version_id = ? and row_index = 2 and status = ?').get(version().id, 'succeeded');
+    const before = confirmedAt();
     held.release();
     await worker;
+    expect(confirmedAt()).toEqual(before);
     expect(fake.calls.filter((c) => c.method === 'pay_row').map((c) => c.args.index)).toEqual([0, 1, 1, 2]);
     expect([...fake.paidTo.values()].reduce((a, b) => a + b, 0n)).toBe(150_000n);
     r = await render();

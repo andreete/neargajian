@@ -6,7 +6,8 @@
 import { and, eq } from 'drizzle-orm';
 import { workflowConfigs } from '../db/schema.ts';
 
-export const DEFAULT_VAULT = 'vault.gajian-payroll.testnet';
+/** The final vault (Phase 16). Versions and revisions recorded before the switch keep 'vault.gajian-payroll.testnet'. */
+export const DEFAULT_VAULT = 'vault2.gajian-payroll.testnet';
 
 export function currentVaultId(env: Readonly<Record<string, string | undefined>> = process.env): string {
   return env.VAULT_CONTRACT_ID || DEFAULT_VAULT;

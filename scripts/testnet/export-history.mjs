@@ -54,6 +54,12 @@ const RUNS = [
     declaredRows: [{ index: 0, receiver: `recipient1.${M}`, amount: '10000' }],
     txs: ['C32vGB2kaT5QWsvCYq9vLDPQdv3x4bQcZSXdPf1Eg6hQ', '3uW7d5P6WzxYLnv7HQHDEvY5N1a8yAYa7XabKN8M3n7g', 'FB58uo5UpWCLiGaypv2Eurr3hkRFXAehsqTTRPyb1Fen'],
   },
+  {
+    runId: 'p16-migrate-202611091439', vault: `vault.${M}`, vaultGeneration: 'phase-04 (retired in Phase 16)',
+    title: 'Vault migration: funds moved to the final vault (via the admin)', category: 'operations', kind: 'two_sequential', releaseMode: 'automatic', approvers: [`approver1.${M}`, `approver2.${M}`],
+    txs: ['3s3fNvETpko2aHD7oAow7Nc1YF2pRbCHHbGBmtDyebyn', '3ywfE8xJUpUht7ivbCFS3vm7JcbFz2xH3ubUsBdJUouJ', 'HvjeydQCTHqo2KY69kRbdTmzHxPd5aexj1GxJZZLVq3G',
+      'Eci9LLv469KAxE6x3rLXhSDnGZeGryLnNAc6Lv66aFfR', '7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ'],
+  },
 ];
 
 async function rpc(method, params) {

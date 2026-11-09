@@ -23,6 +23,46 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 13b Review fixes (paid-state consistency, screenshot 05b) | Done | none (read-only recapture of the Phase 13 run) |
 | 14 UX and accessibility pass | Done | none (local; test-only fixture data) |
 | 15 Reproducibility and targeted regression tests | Done | read-only: `npm run judge:verify` re-checks the live evidence (22/22) |
+| 16 Live testnet rehearsal | Done; awaiting Andre's review | **Yes**: final locked vault, fund migration, demo, maker release, duplicate refusal, Awaiting funding (docs/TESTNET.md) |
+
+---
+
+## Phase 16 · Live testnet rehearsal (9 Nov 2026)
+
+### Built (app and tooling; contract source unchanged, D-051)
+
+- **Path-independent contract build** (`scripts/build-contracts.sh`): cargo-near's default flags plus `--remap-path-prefix` for the cargo registry and the repo, so the Wasm no longer embeds `/home/<user>/…` paths (21 before, 0 after). Docker-based `reproducible-wasm` is not allowed on this host (D-090).
+- **Vault-aware app** (migration `0006_vault_contract.sql`): workflow revisions and submitted versions record their vault; revision uniqueness is per vault (revisions restart at 1 in a new vault); the active workflow is the configured vault's; reconcile, worker, decisions, cancel and release never act on a version of another vault (`assertSameVault`), the run page names the earlier vault. Defaults (config, client, worker log, seed) now point at the final vault; the seed mirrors vault2 revision 3.
+- **Confirmed payout records are fully final** (found during the rehearsal, see below): `updatePayoutAction` never changes a `succeeded` record, not even its time.
+- Tooling: `scripts/testnet/phase16-deploy.sh` (hash check, create, deploy+init, tUSDC registration, delete the full-access key, role keys), `scripts/testnet/switch-vault.ts` (mirror the vault's workflow into the app DB; refuses while older versions are live), `scripts/testnet/phase16.ts` (`migrate`, `duplicate`, `fund`), `signer-keys.mjs` knows the legacy and the final vault, `scripts/judge/verify-deployment.mjs` (`npm run judge:deployment`), live spec `tests/live/phase16.spec.ts` (`npm run live:phase16`; `live:phase13` now runs only its own file). `.env.example` carries the public testnet account IDs.
+
+### Sandbox / local evidence
+
+- Two clean clones of release commit `cf4d9a1` at different paths, separate target dirs: vault Wasm **byte-identical**, sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0` (tUSDC `cc7a437b…` identical too). `npm run contracts:test`: 3 + 49 unit, sandbox flow ok.
+- `npm test` **155/155** (new: vault-switch guard; confirmed payout time cannot change after reconciliation; revisions per vault). `npm run test:e2e` 21/21. `npm run lint`, `npm run typecheck`, `npm run samples:check` (no diff), `npm run build` pass; `npm audit --audit-level=high` passes (14 moderate advisories in the esbuild / minimatch / uuid chains, none high or critical); `npm run secret-scan` clean (working tree + all commits).
+
+### Live testnet evidence (every tx in docs/TESTNET.md; `npm run judge:verify` 93/93 PASS)
+
+- **16a** `vault2.gajian-payroll.testnet` deployed from `cf4d9a1`: on-chain `code_hash` `4osoZq17…` = base58(sha256) of the reproducible Wasm; its only full-access key deleted (0 keys left; `npm run judge:deployment` PASS). Role function-call keys added. The old vault's 0.70 tUSDC moved through an **approved run of the old vault** (create, approve ×2, start_release, pay_row → admin), then the admin funded vault2 with `ft_transfer_call` (the only way the vault books funds). App switched to vault2 (`.env` rewritten, workflow mirrored). The migration run is shown as an operations transfer, never as payroll.
+- **16e** Full demo through the app: 3-row upload, detailed posting, approver 1 then 2 in the browser, automatic release, Paid 3 of 3 with explorer links, history in both views, company and recipient-detail CSVs downloaded and matching the UI.
+- **16c** Maker release through the app: admin switched to "Maker releases" in the app (revision 2), run approved, maker clicked **Release payments**, worker paid, admin switched back to automatic (revision 3).
+- **16b** While that run was **Releasing with 1 of 3 paid**, a duplicate `pay_row` for the paid row 0 (worker key, real proof) was **refused on-chain: `Row is already paid`**; paid count unchanged.
+- **16d** Run of 0.75 tUSDC with 0.49 in the vault: `start_release` refused on-chain (`Insufficient vault balance`), the app showed **Awaiting funding** on the run page and in the list; the admin minted and funded 0.50; the worker retried after 60 s and paid all 3 rows.
+- **16e** 1,000-row import check in the running app (uniform sample, 10.00 tUSDC, 50 rows per page in file order), not submitted.
+- Balances changed by exactly the paid amounts: recipient1 +0.37, recipient2 +0.32, recipient3 +0.27, old vault −0.70, vault2 +0.24 (= 0.70 + 0.50 − 0.96). NEAR spent in Phase 16: **0.02182** (total so far ≈ 0.127).
+- Screenshots (1440x900) `docs/screenshots/phase-16/`: 01 demo paid, 02/03 history consolidated/detailed, 04 admin maker releases, 05 maker-release button, 06 releasing during the duplicate proof, 07 maker-release run paid, 08 back to automatic, 09 Awaiting funding, 10 paid after funding, 11 1,000-row import.
+
+### Found during the rehearsal and fixed
+
+- **Paid-at time could change after export.** In 16e the page's reconcile confirmed the last payout from the vault first (14:44:29 UTC); the worker's own late "succeeded" write then overwrote the record's time with its earlier tick start (14:44:25). The company CSV downloaded during the rehearsal shows 14:44:29 for line 3; the app shows 14:44:25 for that line. Fix: a confirmed payout record is now immutable (first confirmation wins), regression asserted in `tests/integration/run-page-states.test.tsx`. Amounts and references were never affected.
+
+### Tested only locally or in the sandbox (labelled in README too)
+
+Unknown transaction outcome (landed / never landed), two release workers at once, a failed token transfer with bounded retries, a worker crash between claim and signing: automated tests only, not on testnet.
+
+### Not done
+
+- The old vault keeps its full-access key (retired, 0 tUSDC); the tUSDC token was not redeployed (unchanged since Phase 02, admin-mintable test token).
 
 ---
 

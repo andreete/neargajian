@@ -378,3 +378,21 @@ Andre verified the key transactions and balances independently on testnet.
 
 - `scripts/secret-scan.sh` scans tracked and untracked (non-ignored) files and every commit reachable from any ref; CI runs it with full history. Patterns target private material (NEAR private keys are 80+ base58 characters; public keys are not flagged). Matches are reported by location only.
 
+## Phase 16 decisions (9 Nov 2026, by the agent, within Andre's Phase 16 brief)
+
+### D-090 · Reproducible build without Docker
+
+- cargo-near's `reproducible-wasm` mode needs Docker, which this host forbids. The release build pins the toolchain (Rust 1.95.0, cargo-near 0.23.0, `--locked`) and remaps machine paths (cargo registry → `/cargo/registry/src`, repo → `/gajian`) through `--env RUSTFLAGS=…` (cargo-near ignores a plain `RUSTFLAGS`). Proof: two clean clones at different paths produce byte-identical Wasm, and the on-chain `code_hash` equals it.
+
+### D-091 · Final vault under a new name, locked
+
+- `vault2.gajian-payroll.testnet` holds the release build and has no access keys at all, so its code can never change; `vault.gajian-payroll.testnet` stays readable with its history. Funds moved through an approved run of the old vault to the admin, then `ft_transfer_call` into vault2, because the vault books only funds that arrive through `ft_on_transfer`.
+
+### D-092 · The app records which vault a version and a revision belong to
+
+- Revisions restart at 1 in a new vault, so uniqueness is per vault. No chain action is ever sent for a version through a client of another vault. Versions from the earlier vault stay as their vault last confirmed them.
+
+### D-093 · A confirmed payout record is immutable
+
+- The first confirmation of a payout (by the worker or by reconciliation from the vault) fixes its status and its time; exports and history can no longer change after the fact.
+

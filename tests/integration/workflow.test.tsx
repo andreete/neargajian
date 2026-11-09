@@ -62,13 +62,13 @@ afterAll(async () => {
 beforeEach(async () => {
   fake = new FakeVault();
   (await import('@/server/chain/vault-client')).setVaultClientForTests(fake);
-  // Reset to the seeded state: revision 5 active (mirrors the vault), nothing else.
+  // Reset to one active seeded revision; this file's stand-in vault sits at revision 5.
   const { workflowConfigs } = schema;
-  db.delete(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'pending')).run();
+  const seeded = `wf_rev_${(await import('@/server/db/seed')).SEED_WORKFLOW.revision}`;
   for (const row of db.select().from(workflowConfigs).all()) {
-    if (row.revision !== 5) db.delete(workflowConfigs).where(eq(workflowConfigs.id, row.id)).run();
+    if (row.id !== seeded) db.delete(workflowConfigs).where(eq(workflowConfigs.id, row.id)).run();
   }
-  db.update(workflowConfigs).set({ chainStatus: 'active' }).where(eq(workflowConfigs.revision, 5)).run();
+  db.update(workflowConfigs).set({ chainStatus: 'active', revision: 5 }).where(eq(workflowConfigs.id, seeded)).run();
 });
 
 const parallelMaker = { kind: 'two_parallel' as const, approverUserIds: ['usr_app1', 'usr_app2'], releaseMode: 'maker' as const, expectedRevision: 5 };
