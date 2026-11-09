@@ -4,7 +4,7 @@
 
 GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 09 of 18.** Contracts with live testnet payouts, the database model, sign-in and role dashboards, the admin workflow editor (chain-confirmed), the manual builder and the CSV/TXT upload with templates exist. Submitting, approving and releasing runs in the app come in Phases 10–12. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 13 of 18.** The complete payroll flow works in the app on NEAR testnet: build or upload a run, review and submit it to the vault, approve it in the browser (one or two approvers, in sequence or in parallel), the release worker pays every recipient from the vault, and history shows the paid run in consolidated and detailed posting with company and recipient-detail CSV exports. Proven live through the app on 9 Nov 2026 (`docs/TESTNET.md`, Phase 13). This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
@@ -19,7 +19,7 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | --- | --- | --- |
 | Sample files reproduce byte-for-byte | `npm run samples:check` | 4/4 SHA-256 checksums match `docs/SAMPLE-DATA.md`, no git diff |
 | Lint, typecheck | `npm run lint`, `npm run typecheck` | pass |
-| Unit + integration tests | `npm test` | 113/113 pass |
+| Unit + integration tests | `npm test` | 140/140 pass (lifecycle, decisions, release worker incl. restart / unknown outcome / two workers, reports) |
 | Browser tests (Chromium, production build) | `npm run test:e2e` | 15/15 pass |
 | Upload of the three sample files | `npm test` (import tests) | 56.690860 / 56.690860 / 10.000000 tUSDC, 1,000 rows each |
 | Production build | `npm run build` | pass |
@@ -27,6 +27,7 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
 | Money math and payout commitments | `npm test` | Exact 6-decimal parsing; Merkle commitments with shared Rust/TypeScript vectors (`docs/COMMITMENTS.md`); 1,000-row sample proofs generated and verified in ~40 ms |
 | Contracts (live testnet) | `scripts/testnet/phase02-single-payout.sh`, `node scripts/testnet/phase04-live.ts` | First contract-controlled payout (0.05 tUSDC); then runs with two approvers in sequence (automatic release) and in parallel (maker release), and a rejection, all signed with restricted function-call keys. See `docs/TESTNET.md` |
+| Complete flow through the app (live testnet) | `npm run live:phase13` (needs the production server and `npm run worker` running) | Upload 3 rows, submit, approver 1 then approver 2 in the browser, worker pays 0.04 / 0.06 / 0.02 tUSDC, run Paid with explorer links, history in both views, both CSVs; balances changed by exactly the paid amounts. See `docs/TESTNET.md` |
 | Approval policies and recovery (sandbox) | `npm run contracts:test` | 1 / 2-sequential / 2-parallel approvals, reject, cancel, supersede, workflow snapshot, release modes, reservations, stuck-row recovery (`docs/RECOVERY.md`) |
 
 ## Requirements
@@ -84,6 +85,18 @@ npm run build
 npm run test:e2e                  # starts the build on 127.0.0.1:8092 with an isolated seeded DB, then stops it
 npm run screenshots               # writes the current phase's design screenshots
 ```
+
+## Release worker
+
+The release worker is its own long-running process. It reconciles submitted runs with the vault, releases approved runs in automatic-release mode and pays one recipient per transaction (tx hash stored before sending; only proven failures retried, at most 3 attempts). Run it only while you need payouts:
+
+```sh
+npm run worker        # Ctrl+C (SIGINT) or SIGTERM stops it cleanly after the current step
+```
+
+History and exports live at `/history` (maker, approvers, admin). The company CSV follows each run's posting mode (one line per run, or one line per recipient line); the recipient-detail CSV (names, emails, NEAR accounts, tx links) is available only to the maker and the approvers assigned to a run, never to the admin. Times are UTC to the second.
+
+`npm run live:phase13` drives the full flow in a real browser against the running server and **sends real testnet transactions**; run it only on purpose.
 
 ## Database
 

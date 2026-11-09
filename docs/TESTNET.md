@@ -142,6 +142,33 @@ Sent by the production app (`POST /api/admin/workflow` as `admin@gajian.my.id`),
 
 Active vault workflow now: **revision 5**, two in sequence (approver1 → approver2), automatic release, caps 1 / 100 tUSDC. The seed mirrors it (`SEED_WORKFLOW` in `src/server/db/seed.ts`).
 
+## Phase 13: complete flow through the app (9 Nov 2026)
+
+Driven in the browser (Playwright against the production build on 127.0.0.1:8092, `npm run live:phase13`, spec `tests/live/phase13.spec.ts`), never by scripts: the maker uploaded `tests/live/live-3-rows.csv`, chose **detailed posting** and submitted; approver 1 and then approver 2 approved in the browser; the release worker (`npm run worker`, its own process, stopped afterwards) released and paid. Every transaction was signed by the app with the role's restricted function-call key.
+
+Run "November contractors (live testnet)", version 1, vault run `gjn-c042c3e14af142669ce4-v1`, 3 rows, total 0.12 tUSDC, workflow revision 5 (two in sequence, automatic release).
+
+| # | Step (UTC) | Signer | Tx | Result |
+| --- | --- | --- | --- | --- |
+| 1 | 13:18:10 maker submits (`create_run`) | maker | [`4oyBhx2k…`](https://testnet.nearblocks.io/txns/4oyBhx2kATjLb7Cesfp6LioEfVxmuP9WSUEFAeNCcPMF) | ok, PendingApproval |
+| 2 | 13:28:47 approver 1 approves | approver1 | [`BtCpa3C4…`](https://testnet.nearblocks.io/txns/BtCpa3C4CBca9KyrWquRdfzAdpYLfasC9SviFovWeUgH) | ok, confirmed 13:28:50 |
+| 3 | 13:28:52 approver 2 approves | approver2 | [`2XfXfgzN…`](https://testnet.nearblocks.io/txns/2XfXfgzNqsqajrEoj8KaFRU4FwAjYZc5LSgGY84DUKuo) | ok, Approved (confirmed 13:28:56) |
+| 4 | 13:28:54 worker `start_release` | worker | [`8M53CacB…`](https://testnet.nearblocks.io/txns/8M53CacBjHr5Dhhr2G6Fh6Sr3ecZJhLcYqpNbGUJfrmK) | ok, Releasing, 0.12 reserved |
+| 5 | 13:28:54 `pay_row` 0 → recipient1, 0.04 | worker | [`Awh72Fb6…`](https://testnet.nearblocks.io/txns/Awh72Fb6syidtHQ488FEU6DVtSruhYvSsZubcQoGuQ9X) | ok, `true` (ft_transfer event: recipient1, 40000) |
+| 6 | 13:29:11 `pay_row` 1 → recipient2, 0.06 | worker | [`BcXTo8SA…`](https://testnet.nearblocks.io/txns/BcXTo8SA84kVy6reY7hCenkY831Phn2p6aZxqRdS9V9o) | ok, `true` |
+| 7 | 13:29:21 `pay_row` 2 → recipient3, 0.02 | worker | [`Ee67Kff6…`](https://testnet.nearblocks.io/txns/Ee67Kff6BNer8FpBUT9yKJGaJ6AWTJWfedxYXCKaCkQz) | ok, `true`, run Paid |
+
+Balances (`node scripts/testnet/balances.mjs`, RPC `final`), before → after:
+
+| Account | Before | After | Change | Expected |
+| --- | --- | --- | --- | --- |
+| vault | 0.820000 | 0.700000 | −0.120000 | −0.120000 |
+| recipient1 | 0.080000 | 0.120000 | +0.040000 | +0.040000 |
+| recipient2 | 0.090000 | 0.150000 | +0.060000 | +0.060000 |
+| recipient3 | 0.060000 | 0.080000 | +0.020000 | +0.020000 |
+
+Every balance changed by exactly the paid amount. History shows the run in both views (consolidated 0.12 = detailed 0.12, references `GJN-UP6YUKW8`, lines `-0001..-0003`); the company CSV and the recipient-detail CSV were downloaded from the app. Screenshots: `docs/screenshots/phase-13/`. NEAR spent: 9.89790 → 9.89493 = **0.00297 NEAR** (gas only).
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -149,7 +176,7 @@ Active vault workflow now: **revision 5**, two in sequence (approver1 → approv
 | 9 Nov 2026 | Account setup (10 sub-accounts) | — | — | 0.0712 | table above |
 | 9 Nov 2026 | Phase 02 deploy + register + fund + `p02-run-1` | 1 | 0.050000 | 0.0053 (plus 0.0025 NEAR storage deposits and ~3.1 NEAR locked for contract storage, both still held by our accounts) | Phase 02 table |
 | 9 Nov 2026 | Phase 04: retire old vault (drain 10 × 0.095 to admin, delete), recreate + deploy, 3 registrations, fund, 5 function-call keys, 3 live runs (25 steps) | 5 | 0.180000 to recipients (+0.950000 returned to admin) | 0.0253 | Phase 04 tables |
-
 | 9 Nov 2026 | Phase 07: 2 workflow updates via the app | — | — | ≈ 0.0005 | Phase 07 table |
+| 9 Nov 2026 | Phase 13: live app run (submit, 2 approvals, release, 3 payouts) | 3 | 0.120000 | 0.00297 | Phase 13 table |
 
-**Total testnet NEAR burned so far: ≈ 0.102 NEAR** (10.00000 → 9.89830 across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.105 NEAR** (10.00000 → 9.89493 across all our accounts; storage deposits and contract storage stay inside our accounts).

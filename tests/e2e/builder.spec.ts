@@ -17,7 +17,7 @@ test('maker builds a manual run, sees inline errors and keeps only the valid row
   await page.getByText('Enter rows manually').click();
   await page.getByText('Detailed', { exact: true }).click();
   await page.getByRole('button', { name: 'Create draft run' }).click();
-  await page.waitForURL(/\/maker\/runs\/[^/]+$/);
+  await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
 
   const fill = async (row: number, values: string[]) => {
     const labels = ['NEAR account ID', 'Receiver name', 'Amount', 'Mobile phone', 'Email'];
@@ -49,7 +49,7 @@ test('builder fits the container at 1280x720 and 1440x900: full account IDs, rem
   await page.getByLabel('Run title').fill('Fit check');
   await page.getByText('Enter rows manually').click();
   await page.getByRole('button', { name: 'Create draft run' }).click();
-  await page.waitForURL(/\/maker\/runs\/[^/]+$/);
+  await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
   await page.getByLabel('Row 1 NEAR account ID').fill('recipient1.gajian-payroll.testnet');
   await page.getByLabel('Row 1 Email').fill('emma.clark@example.com');
   for (const [width, height] of [[1280, 720], [1440, 900]] as const) {

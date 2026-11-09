@@ -70,6 +70,8 @@ npm run dev                      # http://127.0.0.1:8092 ; health: /api/health
 npm run db:seed                  # demo users/workflow/draft (DEMO_MODE=true)
 nice -n 19 npm run test:e2e      # Playwright vs the production build (port 8092 must be free)
 nice -n 19 npm run screenshots   # docs/screenshots/phase-06
+npm run worker                   # release worker, its own process; run only when payouts are needed, stop with SIGTERM/Ctrl+C
+nice -n 19 npm run live:phase13  # LIVE testnet flow through the app (needs server + worker on 8092); real transactions, on purpose only
 
 # Contracts (one at a time, never alongside Node work)
 nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm (tusdc, vault)

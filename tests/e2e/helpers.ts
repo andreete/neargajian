@@ -16,7 +16,7 @@ export async function newRun(page: Page, title: string, source: 'upload' | 'manu
   await page.getByText(source === 'upload' ? 'Upload a file' : 'Enter rows manually').click();
   await page.getByText(posting, { exact: true }).click();
   await page.getByRole('button', { name: 'Create draft run' }).click();
-  await page.waitForURL(/\/maker\/runs\/[^/]+$/);
+  await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
 }
 
 export const sampleCsv = () => readFileSync('public/templates/gajian-payroll-sample-1000.csv');

@@ -16,10 +16,38 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 08 Manual payroll builder | Done | none (local) |
 | 09 Template and upload | Done, approved by Andre | none (local) |
 | 09b Review fixes | Done | none |
-| 10 Read-only preview and immutable submission | Done | proven live at the end of Phase 13 |
-| 11 Approver queues and review | Done | proven live at the end of Phase 13 |
-| 12 Release worker and maker release | Done | proven live at the end of Phase 13 |
-| 13 History and accounting CSVs | Not started | — |
+| 10 Read-only preview and immutable submission | Done | **Yes** (Phase 13 live run: `create_run` through the app) |
+| 11 Approver queues and review | Done | **Yes** (Phase 13 live run: both approvals in the browser) |
+| 12 Release worker and maker release | Done | **Yes** (Phase 13 live run: worker release + 3 payouts); maker release proven in sandbox/integration only |
+| 13 History and accounting CSVs | Done; awaiting Andre's review | **Yes**: complete flow through the app, see docs/TESTNET.md |
+
+---
+
+## Phase 13 · History and accounting CSVs (9 Nov 2026)
+
+### Built
+
+- `src/server/reports/history.ts`: `historyFor` (role scope: maker → own runs, approver → assigned runs, admin → all runs at company level only, never recipient identity, contact, wallet or recipient tx), built only from payout actions the vault confirmed. A run is listed as paid only when the version is Paid, every row has a confirmed payout and the confirmed sum equals the frozen total; partially paid or releasing runs show in "In progress" and never in reports. `companyCsv` (each run in its posting mode locked at submission: 1 line per run or 1 line per recipient line, opaque references `GJN-XXXXXXXX[-NNNN]`, no recipient fields) and `recipientCsv` (separate export, maker + assigned approvers only). UTF-8 with BOM, CRLF, formula escaping, exact 6-decimal amounts, UTC to the second.
+- API `GET /api/reports/company` (maker, approver, admin) and `GET /api/reports/recipients` (maker, approver; admin 403), authorized server-side, `no-store`.
+- `/history` page: consolidated / detailed view switch (`?view=`), paid runs, paid lines and total, a reconciliation tile (consolidated total = detailed total), in-progress section, export area. Nav "History and reports" enabled for all roles (admin: "Company reports").
+- Live proof tooling: `playwright.live.config.ts` + `tests/live/phase13.spec.ts` (`npm run live:phase13`), CSV `tests/live/live-3-rows.csv`.
+
+### Sandbox / local evidence
+
+- `tests/integration/reports.test.ts` (5): the same 1,000-row data gives 1 consolidated entry vs 1,000 detailed entries with identical totals (10.000000) and unique references; both views reconcile and a partially paid run stays out of reports; spreadsheet formulas escaped; admin company CSV contains no identity/contact/wallet field and the admin gets 403 on the recipient export (401 when signed out); recipient export scoped to the maker and assigned approvers; timestamps are UTC whole seconds.
+- `npm run lint`, `npm run typecheck` pass; `npm test` **140/140**; `npm run build` pass; `npm run test:e2e` **15/15**.
+
+### Live testnet evidence (through the app in a browser; every tx in docs/TESTNET.md)
+
+- Maker uploaded 3 rows (recipient1 0.04, recipient2 0.06, recipient3 0.02 tUSDC), chose detailed posting, submitted (`create_run` 4oyBhx2k…); approver 1 (BtCpa3C4…) then approver 2 (2XfXfgzN…) approved in the browser; the worker process released (8M53CacB…) and paid 3 rows (Awh72Fb6…, BcXTo8SA…, Ee67Kff6…); the run shows **Paid** with explorer links.
+- Balances changed by exactly the paid amounts: vault 0.82 → 0.70, recipient1 0.08 → 0.12, recipient2 0.09 → 0.15, recipient3 0.06 → 0.08 tUSDC. NEAR spent 0.00297.
+- History shows the run in consolidated (1 line, `GJN-UP6YUKW8`, 0.12) and detailed (3 lines, `-0001..-0003`) views; reconciliation tile "Both views match"; company CSV and recipient-detail CSV downloaded.
+- Screenshots (1440x900) `docs/screenshots/phase-13/`: 01 submit confirmation dialog, 02 approver review detail, 03 approval waiting for chain confirmation, 04 run while releasing, 05/05b paid run with explorer links, 06 history consolidated, 07 history detailed, 08 export area.
+
+### Not done / limits
+
+- Maker-release mode and the failure paths (unknown outcome, two workers, insufficient funding, failed transfer) are proven in integration tests with the contract-faithful stand-in and in the contract sandbox, not live in the app.
+- The worker ran with `WORKER_MAX_ROWS=1` during the live proof so the "releasing" state could be captured; the default is 5 rows per tick.
 
 ---
 

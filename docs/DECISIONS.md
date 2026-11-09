@@ -333,3 +333,18 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-080 · Retry policy
 
 - Retry only proven failures (the token transfer failed: `pay_row` returned false or `get_row` is Failed), at most 3 attempts per row with 30 s backoff; afterwards the run shows Needs attention and an operator follows docs/RECOVERY.md. "Already paid / in flight" refusals are reconciled from the vault, never treated as failures.
+
+## Phase 13 decisions (9 Nov 2026, by the agent)
+
+### D-081 · History views vs locked posting mode
+
+- The history page offers both views (consolidated and detailed) for every paid run so totals can be reconciled on screen; the **company CSV** always follows each run's posting mode locked at submission. Both views are built from the same vault-confirmed payout records, and a run enters reports only when Paid with every row confirmed.
+
+### D-082 · Export scoping
+
+- Company CSV: maker (own runs), assigned approvers, admin; no recipient fields at all. Recipient-detail CSV: a separate route for the maker and the approvers assigned to the run; the admin gets 403. Exports use UTC timestamps to the second, exact 6-decimal amounts, formula escaping, UTF-8 BOM and CRLF.
+
+### D-083 · Live proof through the app
+
+- The live testnet proof is a Playwright spec under `tests/live/` with its own config (`playwright.live.config.ts`), run only on purpose against the running production server and worker with the real demo database. It is never part of `npm run test:e2e` (isolated seeded DB, no chain transactions).
+

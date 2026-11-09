@@ -33,7 +33,7 @@ const db = getDb();
 const client = getVaultClient();
 while (!stopping) {
   try {
-    const s = await workerTick(db, client, { workerId, maxRowsPerTick: 5 });
+    const s = await workerTick(db, client, { workerId, maxRowsPerTick: Number(process.env.WORKER_MAX_ROWS ?? 5) });
     if (s.released || s.paidRows) logLine('tick', s);
   } catch (error) {
     logLine('error', { message: error instanceof Error ? error.message.slice(0, 300) : String(error) });

@@ -11,17 +11,17 @@ export function navFor(role: SessionUser['role']): NavItem[] {
       return [
         { href: '/maker', label: 'My runs', icon: 'runs' },
         { href: '/maker/runs/new', label: 'New run', icon: 'plus' },
-        { href: '/history', label: 'History and reports', icon: 'reports', soon: 'Phase 13' },
+        { href: '/history', label: 'History and reports', icon: 'reports' },
       ];
     case 'approver':
       return [
         { href: '/approver', label: 'Review queue', icon: 'inbox' },
-        { href: '/history', label: 'History and reports', icon: 'reports', soon: 'Phase 13' },
+        { href: '/history', label: 'History and reports', icon: 'reports' },
       ];
     case 'admin':
       return [
         { href: '/admin', label: 'Workflow settings', icon: 'workflow' },
-        { href: '/reports', label: 'Company reports', icon: 'reports', soon: 'Phase 13' },
+        { href: '/history', label: 'Company reports', icon: 'reports' },
       ];
   }
 }
