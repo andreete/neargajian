@@ -17,7 +17,7 @@ import type { Db } from '../db/client.ts';
 import { auditEvents, payoutActions, runVersions, versionRows } from '../db/schema.ts';
 import { claimPayoutAction, updatePayoutAction, type PayoutAction } from './actions.ts';
 import { settleActions } from './settle.ts';
-import { reconcileVersion, snapshotOf, type Version } from '../runs/lifecycle.ts';
+import { assertSameVault, reconcileVersion, snapshotOf, type Version } from '../runs/lifecycle.ts';
 import { createReportEntries } from '../reports/entries.ts';
 
 export const MAX_ROW_ATTEMPTS = 3;
@@ -45,6 +45,7 @@ function latestPerRow(actions: PayoutAction[]): Map<number, PayoutAction> {
 export async function requestRelease(db: Db, client: VaultClient, v: Version, opts: { role: 'worker' | 'maker'; workerId: string; now?: Date }) {
   const now = opts.now ?? new Date();
   if (v.status !== 'approved') return { status: v.status };
+  assertSameVault(v, client);
   const claim = claimPayoutAction(db, { versionId: v.id, kind: 'release', rowIndex: null, workerId: opts.workerId, now, leaseMs: LEASE_MS });
   if (!claim.claimed) {
     await reconcileActions(db, client, v, now);
@@ -79,6 +80,7 @@ function proofsFor(db: Db, v: Version) {
 export async function payRows(db: Db, client: VaultClient, v: Version, opts: { role: 'worker' | 'maker'; workerId: string; max: number; now?: Date }) {
   const now = opts.now ?? new Date();
   if (v.status !== 'releasing') return { paid: 0 };
+  assertSameVault(v, client);
   await reconcileActions(db, client, v, now);
   const { rows, tree } = proofsFor(db, v);
   const latest = latestPerRow(actionsOf(db, v.id, 'pay_row'));
@@ -113,7 +115,8 @@ export async function payRows(db: Db, client: VaultClient, v: Version, opts: { r
 /** One worker pass: reconcile live versions, release automatic ones, pay releasing ones. */
 export async function workerTick(db: Db, client: VaultClient, opts: { workerId: string; maxRowsPerTick?: number; now?: Date }) {
   const now = opts.now ?? new Date();
-  const live = db.select().from(runVersions).where(inArray(runVersions.status, ['submitting', 'pending_approval', 'approved', 'releasing'])).all();
+  const live = db.select().from(runVersions)
+    .where(and(inArray(runVersions.status, ['submitting', 'pending_approval', 'approved', 'releasing']), eq(runVersions.vaultContractId, client.vaultId))).all();
   const summary = { reconciled: 0, released: 0, paidRows: 0 };
   for (const v0 of live) {
     const r = await reconcileVersion(db, client, v0.id, now);

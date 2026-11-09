@@ -10,7 +10,9 @@ import {
 } from '../../src/server/commitments.ts';
 import { formatAmount, parseAmount } from '../../src/server/money.ts';
 // @ts-expect-error plain .mjs helper without type declarations
-import { MASTER, ROLES, VAULT, rpc, vaultKey } from './signer-keys.mjs';
+import { MASTER, ROLES, LEGACY_VAULT as VAULT, rpc, vaultKey as finalVaultKey } from './signer-keys.mjs';
+// Historical Phase 04 script: it always targets the Phase 04 vault (now LEGACY_VAULT).
+const vaultKey = (account: string) => finalVaultKey(account, VAULT);
 
 type Role = keyof typeof ROLES;
 interface Step { label: string; signer: string; method: string; expect: 'ok' | 'fail'; tx?: string; ok: boolean; result: string }

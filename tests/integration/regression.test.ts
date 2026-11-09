@@ -120,6 +120,25 @@ describe('approval order enforced end to end', () => {
   });
 });
 
+describe('vault switch', () => {
+  it('a version submitted to another vault is never reconciled, decided, released or paid through this one', async () => {
+    await submitted();
+    await approve(app1);
+    const other = new FakeVault();
+    other.vaultId = 'vault2.gajian-payroll.testnet';
+    expect(v().vaultContractId).toBe('vault.gajian-payroll.testnet');
+    expect((await reconcileVersion(h.db, other, v().id)).status).toBe('pending_approval');
+    await expect(decide(h.db, other, app2, RUN, { versionId: v().id, decision: 'approve' })).rejects.toThrow(/submitted to vault\.gajian-payroll\.testnet/);
+    await workerTick(h.db, other, { workerId: 'w' });
+    expect(other.calls).toEqual([]);
+    expect(await approve(app2)).toBe('approved'); // its own vault still works
+    await workerTick(h.db, other, { workerId: 'w' });
+    expect(other.calls).toEqual([]);
+    await expect(requestRelease(h.db, other, v(), { role: 'worker', workerId: 'w' })).rejects.toThrow(/Nothing was sent/);
+    expect(other.calls).toEqual([]);
+  });
+});
+
 describe('transfer idempotency', () => {
   it('repeated release requests reserve once; a worker restart after payment sends nothing', async () => {
     await submitted();

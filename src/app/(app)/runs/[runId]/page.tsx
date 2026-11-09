@@ -101,7 +101,7 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
           {isMaker && ['rejected', 'cancelled', 'submit_failed'].includes(v.status) ? <EditDraftLink runId={runId} label={`Edit and submit version ${v.versionNo + 1}`} /> : null}
         </div>
       </div>
-      <p className="run-sub">Vault run <span className="mono">{v.chainRunId}</span> · {v.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'} · {v.sourceFilename ? <>file <span className="mono">{v.sourceFilename}</span></> : 'manual entry'} · submitted {formatDateTime(v.createdAt)}</p>
+      <p className="run-sub">Vault run <span className="mono">{v.chainRunId}</span>{v.vaultContractId !== config.vaultContractId ? <> in the earlier vault <span className="mono">{v.vaultContractId}</span></> : null} · {v.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'} · {v.sourceFilename ? <>file <span className="mono">{v.sourceFilename}</span></> : 'manual entry'} · submitted {formatDateTime(v.createdAt)}</p>
 
       <ChainAutoRefresh runId={runId} active={pendingChain} csrfToken={session.csrfToken}
         label={v.status === 'submitting' ? 'Submitted: waiting for the vault to confirm on NEAR' : v.status === 'releasing' || v.status === 'paid' ? `Releasing: ${paidCount} of ${pay.rowCount} recipients paid` : status === 'awaiting_funding' ? (d.snapshot?.releaseMode === 'maker' ? 'Awaiting funding: release again once the vault holds enough tUSDC' : 'Awaiting funding: the release worker retries once the vault holds enough tUSDC') : v.status === 'approved' ? 'Approved: the release worker will release this run' : 'Waiting for NEAR to confirm a decision'} />

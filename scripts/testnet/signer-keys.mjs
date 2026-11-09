@@ -8,7 +8,10 @@ import { join } from 'node:path';
 export const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
 export const MASTER = process.env.GAJIAN_MASTER ?? 'gajian-payroll.testnet';
-export const VAULT = `vault.${MASTER}`;
+/** The final vault (Phase 16): deployed from the release commit, no full-access key. */
+export const VAULT = process.env.GAJIAN_VAULT ?? `vault2.${MASTER}`;
+/** The Phase 04 vault: kept readable; its funds moved to VAULT through an approved run. */
+export const LEGACY_VAULT = `vault.${MASTER}`;
 export const TOKEN = `tusdc.${MASTER}`;
 export const ROLES = {
   maker: `maker.${MASTER}`,
@@ -29,10 +32,10 @@ export async function rpc(method, params) {
   return body.result;
 }
 
-/** The account's function-call key for the vault: { publicKey, methods, allowance, path }. */
-export async function vaultKey(accountId) {
+/** The account's function-call key for a vault (default: the final vault): { publicKey, methods, allowance, path }. */
+export async function vaultKey(accountId, vault = VAULT) {
   const { keys } = await rpc('query', { request_type: 'view_access_key_list', finality: 'final', account_id: accountId });
-  const fc = keys.filter((k) => k.access_key.permission?.FunctionCall?.receiver_id === VAULT);
+  const fc = keys.filter((k) => k.access_key.permission?.FunctionCall?.receiver_id === vault);
   if (fc.length !== 1) throw new Error(`${accountId}: expected exactly one vault function-call key, found ${fc.length}`);
   const { public_key: publicKey, access_key: { permission: { FunctionCall: p } } } = fc[0];
   const path = join(homedir(), '.near-credentials', 'testnet', accountId, `${publicKey.replace(':', '_')}.json`);

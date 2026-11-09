@@ -107,12 +107,14 @@ export const workflowConfigs = sqliteTable('workflow_configs', {
   /** pending → active (confirmed on-chain) or failed; superseded when a newer one activates. */
   chainStatus: text('chain_status', { enum: ['pending', 'active', 'failed', 'superseded'] }).notNull(),
   chainTxHash: text('chain_tx_hash'),
+  /** The vault contract this revision lives in (revisions restart at 1 in a new vault). */
+  vaultContractId: text('vault_contract_id').notNull().default('vault.gajian-payroll.testnet'),
   createdByUserId: text('created_by_user_id').notNull().references(() => users.id),
   createdAt: ms('created_at').notNull(),
   activatedAt: ms('activated_at'),
 }, (t) => [
   // Failed attempts keep their row (audit) and do not block a retry of the same revision.
-  uniqueIndex('workflow_configs_revision_uq').on(t.revision).where(sql`chain_status <> 'failed'`),
+  uniqueIndex('workflow_configs_revision_uq').on(t.vaultContractId, t.revision).where(sql`chain_status <> 'failed'`),
   check('workflow_configs_kind_ck', inList('kind', WORKFLOW_KINDS)),
   check('workflow_configs_release_ck', inList('release_mode', RELEASE_MODES)),
   check('workflow_configs_status_ck', inList('chain_status', ['pending', 'active', 'failed', 'superseded'])),
@@ -159,6 +161,8 @@ export const runVersions = sqliteTable('run_versions', {
   versionNo: integer('version_no').notNull(),
   /** Deterministic vault run_id (idempotent create_run). */
   chainRunId: text('chain_run_id').notNull(),
+  /** The vault contract this version was submitted to. */
+  vaultContractId: text('vault_contract_id').notNull().default('vault.gajian-payroll.testnet'),
   postingMode: text('posting_mode', { enum: POSTING_MODES }).notNull(),
   workflowRevision: integer('workflow_revision').notNull(),
   /** JSON snapshot: kind, release mode, approver user IDs and chain accounts, caps. */

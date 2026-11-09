@@ -4,6 +4,7 @@
  */
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Queryable } from '../db/client.ts';
+import { activeWorkflowWhere } from '../workflow/vault.ts';
 import {
   approvalEvents, draftRows, payrollRuns, runVersions, testnetRunEvents, testnetRunRows, testnetRuns, users, workflowConfigs,
   type PostingMode, type ReleaseMode, type WorkflowKind,
@@ -116,7 +117,7 @@ export interface ActiveWorkflow {
 }
 
 export function activeWorkflow(db: Queryable): ActiveWorkflow | null {
-  const wf = db.select().from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'active')).get();
+  const wf = db.select().from(workflowConfigs).where(activeWorkflowWhere()).get();
   if (!wf) return null;
   const ids = [wf.approver1UserId, wf.approver2UserId].filter((x): x is string => Boolean(x));
   const people = db.select().from(users).where(inArray(users.id, ids)).all();

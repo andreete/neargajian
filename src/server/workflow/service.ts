@@ -12,6 +12,7 @@ import { randomUUID } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { ChainWorkflow, TxOutcome, VaultClient } from '../chain/vault-client.ts';
 import type { Db } from '../db/client.ts';
+import { activeWorkflowWhere } from './vault.ts';
 import { auditEvents, users, workflowConfigs, type ReleaseMode, type WorkflowKind } from '../db/schema.ts';
 import type { WorkflowSnapshot } from '../runs/repository.ts';
 
@@ -111,7 +112,7 @@ export async function updateWorkflow(db: Db, client: VaultClient, adminUserId: s
   if (db.select({ id: workflowConfigs.id }).from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'pending')).get()) {
     return { status: 'conflict', message: 'A workflow change is still waiting for confirmation on NEAR. Refresh its status first.' };
   }
-  const active = db.select().from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'active')).get();
+  const active = db.select().from(workflowConfigs).where(activeWorkflowWhere()).get();
   if (!active || active.revision !== input.expectedRevision) {
     return { status: 'conflict', message: 'The workflow changed since you opened this page. Reload and try again.' };
   }
@@ -125,7 +126,7 @@ export async function updateWorkflow(db: Db, client: VaultClient, adminUserId: s
   const revision = chain.revision + 1;
   const row = {
     id: `wf_rev_${revision}_${randomUUID().slice(0, 8)}`, revision, kind, approver1UserId: approvers[0]!.id, approver2UserId: approvers[1]?.id ?? null, releaseMode,
-    maxRowAmount: active.maxRowAmount, maxRunTotal: active.maxRunTotal, chainStatus: 'pending' as const, chainTxHash: null,
+    maxRowAmount: active.maxRowAmount, maxRunTotal: active.maxRunTotal, chainStatus: 'pending' as const, chainTxHash: null, vaultContractId: active.vaultContractId,
     createdByUserId: adminUserId, createdAt: now, activatedAt: null,
   };
   db.insert(workflowConfigs).values(row).run();
@@ -161,7 +162,7 @@ export async function reconcilePendingWorkflow(db: Db, client: VaultClient, acto
 
 /** Snapshot of the active workflow for a new run version (copied into the version). */
 export function activeSnapshot(db: Db): WorkflowSnapshot | null {
-  const wf = db.select().from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'active')).get();
+  const wf = db.select().from(workflowConfigs).where(activeWorkflowWhere()).get();
   if (!wf) return null;
   const ids = [wf.approver1UserId, wf.approver2UserId].filter((x): x is string => Boolean(x));
   const people = db.select().from(users).where(inArray(users.id, ids)).all();

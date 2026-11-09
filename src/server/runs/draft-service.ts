@@ -6,13 +6,14 @@
 import { desc, eq } from 'drizzle-orm';
 import { can, type Principal } from '../auth/policy.ts';
 import type { Db } from '../db/client.ts';
+import { activeWorkflowWhere } from '../workflow/vault.ts';
 import { payrollRuns, runVersions, workflowConfigs, type PostingMode } from '../db/schema.ts';
 import { validateRows, type Limits, type RawRow, type ValidationSummary } from '../payroll/validate.ts';
 import { DomainError, getDraftRows, replaceDraft, type DraftRowInput } from './repository.ts';
 import { importPayrollFile } from '../payroll/import.ts';
 
 export function activeLimits(db: Db): Limits {
-  const wf = db.select().from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'active')).get();
+  const wf = db.select().from(workflowConfigs).where(activeWorkflowWhere()).get();
   return { maxRowAmount: wf?.maxRowAmount ?? 1_000_000n, maxRunTotal: wf?.maxRunTotal ?? 100_000_000n };
 }
 

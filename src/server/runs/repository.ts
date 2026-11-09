@@ -124,6 +124,8 @@ export function chainRunIdFor(runId: string, versionNo: number): string {
 export function createVersion(db: Db, input: {
   runId: string; makerUserId: string; rows: ValidatedRow[]; workflow: WorkflowSnapshot; now: Date;
   postingMode: PostingMode; source?: { filename: string; sha256: string } | null; salt?: Buffer;
+  /** The vault contract the version is submitted to. */
+  vaultContractId?: string;
 }) {
   if (input.rows.length < 1 || input.rows.length > 1000) throw new DomainError('invalid', 'A version needs 1-1,000 rows.');
   const leaves: PayoutLeaf[] = input.rows.map((r, index) => ({ index, accountId: r.accountId, amount: r.amount }));
@@ -141,7 +143,7 @@ export function createVersion(db: Db, input: {
     const id = randomUUID();
     const status: VersionStatus = 'submitting';
     tx.insert(runVersions).values({
-      id, runId: input.runId, versionNo, chainRunId: chainRunIdFor(input.runId, versionNo),
+      id, runId: input.runId, versionNo, chainRunId: chainRunIdFor(input.runId, versionNo), ...(input.vaultContractId ? { vaultContractId: input.vaultContractId } : {}),
       postingMode: input.postingMode, workflowRevision: input.workflow.revision,
       workflowSnapshot: JSON.stringify(input.workflow), rowCount: tree.rowCount, total: tree.total,
       payoutRoot: toHex(tree.root), reviewDigest: toHex(digest), reviewSalt: salt.toString('hex'),

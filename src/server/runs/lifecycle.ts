@@ -54,6 +54,13 @@ function audit(db: Db, actor: string | null, action: string, versionId: string, 
   db.insert(auditEvents).values({ at: now, actorUserId: actor, action, entityType: 'run_version', entityId: versionId, detail: JSON.stringify(detail) }).run();
 }
 
+/** Refuses any chain action on a version that lives in another vault (after a vault switch). */
+export function assertSameVault(v: Version, client: VaultClient) {
+  if (v.vaultContractId !== client.vaultId) {
+    throw new DomainError('conflict', `This version was submitted to ${v.vaultContractId}; the app now works with ${client.vaultId}. Nothing was sent.`);
+  }
+}
+
 export function versionsOf(db: Db, runId: string): Version[] {
   return db.select().from(runVersions).where(eq(runVersions.runId, runId)).orderBy(desc(runVersions.versionNo)).all();
 }
@@ -105,7 +112,7 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
   if (!snapshot) throw new DomainError('invalid', 'No active approval workflow. Ask the admin to set one.');
   const rows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
   const version = createVersion(db, {
-    runId, makerUserId: principal.id, rows, workflow: snapshot, postingMode: run.postingMode, now,
+    runId, makerUserId: principal.id, rows, workflow: snapshot, postingMode: run.postingMode, now, vaultContractId: client.vaultId,
     source: run.source === 'upload' && run.draftFilename && run.draftFileSha256 ? { filename: run.draftFilename, sha256: run.draftFileSha256 } : null,
   });
   const stored = db.select().from(runVersions).where(eq(runVersions.id, version.id)).get()!;
@@ -138,6 +145,9 @@ async function reconcileSummary(db: Db, client: VaultClient, versionId: string, 
 export async function reconcileVersion(db: Db, client: VaultClient, versionId: string, now = new Date()): Promise<{ status: VersionStatus; chain: ChainRun | null }> {
   const v = db.select().from(runVersions).where(eq(runVersions.id, versionId)).get();
   if (!v) throw new DomainError('not_found', 'Version not found.');
+  // A version submitted to another vault (before a vault switch) is never reconciled against
+  // this one: its state stays as last confirmed by its own vault.
+  if (v.vaultContractId !== client.vaultId) return { status: v.status, chain: null };
   const chain = await client.view<ChainRun | null>('get_run', { run_id: v.chainRunId });
 
   if (v.status === 'submitting') {
@@ -214,6 +224,7 @@ export async function cancelVersion(db: Db, client: VaultClient, principal: Prin
   if (!ctx || !can(principal, 'run.cancel', ctx)) throw new DomainError('not_found', 'Payroll run not found.');
   const v = latestVersion(db, runId);
   if (!v || (v.status !== 'pending_approval' && v.status !== 'approved')) throw new DomainError('conflict', 'Only a version that is waiting for approval or approved can be cancelled.');
+  assertSameVault(v, client);
   audit(db, principal.id, 'run.cancel_requested', v.id, {}, now);
   const outcome = await client.call('maker', 'cancel_run', { run_id: v.chainRunId }, { gasTgas: 30 });
   if (outcome.status === 'failure') throw new DomainError('conflict', `The vault refused the cancellation: ${outcome.error ?? 'unknown reason'}.`);
@@ -270,6 +281,7 @@ export async function decide(db: Db, client: VaultClient, principal: Principal, 
   const v = latestVersion(db, runId);
   if (!v || v.id !== input.versionId) throw new DomainError('conflict', 'This version was replaced. Open the latest version and review it again.');
   if (v.status !== 'pending_approval') throw new DomainError('conflict', 'This version is not waiting for approval.');
+  assertSameVault(v, client);
   const snap = snapshotOf(v);
   const step = snap.approvers.findIndex((a) => a.userId === principal.id) + 1;
   if (step === 0) throw new DomainError('forbidden', 'You are not assigned to this version.');
