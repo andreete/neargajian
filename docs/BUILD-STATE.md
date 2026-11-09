@@ -22,6 +22,20 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 13 History and accounting CSVs | Done, approved by Andre (live run independently verified) | **Yes**: complete flow through the app, see docs/TESTNET.md |
 | 13b Review fixes (paid-state consistency, screenshot 05b) | Done | none (read-only recapture of the Phase 13 run) |
 | 14 UX and accessibility pass | Done | none (local; test-only fixture data) |
+| 15 Reproducibility and targeted regression tests | Done | read-only: `npm run judge:verify` re-checks the live evidence (22/22) |
+
+---
+
+## Phase 15 · Reproducibility and targeted regression tests (9 Nov 2026)
+
+- **Acceptance walk** `docs/ACCEPTANCE.md`: A01–A08 each with app/sandbox evidence and live testnet evidence in separate columns. All pass; pending items are the Phase 16 rehearsal steps (16a reproducible deployment, 16b live duplicate rejection, 16c maker release through the app, 16d live Awaiting funding, 16e live 1,000-row check). Nothing blocked.
+- **Permission boundaries** `tests/integration/boundaries.test.ts`: every API route (18 operations) refused for signed-out callers (401); 43 wrong-principal cases (another maker 404, unassigned approver 404, assigned approver on maker/admin routes 403, admin on run routes and recipient export 403, maker on decision/admin routes 403); every mutation refused without CSRF token and from a foreign origin (403). Each case: no chain call, no state change. Lists and exports scoped per caller.
+- **Targeted regressions** `tests/integration/regression.test.ts`: file SHA-256, frozen rows and the on-chain payout root describe the uploaded file; frozen rows cannot be edited or deleted; rows tampered below the app are never paid (root mismatch, zero `pay_row`); one-approver template; parallel in either order; no release before both approvals; sequence order refused before any transaction; repeated release reserves once; a restarted worker after payment sends nothing; duplicate `pay_row` refused by the vault.
+- **Credential scan** `scripts/secret-scan.sh` (`npm run secret-scan`; `--staged` for pre-commit): private-key, PEM, NEAR credential JSON, seed-phrase JSON, token patterns and secret-like file names in the working tree and in **every commit of the full history** plus every file name ever added; prints locations, never values. Result: **clean (working tree + all commits)**. Self-test: a planted key committed and then deleted is reported (exit 1).
+- **Judge mode** `docs/JUDGE.md` + `npm run judge:verify` (`scripts/judge/verify-testnet.mjs`, read-only RPC, no keys) over `docs/evidence/testnet-runs.json`: Phase 13 run status/total/rows from `get_run`/`get_row`, each tx final with the expected signer, each payout's `ft_transfer` event, and six Phase 04 on-chain refusals. Result **22/22 PASS**.
+- **CI** (`.github/workflows/ci.yml`): adds browser tests (Playwright Chromium, generated session secret, fixture DB, no testnet) and a credential-scan job with full history. `npm run typecheck` now runs `next typegen` first, so a fresh checkout (or CI) can typecheck before a build; a fresh clone previously failed typecheck without the generated `next-env.d.ts`.
+- **Fresh-checkout proof** (clean clone, no `.env`, generated `SESSION_SECRET`, as CI; deleted afterwards): `npm ci` ok; lint ok; typecheck ok (after the typegen fix; failed before it); `npm test` 154/154; `samples:check` no diff; build ok; `npm run test:e2e` 21/21; `secret-scan` clean; `judge:verify` all pass.
+- Local: `npm run lint`, `npm run typecheck` pass; `npm test` **154/154**; `npm run test:e2e` **21/21**.
 
 ---
 

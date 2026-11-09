@@ -368,3 +368,13 @@ Andre verified the key transactions and balances independently on testnet.
 
 - Browser tests seed runs in every lifecycle state with `scripts/e2e-fixture.ts` against the stand-in vault in the isolated `.tmp/e2e` database only (the script refuses other paths). Its tx hashes are fake and screenshots made from it are labelled as fixture data.
 
+## Phase 15 decisions (9 Nov 2026, by the agent)
+
+### D-088 · Public evidence file and read-only judge verification
+
+- `docs/evidence/testnet-runs.json` lists public evidence only (account IDs, run IDs, tx hashes, base-unit amounts, expected refusal messages). `npm run judge:verify` re-checks it against testnet with view calls and tx status; it never needs keys. Phase 16 appends its runs here.
+
+### D-089 · Credential scan covers the full history
+
+- `scripts/secret-scan.sh` scans tracked and untracked (non-ignored) files and every commit reachable from any ref; CI runs it with full history. Patterns target private material (NEAR private keys are 80+ base58 characters; public keys are not flagged). Matches are reported by location only.
+

@@ -11,20 +11,103 @@
       "status": "Paid",
       "total": "120000",
       "rows": [
-        { "index": 0, "receiver": "recipient1.gajian-payroll.testnet", "amount": "40000" },
-        { "index": 1, "receiver": "recipient2.gajian-payroll.testnet", "amount": "60000" },
-        { "index": 2, "receiver": "recipient3.gajian-payroll.testnet", "amount": "20000" }
+        {
+          "index": 0,
+          "receiver": "recipient1.gajian-payroll.testnet",
+          "amount": "40000"
+        },
+        {
+          "index": 1,
+          "receiver": "recipient2.gajian-payroll.testnet",
+          "amount": "60000"
+        },
+        {
+          "index": 2,
+          "receiver": "recipient3.gajian-payroll.testnet",
+          "amount": "20000"
+        }
       ],
       "txs": [
-        { "step": "create_run (maker)", "hash": "4oyBhx2kATjLb7Cesfp6LioEfVxmuP9WSUEFAeNCcPMF", "signer": "maker.gajian-payroll.testnet" },
-        { "step": "approve (approver 1)", "hash": "BtCpa3C4CBca9KyrWquRdfzAdpYLfasC9SviFovWeUgH", "signer": "approver1.gajian-payroll.testnet" },
-        { "step": "approve (approver 2)", "hash": "2XfXfgzNqsqajrEoj8KaFRU4FwAjYZc5LSgGY84DUKuo", "signer": "approver2.gajian-payroll.testnet" },
-        { "step": "start_release (worker)", "hash": "8M53CacBjHr5Dhhr2G6Fh6Sr3ecZJhLcYqpNbGUJfrmK", "signer": "worker.gajian-payroll.testnet" },
-        { "step": "pay_row 0 (worker)", "hash": "Awh72Fb6syidtHQ488FEU6DVtSruhYvSsZubcQoGuQ9X", "signer": "worker.gajian-payroll.testnet" },
-        { "step": "pay_row 1 (worker)", "hash": "BcXTo8SA84kVy6reY7hCenkY831Phn2p6aZxqRdS9V9o", "signer": "worker.gajian-payroll.testnet" },
-        { "step": "pay_row 2 (worker)", "hash": "Ee67Kff6BNer8FpBUT9yKJGaJ6AWTJWfedxYXCKaCkQz", "signer": "worker.gajian-payroll.testnet" }
+        {
+          "step": "create_run (maker)",
+          "hash": "4oyBhx2kATjLb7Cesfp6LioEfVxmuP9WSUEFAeNCcPMF",
+          "signer": "maker.gajian-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 1)",
+          "hash": "BtCpa3C4CBca9KyrWquRdfzAdpYLfasC9SviFovWeUgH",
+          "signer": "approver1.gajian-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 2)",
+          "hash": "2XfXfgzNqsqajrEoj8KaFRU4FwAjYZc5LSgGY84DUKuo",
+          "signer": "approver2.gajian-payroll.testnet"
+        },
+        {
+          "step": "start_release (worker)",
+          "hash": "8M53CacBjHr5Dhhr2G6Fh6Sr3ecZJhLcYqpNbGUJfrmK",
+          "signer": "worker.gajian-payroll.testnet"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "hash": "Awh72Fb6syidtHQ488FEU6DVtSruhYvSsZubcQoGuQ9X",
+          "signer": "worker.gajian-payroll.testnet"
+        },
+        {
+          "step": "pay_row 1 (worker)",
+          "hash": "BcXTo8SA84kVy6reY7hCenkY831Phn2p6aZxqRdS9V9o",
+          "signer": "worker.gajian-payroll.testnet"
+        },
+        {
+          "step": "pay_row 2 (worker)",
+          "hash": "Ee67Kff6BNer8FpBUT9yKJGaJ6AWTJWfedxYXCKaCkQz",
+          "signer": "worker.gajian-payroll.testnet"
+        }
       ]
     }
   ],
-  "expectedFailures": []
+  "expectedFailures": [
+    {
+      "phase": "04",
+      "step": "out-of-order approval (approver 2 first, sequence)",
+      "hash": "GJcGj4WPT4GhtNDowQ8N5QfrE34yHK1EiJBabPVgfNrp",
+      "signer": "approver2.gajian-payroll.testnet",
+      "error": "Approver 2 can act only after approver 1 approved"
+    },
+    {
+      "phase": "04",
+      "step": "early release (before final approval)",
+      "hash": "CZsAPrnuYM8n6VN6PhzAmtXfSPAWsJVau79Qsgnn7hpv",
+      "signer": "worker.gajian-payroll.testnet",
+      "error": "Run is not approved for release"
+    },
+    {
+      "phase": "04",
+      "step": "stale workflow revision",
+      "hash": "B6yp7NxGa6JrKMPMisFrQH1AF4oBccMoozCTXc2ARGn7",
+      "signer": "maker.gajian-payroll.testnet",
+      "error": "Workflow changed since review: reload and confirm again"
+    },
+    {
+      "phase": "04",
+      "step": "wrong signer (worker releases a maker-release run)",
+      "hash": "G9sgA8X9JJ7wGJZFoqLn6wa36F4Goga2jxhmNRajE8XA",
+      "signer": "worker.gajian-payroll.testnet",
+      "error": "Only the maker can release this run (maker release"
+    },
+    {
+      "phase": "04",
+      "step": "tampered payout amount",
+      "hash": "7TUUMNJTvUTGTzngZUDqKATiN69PKQCFNdbEph5DU1Tn",
+      "signer": "maker.gajian-payroll.testnet",
+      "error": "Payout proof does not match the approved run"
+    },
+    {
+      "phase": "04",
+      "step": "release after rejection",
+      "hash": "FB58uo5UpWCLiGaypv2Eurr3hkRFXAehsqTTRPyb1Fen",
+      "signer": "maker.gajian-payroll.testnet",
+      "error": "Run is not approved for release"
+    }
+  ]
 }

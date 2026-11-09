@@ -19,8 +19,10 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | --- | --- | --- |
 | Sample files reproduce byte-for-byte | `npm run samples:check` | 4/4 SHA-256 checksums match `docs/SAMPLE-DATA.md`, no git diff |
 | Lint, typecheck | `npm run lint`, `npm run typecheck` | pass |
-| Unit + integration tests | `npm test` | 140/140 pass (lifecycle, decisions, release worker incl. restart / unknown outcome / two workers, reports) |
-| Browser tests (Chromium, production build) | `npm run test:e2e` | 15/15 pass |
+| Unit + integration tests | `npm test` | 154/154 pass (lifecycle, decisions, release worker incl. restart / unknown outcome / two workers, reports, run page in every payout state, API permission matrix, file integrity) |
+| Browser tests (Chromium, production build) | `npm run test:e2e` | 21/21 pass (incl. every page at 1280x720 and 1440x900, dialogs, copy actions) |
+| Credential scan | `npm run secret-scan` | clean: working tree + full Git history |
+| Live evidence, read-only | `npm run judge:verify` | 22/22 checks: runs, rows, tx outcomes, ft_transfer events and on-chain refusals (see `docs/JUDGE.md`) |
 | Upload of the three sample files | `npm test` (import tests) | 56.690860 / 56.690860 / 10.000000 tUSDC, 1,000 rows each |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
@@ -130,6 +132,9 @@ public/         logo and payroll templates         docs/         PRD, build plan
 ```
 
 ## Project documents
+
+- `docs/JUDGE.md`: reproduce and verify (fresh checkout, expected output, read-only testnet verification).
+- `docs/ACCEPTANCE.md`: acceptance checks A01–A08 with app/sandbox and live testnet evidence kept apart.
 
 - `docs/build/`: kickoff decisions, PRD with acceptance checks A01–A08, design system, 18-phase build plan
 - `docs/BUILD-STATE.md`: what has been built and verified, phase by phase

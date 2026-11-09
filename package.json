@@ -14,7 +14,7 @@
     "build": "./scripts/with-tmp.sh next build",
     "start": "./scripts/with-tmp.sh next start -H 127.0.0.1 -p 8092",
     "lint": "./scripts/with-tmp.sh eslint .",
-    "typecheck": "./scripts/with-tmp.sh tsc --noEmit",
+    "typecheck": "./scripts/with-tmp.sh sh -c 'next typegen >/dev/null && tsc --noEmit'",
     "test": "./scripts/with-tmp.sh vitest run",
     "check": "npm run lint && npm run typecheck && npm run test",
     "samples:check": "./scripts/with-tmp.sh node scripts/generate-sample-payroll.mjs && git diff --exit-code -- public/templates docs/SAMPLE-DATA.md",
