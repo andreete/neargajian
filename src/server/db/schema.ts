@@ -249,6 +249,11 @@ export const payoutActions = sqliteTable('payout_actions', {
   error: text('error'),
   createdAt: ms('created_at').notNull(),
   updatedAt: ms('updated_at').notNull(),
+  /**
+   * Timestamp of the block that includes this action's transaction (what the explorer shows):
+   * the paid time of a payout. Set once from the chain at confirmation, never changed (trigger).
+   */
+  chainBlockTime: ms('chain_block_time'),
 }, (t) => [
   index('payout_actions_version_ix').on(t.versionId),
   check('payout_actions_kind_ck', inList('kind', PAYOUT_ACTION_KINDS)),

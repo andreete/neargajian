@@ -35,6 +35,7 @@ class FakeVault implements VaultClient {
     this.wf = { ...this.wf, revision: this.wf.revision + 1, kind: args.kind as ChainWorkflow['kind'], approvers: args.approvers as string[], release_mode: args.release_mode as ChainWorkflow['release_mode'] };
     return this.mode === 'unknown-landed' ? { txHash, status: 'unknown' } : { txHash, status: 'success', value: this.wf };
   }
+  async txBlockTime(): Promise<Date | null> { return null; }
   async txOutcome(txHash: string): Promise<TxOutcome> {
     return this.mode === 'unknown-lost' ? { txHash, status: 'failure', error: 'transaction expired' } : { txHash, status: 'success' };
   }

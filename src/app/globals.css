@@ -724,8 +724,13 @@ table.data.review td.acct { max-width: 260px; overflow: hidden; text-overflow: e
 .timeline-list .what strong { display: block; }
 .timeline-list .what span { color: var(--muted); font-size: 13px; }
 .pending-tx { display: inline-flex; gap: 6px; align-items: center; color: var(--warning); font-weight: 600; font-size: 13px; }
-.run-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 8px; }
-.run-head h1 { font-size: 30px; }
+/* Run page header: back link | title + chips (wraps inside its column) | actions (always top right). */
+.run-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; column-gap: 14px; margin-bottom: 8px; }
+.run-head h1 { font-size: 30px; line-height: 1.2; overflow-wrap: anywhere; }
+.run-head .run-back { margin-top: 4px; }
+.run-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; min-width: 0; }
+.run-chips { display: inline-flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
+.run-head > .action-bar { margin-left: 0; justify-content: flex-end; flex-wrap: nowrap; padding-top: 2px; }
 .run-sub { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
 .action-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-left: auto; }
 .continue-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
@@ -766,3 +771,4 @@ table.data.history-table .run-title { max-width: clamp(170px, 17vw, 300px); }
 table.data.review td.who .trunc { max-width: 230px; }
 table.data.review td.acct { max-width: 290px; }
 .pager .btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+table.data.review.payouts th, table.data.review.payouts td { padding-left: 10px; padding-right: 10px; }

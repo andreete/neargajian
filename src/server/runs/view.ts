@@ -2,7 +2,11 @@
 import type { RunStatus } from '../../components/status-chip.tsx';
 import type { RunDetail } from './lifecycle.ts';
 
-export interface RowView { index: number; line: number | null; account: string; name: string; amount: string; status: 'pending' | 'inflight' | 'paid' | 'failed' | 'unknown'; txHash: string | null }
+export interface RowView {
+  index: number; line: number | null; account: string; name: string; amount: string; status: 'pending' | 'inflight' | 'paid' | 'failed' | 'unknown'; txHash: string | null;
+  /** Block time of the payout transaction (ISO), from the chain; null until known. */
+  paidAt: string | null;
+}
 
 type PaymentInput = Pick<RunDetail, 'version' | 'rows' | 'actions'>;
 
@@ -15,7 +19,7 @@ export function rowStates(d: PaymentInput): RowView[] {
   return d.rows.map((r) => {
     const a = latest.get(r.rowIndex);
     const status = !a ? 'pending' : a.status === 'succeeded' ? 'paid' : a.status === 'failed' ? 'failed' : a.status === 'unknown' ? 'unknown' : 'inflight';
-    return { index: r.rowIndex, line: r.sourceLine, account: r.nearAccountId, name: r.receiverName, amount: r.amount.toString(), status, txHash: a?.txHash ?? null };
+    return { index: r.rowIndex, line: r.sourceLine, account: r.nearAccountId, name: r.receiverName, amount: r.amount.toString(), status, txHash: a?.txHash ?? null, paidAt: status === 'paid' && a?.chainBlockTime ? a.chainBlockTime.toISOString() : null };
   });
 }
 

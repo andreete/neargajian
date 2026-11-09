@@ -37,8 +37,9 @@ function Timeline({ d, pay }: { d: RunDetail; pay: PaymentState }) {
       at: e.confirmedAt ?? e.createdAt, tx: e.chainTxHash });
   }
   const funding = release?.status === 'failed' && /funding|Insufficient/i.test(release.error ?? '');
-  if (release) items.push({ tone: release.status === 'succeeded' ? 'ok' : funding ? 'wait' : release.status === 'failed' ? 'bad' : 'wait', title: funding ? 'Release waiting for funding' : 'Release requested', detail: funding ? `The vault holds less than ${displayAmount(v.total)} tUSDC available; ${d.snapshot?.releaseMode === 'maker' ? 'the maker can release again after funding' : 'the release worker retries every minute'}` : release.status === 'failed' ? release.error ?? 'Refused by the vault' : release.status === 'succeeded' ? `Vault reserved ${displayAmount(v.total)} tUSDC` : 'Waiting for confirmation on NEAR', at: release.updatedAt, tx: release.txHash });
-  if (pay.paidCount) items.push({ tone: pay.complete ? 'ok' : 'wait', title: `Payouts: ${pay.paidCount} of ${pay.rowCount} paid`, detail: pay.complete ? `All recipients paid by the vault (ft_transfer), ${displayAmount(pay.paidTotal)} tUSDC confirmed` : `Paying one recipient per transaction, ${displayAmount(pay.paidTotal)} of ${displayAmount(pay.total)} tUSDC confirmed`, at: null, tx: null });
+  if (release) items.push({ tone: release.status === 'succeeded' ? 'ok' : funding ? 'wait' : release.status === 'failed' ? 'bad' : 'wait', title: funding ? 'Release waiting for funding' : 'Release requested', detail: funding ? `The vault holds less than ${displayAmount(v.total)} tUSDC available; ${d.snapshot?.releaseMode === 'maker' ? 'the maker can release again after funding' : 'the release worker retries every minute'}` : release.status === 'failed' ? release.error ?? 'Refused by the vault' : release.status === 'succeeded' ? `Vault reserved ${displayAmount(v.total)} tUSDC` : 'Waiting for confirmation on NEAR', at: release.chainBlockTime ?? release.updatedAt, tx: release.txHash });
+  const lastPaid = pay.rows.reduce<string | null>((m, r) => (r.paidAt && (!m || r.paidAt > m) ? r.paidAt : m), null);
+  if (pay.paidCount) items.push({ tone: pay.complete ? 'ok' : 'wait', title: `Payouts: ${pay.paidCount} of ${pay.rowCount} paid`, detail: pay.complete ? `All recipients paid by the vault (ft_transfer), ${displayAmount(pay.paidTotal)} tUSDC confirmed` : `Paying one recipient per transaction, ${displayAmount(pay.paidTotal)} of ${displayAmount(pay.total)} tUSDC confirmed`, at: lastPaid ? new Date(lastPaid) : null, tx: null });
   if (v.status === 'cancelled') items.push({ tone: 'bad', title: 'Cancelled', detail: v.supersededByVersionId ? 'Replaced by a newer version' : 'Cancelled by the maker before release', at: v.statusUpdatedAt, tx: null });
   return (
     <ol className="timeline-list">
@@ -92,11 +93,13 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
   return (
     <>
       <div className="run-head">
-        <Link href={isMaker ? '/maker' : '/approver'} className="btn btn-ghost btn-sm">← {isMaker ? 'My runs' : 'Review queue'}</Link>
-        <h1>{d.run.title}</h1>
-        <StatusChip status={status} />
-        <span className="chip chip-neutral">Version {v.versionNo}</span>
-        <div className="action-bar">
+        <Link href={isMaker ? '/maker' : '/approver'} className="btn btn-ghost btn-sm run-back">← {isMaker ? 'My runs' : 'Review queue'}</Link>
+        <div className="run-title">
+          <h1>{d.run.title}</h1>
+          <span className="run-chips"><StatusChip status={status} /><span className="chip chip-neutral">Version {v.versionNo}</span></span>
+        </div>
+        {/* Page actions always sit here, top right, in every run state. */}
+        <div className="action-bar" data-testid="run-actions">
           {isMaker && (v.status === 'pending_approval' || v.status === 'approved') ? <CancelVersion runId={runId} versionNo={v.versionNo} csrfToken={session.csrfToken} /> : null}
           {isMaker && ['rejected', 'cancelled', 'submit_failed'].includes(v.status) ? <EditDraftLink runId={runId} label={`Edit and submit version ${v.versionNo + 1}`} /> : null}
         </div>

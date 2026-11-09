@@ -23,6 +23,7 @@ export interface PaidLine {
   lineNo: number;
   rowIndex: number;
   amount: bigint;
+  /** Timestamp of the block that includes the payout's pay_row transaction (explorer time). */
   paidAt: Date | null;
   /** Recipient fields: only present when the caller may see recipient details. */
   recipient: { accountId: string; name: string; email: string; sourceLine: number | null; txHash: string | null } | null;
@@ -82,7 +83,7 @@ export function historyFor(db: Db, principal: Principal): History {
       const a = paidBy.get(r.rowIndex)!;
       const detailedRef = entries.find((e) => e.rowIndex === r.rowIndex)?.reference ?? `${base}-${String(i + 1).padStart(4, '0')}`;
       return {
-        reference: detailedRef, lineNo: r.rowIndex + 1, rowIndex: r.rowIndex, amount: r.amount, paidAt: a.updatedAt,
+        reference: detailedRef, lineNo: r.rowIndex + 1, rowIndex: r.rowIndex, amount: r.amount, paidAt: a.chainBlockTime,
         recipient: recipientsAllowed ? { accountId: r.nearAccountId, name: r.receiverName, email: r.email, sourceLine: r.sourceLine, txHash: a.txHash } : null,
       };
     });
@@ -93,7 +94,8 @@ export function historyFor(db: Db, principal: Principal): History {
       rowCount: v.rowCount, total: v.total, confirmedTotal: confirmed, paidCount: lines.length, paidAt,
       reference: entries.find((e) => e.rowIndex === null)?.reference ?? base, lines,
     };
-    if (v.status === 'paid' && lines.length === v.rowCount && confirmed === v.total) out.paid.push(run);
+    // Reports need every paid time from the chain; until the block times are read, the run waits.
+    if (v.status === 'paid' && lines.length === v.rowCount && confirmed === v.total && lines.every((l) => l.paidAt)) out.paid.push(run);
     else out.inProgress.push(run);
   }
   out.paid.sort((a, b) => (b.paidAt?.getTime() ?? 0) - (a.paidAt?.getTime() ?? 0));

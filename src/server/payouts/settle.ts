@@ -4,11 +4,11 @@
  * run reconciliation, so a version can only become Paid after every row's payout record is
  * confirmed (PRD A06). Unknown outcomes stay unknown until the chain proves them.
  */
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { ChainRole, VaultClient } from '../chain/vault-client.ts';
 import type { Db } from '../db/client.ts';
 import { payoutActions, versionRows, type runVersions } from '../db/schema.ts';
-import { updatePayoutAction } from './actions.ts';
+import { setChainBlockTime, updatePayoutAction } from './actions.ts';
 
 interface ChainRow { status: 'InFlight' | 'Paid' | 'Failed'; receiver_id: string; amount: string; attempts: number }
 type Version = typeof runVersions.$inferSelect;
@@ -37,6 +37,30 @@ export async function settleActions(db: Db, client: VaultClient, v: Version, now
     const out = await client.txOutcome(a.txHash, 'worker');
     if (out.status === 'failure') updatePayoutAction(db, a.id, { status: 'failed', now, error: out.error ?? 'Refused by the vault.' });
   }
+  await fillBlockTimes(db, client, v);
+}
+
+/**
+ * Sets the chain block time (the explorer's time) of every succeeded action of a version that
+ * does not have one yet. Read from the chain only; if the RPC cannot answer, it stays empty
+ * and is filled on a later pass. Never estimated from the app's clock.
+ */
+export async function fillBlockTimes(db: Db, client: VaultClient, v: Version): Promise<number> {
+  const missing = db.select().from(payoutActions)
+    .where(and(eq(payoutActions.versionId, v.id), eq(payoutActions.status, 'succeeded'), isNull(payoutActions.chainBlockTime))).all();
+  if (!missing.length) return 0;
+  const makerRelease = (JSON.parse(v.workflowSnapshot) as { releaseMode: string }).releaseMode === 'maker';
+  let filled = 0;
+  for (const a of missing) {
+    if (!a.txHash) continue;
+    // Payouts are signed by the worker; in maker-release mode the release is signed by the maker.
+    const roles: ChainRole[] = a.kind === 'release' && makerRelease ? ['maker', 'worker'] : ['worker', 'maker'];
+    for (const role of roles) {
+      const at = await client.txBlockTime(a.txHash, role);
+      if (at) { if (setChainBlockTime(db, a.id, at)) filled += 1; break; }
+    }
+  }
+  return filled;
 }
 
 /** Rows with a confirmed payout (succeeded `pay_row`), their count and their exact sum. */

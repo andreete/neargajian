@@ -151,7 +151,7 @@ export function UploadPanel(props: {
           <a className="btn btn-primary" href={`/maker/runs/${props.runId}/review`}>Continue to review</a>
         </div>
       ) : null}
-      {props.rows.length ? <ReviewTable rows={props.rows} total={total} /> : null}
+      {props.rows.length ? <ReviewTable key={props.revision} rows={props.rows} total={total} /> : null}
 
       {props.rows.length ? (
         <section aria-labelledby="posting-title">

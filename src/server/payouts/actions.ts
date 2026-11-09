@@ -36,7 +36,7 @@ export function claimPayoutAction(db: Db, input: {
       id: actionId(version.chainRunId, input.kind, input.rowIndex, attempt),
       versionId: input.versionId, kind: input.kind, rowIndex: input.rowIndex, attempt, status: 'claimed',
       workerId: input.workerId, leaseExpiresAt: new Date(input.now.getTime() + input.leaseMs),
-      txHash: null, error: null, createdAt: input.now, updatedAt: input.now,
+      txHash: null, error: null, createdAt: input.now, updatedAt: input.now, chainBlockTime: null,
     };
     tx.insert(payoutActions).values(action).run();
     return { claimed: true as const, action };
@@ -55,4 +55,14 @@ export function updatePayoutAction(db: Db, id: string, update: {
   // A succeeded record is final, including its time (the paid-at time in history and exports):
   // the first confirmation wins. A late answer from the worker after reconciliation already
   // confirmed the payout from the vault (or a late "unknown") leaves it untouched.
+}
+
+/**
+ * Records the timestamp of the block that includes a succeeded action's transaction (the
+ * paid time of a payout). Set once; a later call never changes it (also enforced by a trigger).
+ */
+export function setChainBlockTime(db: Db, id: string, at: Date): boolean {
+  const r = db.update(payoutActions).set({ chainBlockTime: at })
+    .where(and(eq(payoutActions.id, id), eq(payoutActions.status, 'succeeded'), isNull(payoutActions.chainBlockTime))).run();
+  return r.changes === 1;
 }

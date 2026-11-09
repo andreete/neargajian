@@ -22,7 +22,7 @@ GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT uploa
 | Unit + integration tests | `npm test` | 155/155 pass (lifecycle, decisions, release worker incl. restart / unknown outcome / two workers, reports, run page in every payout state, API permission matrix, file integrity) |
 | Browser tests (Chromium, production build) | `npm run test:e2e` | 21/21 pass (incl. every page at 1280x720 and 1440x900, dialogs, copy actions) |
 | Credential scan | `npm run secret-scan` | clean: working tree + full Git history |
-| Live evidence, read-only | `npm run judge:verify` | 93/93 checks: runs, rows, tx outcomes, ft_transfer events, operations, the final vault's code hash and keys, on-chain refusals (see `docs/JUDGE.md`) |
+| Live evidence, read-only | `npm run judge:verify` | 115/115 checks: runs, rows, tx outcomes, ft_transfer events, operations, the final vault's code hash and keys, on-chain refusals, and every exported paid time equal to its payout's block time (see `docs/JUDGE.md`) |
 | Upload of the three sample files | `npm test` (import tests) | 56.690860 / 56.690860 / 10.000000 tUSDC, 1,000 rows each |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |

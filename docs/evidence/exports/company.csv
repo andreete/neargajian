@@ -1,0 +1,11 @@
+﻿reference,posting_mode,run_title,run_version,vault_run_id,line,paid_at_utc,amount,currency,status
+GJN-X9YQEYYV-0001,detailed,Phase 16 rehearsal: November bonuses,1,gjn-648622d67c1e4c47a8b3-v1,1,2026-11-09T14:48:45Z,0.300000,tUSDC,paid
+GJN-X9YQEYYV-0002,detailed,Phase 16 rehearsal: November bonuses,1,gjn-648622d67c1e4c47a8b3-v1,2,2026-11-09T14:49:13Z,0.250000,tUSDC,paid
+GJN-X9YQEYYV-0003,detailed,Phase 16 rehearsal: November bonuses,1,gjn-648622d67c1e4c47a8b3-v1,3,2026-11-09T14:49:39Z,0.200000,tUSDC,paid
+GJN-6GH8GL2Z,consolidated,Phase 16 rehearsal: maker release,1,gjn-b8686812506e46a58811-v1,,2026-11-09T14:46:45Z,0.090000,tUSDC,paid
+GJN-UHZFZX9V-0001,detailed,Phase 16 rehearsal: November contractors,1,gjn-b3bbdf502fcd477d958b-v1,1,2026-11-09T14:43:34Z,0.050000,tUSDC,paid
+GJN-UHZFZX9V-0002,detailed,Phase 16 rehearsal: November contractors,1,gjn-b3bbdf502fcd477d958b-v1,2,2026-11-09T14:44:01Z,0.030000,tUSDC,paid
+GJN-UHZFZX9V-0003,detailed,Phase 16 rehearsal: November contractors,1,gjn-b3bbdf502fcd477d958b-v1,3,2026-11-09T14:44:26Z,0.040000,tUSDC,paid
+GJN-UP6YUKW8-0001,detailed,November contractors (live testnet),1,gjn-c042c3e14af142669ce4-v1,1,2026-11-09T13:29:02Z,0.040000,tUSDC,paid
+GJN-UP6YUKW8-0002,detailed,November contractors (live testnet),1,gjn-c042c3e14af142669ce4-v1,2,2026-11-09T13:29:13Z,0.060000,tUSDC,paid
+GJN-UP6YUKW8-0003,detailed,November contractors (live testnet),1,gjn-c042c3e14af142669ce4-v1,3,2026-11-09T13:29:22Z,0.020000,tUSDC,paid

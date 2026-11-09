@@ -10,13 +10,13 @@
  *   second payment of a row that is in flight or paid.
  * - A version becomes Paid only when the vault reports the run as Paid.
  */
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { buildPayoutTree, proofFor, toHex } from '../commitments.ts';
 import type { VaultClient } from '../chain/vault-client.ts';
 import type { Db } from '../db/client.ts';
 import { auditEvents, payoutActions, runVersions, versionRows } from '../db/schema.ts';
 import { claimPayoutAction, updatePayoutAction, type PayoutAction } from './actions.ts';
-import { settleActions } from './settle.ts';
+import { fillBlockTimes, settleActions } from './settle.ts';
 import { assertSameVault, reconcileVersion, snapshotOf, type Version } from '../runs/lifecycle.ts';
 import { createReportEntries } from '../reports/entries.ts';
 
@@ -117,7 +117,7 @@ export async function workerTick(db: Db, client: VaultClient, opts: { workerId: 
   const now = opts.now ?? new Date();
   const live = db.select().from(runVersions)
     .where(and(inArray(runVersions.status, ['submitting', 'pending_approval', 'approved', 'releasing']), eq(runVersions.vaultContractId, client.vaultId))).all();
-  const summary = { reconciled: 0, released: 0, paidRows: 0 };
+  const summary = { reconciled: 0, released: 0, paidRows: 0, blockTimes: 0 };
   for (const v0 of live) {
     const r = await reconcileVersion(db, client, v0.id, now);
     summary.reconciled += 1;
@@ -138,6 +138,13 @@ export async function workerTick(db: Db, client: VaultClient, opts: { workerId: 
     } else if (v.status === 'paid') {
       createReportEntries(db, v.id, now);
     }
+  }
+  // Confirmed actions whose block time could not be read yet (RPC hiccup), including paid runs.
+  const pending = db.selectDistinct({ versionId: payoutActions.versionId }).from(payoutActions).innerJoin(runVersions, eq(runVersions.id, payoutActions.versionId))
+    .where(and(eq(payoutActions.status, 'succeeded'), isNull(payoutActions.chainBlockTime), eq(runVersions.vaultContractId, client.vaultId))).limit(20).all();
+  for (const p of pending) {
+    const v = db.select().from(runVersions).where(eq(runVersions.id, p.versionId)).get()!;
+    summary.blockTimes += await fillBlockTimes(db, client, v);
   }
   return summary;
 }

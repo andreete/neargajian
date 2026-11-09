@@ -30,6 +30,14 @@ export class FakeVault implements VaultClient {
   modes = new Map<string, 'unknown-landed' | 'unknown-lost'>();
   /** Receivers whose ft_transfer fails (e.g. not registered with the token). */
   unregistered = new Set<string>();
+  /**
+   * The chain's own clock: each landed transaction is included in a block 7 s after the
+   * previous one, independent of the app's clock (so tests can tell the two apart).
+   */
+  chainClock = new Date('2026-11-10T12:00:00Z');
+  blockTimes = new Map<string, Date>();
+  /** When true, block lookups fail (RPC unavailable): txBlockTime returns null. */
+  blockTimeUnavailable = false;
   private n = 0;
   private held = new Map<string, { signed: () => void; gate: Promise<void> }>();
 
@@ -61,6 +69,11 @@ export class FakeVault implements VaultClient {
     return this.outcomes.get(txHash) ?? { txHash, status: 'unknown' };
   }
 
+  async txBlockTime(txHash: string): Promise<Date | null> {
+    if (this.blockTimeUnavailable) return null;
+    return this.blockTimes.get(txHash) ?? null;
+  }
+
   async call(role: ChainRole, method: string, args: Record<string, unknown>, opts: CallOptions = {}): Promise<TxOutcome> {
     this.n += 1;
     const txHash = `TX${this.n}`;
@@ -72,6 +85,8 @@ export class FakeVault implements VaultClient {
       this.outcomes.set(txHash, { txHash, status: 'failure', error: 'Transaction expired' });
       return { txHash, status: 'unknown' };
     }
+    this.chainClock = new Date(this.chainClock.getTime() + 7000);
+    this.blockTimes.set(txHash, this.chainClock);
     let result: TxOutcome;
     try {
       const value = this.apply(this.accountFor(role), method, args);

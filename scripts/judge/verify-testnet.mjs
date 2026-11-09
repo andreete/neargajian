@@ -71,5 +71,40 @@ for (const f of ev.expectedFailures ?? []) {
   const text = JSON.stringify(out.status) + JSON.stringify(out.receipts_outcome.map((o) => o.outcome.status));
   check(text.includes(f.error), `${f.step} ${f.hash.slice(0, 8)}… refused on-chain: "${f.error}"`);
 }
+// Exported paid times (docs/evidence/exports, downloaded from the app) must equal the timestamp
+// of the block that includes each payout's pay_row transaction (the time the explorer shows).
+function parseCsv(text) { // RFC 4180: quoted fields, doubled quotes, CRLF
+  const rows = []; let row = []; let cell = ''; let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quoted) { if (ch === '"' && text[i + 1] === '"') { cell += '"'; i += 1; } else if (ch === '"') quoted = false; else cell += ch; continue; }
+    if (ch === '"') quoted = true;
+    else if (ch === ',') { row.push(cell); cell = ''; }
+    else if (ch === '\n') { row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  const [header, ...body] = rows;
+  return body.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+}
+const csv = (name) => parseCsv(readFileSync(new URL(`../../docs/evidence/exports/${name}`, import.meta.url), 'utf8').replace(/^\uFEFF/, ''));
+const blockSecond = async (hash, signer) => {
+  const tx = await rpc('EXPERIMENTAL_tx_status', { tx_hash: hash, sender_account_id: signer, wait_until: 'FINAL' });
+  const block = await rpc('block', { block_id: tx.transaction_outcome.block_hash });
+  return { at: new Date(Number(BigInt(block.header.timestamp_nanosec) / 1_000_000n)).toISOString().replace(/\.\d{3}Z$/, 'Z'), height: block.header.height };
+};
+console.log('\n== Exported paid times equal the chain block time of each payout');
+const byRef = new Map();
+for (const { reference, paid_at_utc: paidAt, tx_hash: txHash } of csv('recipients.csv')) {
+  const b = await blockSecond(txHash, 'worker.gajian-payroll.testnet');
+  byRef.set(reference, b.at);
+  check(paidAt === b.at, `recipient CSV ${reference}: ${paidAt} = block ${b.height} at ${b.at} (${txHash.slice(0, 8)}…)`);
+}
+for (const { reference, posting_mode: mode, paid_at_utc: paidAt } of csv('company.csv')) {
+  const times = mode === 'detailed' ? [byRef.get(reference)] : [...byRef].filter(([r]) => r.startsWith(`${reference}-`)).map(([, t]) => t);
+  const expected = times.filter(Boolean).sort().at(-1);
+  check(Boolean(expected) && paidAt === expected, `company CSV ${reference} (${mode}): ${paidAt} = ${mode === 'detailed' ? 'its payout block' : 'last payout block'} ${expected ?? 'missing'}`);
+}
+
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll testnet evidence checks passed.');
 process.exitCode = failures ? 1 : 0;

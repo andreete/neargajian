@@ -11,7 +11,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 
-const fixture = () => JSON.parse(readFileSync('.tmp/e2e/fixture.json', 'utf8')) as Record<'paidDetailed' | 'paidConsolidated' | 'releasing' | 'awaitingFunding' | 'pending' | 'rejected', string>;
+const fixture = () => JSON.parse(readFileSync('.tmp/e2e/fixture.json', 'utf8')) as Record<'paidDetailed' | 'paidConsolidated' | 'releasing' | 'awaitingFunding' | 'pending' | 'rejected' | 'longTitle', string>;
 const SIZES = [[1280, 720], [1440, 900]] as const;
 const EMAIL = { maker: 'maker@gajian.my.id', approver: 'app1@gajian.my.id', admin: 'admin@gajian.my.id' } as const;
 
@@ -122,6 +122,37 @@ test('approver and admin pages fit at 1280x720 and 1440x900', async ({ page, bro
   await sweep(admin, 'admin-history-consolidated', '/history?view=consolidated');
   await sweep(admin, 'admin-history-detailed', '/history?view=detailed');
   expect(problems).toEqual([]);
+});
+
+test('run page actions stay in one place (top right, title row) in every run state and at both sizes', async ({ page }) => {
+  const f = fixture();
+  await signIn(page, 'maker');
+  for (const [name, id] of Object.entries(f)) {
+    await page.goto(`/runs/${id}`);
+    for (const [width, height] of SIZES) {
+      await page.setViewportSize({ width, height });
+      await page.waitForTimeout(50);
+      const geo = await page.evaluate(() => {
+        const head = document.querySelector('.run-head')!.getBoundingClientRect();
+        const h1 = document.querySelector('.run-head h1')!.getBoundingClientRect();
+        const bar = document.querySelector('[data-testid="run-actions"]')!;
+        const buttons = Array.from(bar.querySelectorAll('a, button')).filter((b) => !b.closest('dialog')).map((b) => b.getBoundingClientRect()).filter((r) => r.width > 0);
+        return { headRight: head.right, h1Top: h1.top, h1Right: h1.right, buttons: buttons.map((b) => ({ top: b.top, right: b.right, bottom: b.bottom })) };
+      });
+      for (const b of geo.buttons) {
+        expect(Math.abs(b.right - geo.headRight), `${name} ${width}: action at the right edge`).toBeLessThanOrEqual(1);
+        expect(Math.abs(b.top - geo.h1Top), `${name} ${width}: action on the title row`).toBeLessThanOrEqual(12);
+        expect(geo.h1Right, `${name} ${width}: title never runs under the actions`).toBeLessThanOrEqual(b.right - 40);
+      }
+      if (name === 'pending' || name === 'longTitle' || name === 'awaitingFunding') expect(geo.buttons.length, `${name}: cancel available`).toBe(1);
+      if (name === 'rejected') expect(geo.buttons.length, 'rejected: edit available').toBe(1);
+    }
+  }
+  if (process.env.QA_SHOTS === '1') {
+    await page.goto(`/runs/${f.longTitle}`);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({ path: '.tmp/phase-14/run-long-title-1440.png' });
+  }
 });
 
 test('lists and the run page show the same derived status (Awaiting funding)', async ({ page }) => {

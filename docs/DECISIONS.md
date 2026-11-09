@@ -396,3 +396,14 @@ Andre verified the key transactions and balances independently on testnet.
 
 - The first confirmation of a payout (by the worker or by reconciliation from the vault) fixes its status and its time; exports and history can no longer change after the fact.
 
+## Phase 16b decisions (9 Nov 2026, Andre's review)
+
+### D-094 · Paid time is the chain block time (correction of existing records)
+
+- A payout's paid time is the timestamp of the block that includes its `pay_row` transaction: the time the explorer shows. The release action records its block time the same way. The value is read from the chain at confirmation (worker or reconciliation), set once and protected by a trigger. If the RPC cannot answer, it stays empty and the worker fills it later. It is never estimated from a local clock, and a run enters reports only when every paid time is known. The run page, history, both CSVs and `judge:verify` use this one value.
+- The 16 confirmed actions recorded before this change were filled from the chain by `scripts/testnet/backfill-block-times.ts`. This is a **correction**: the values are derived from the chain, logged with block heights (`docs/evidence/backfill-block-times-16b.json`) and audited, and nothing else changed. The earlier app times remain in the audit detail.
+
+### D-095 · Run page actions have one fixed place
+
+- The run header is a three-column grid: back link | title and chips (the title wraps inside its column) | actions (top right, on the title row). It is the same for every run state, at 1280 and 1440 px.
+

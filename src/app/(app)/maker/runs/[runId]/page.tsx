@@ -43,7 +43,7 @@ export default async function RunBuilderPage({ params }: { params: Promise<{ run
           rows={view.rows.map(({ sourceLine: _s, ...r }) => r)} csrfToken={session.csrfToken}
           limits={{ maxRowAmount: limits.maxRowAmount.toString(), maxRunTotal: limits.maxRunTotal.toString() }} />
       ) : (
-        <UploadPanel key={view.run.draftRevision} runId={view.run.id} title={view.run.title} postingMode={view.run.postingMode} revision={view.run.draftRevision}
+        <UploadPanel key={view.run.id} runId={view.run.id} title={view.run.title} postingMode={view.run.postingMode} revision={view.run.draftRevision}
           csrfToken={session.csrfToken} rows={view.rows}
           activeFile={view.run.draftFilename ? { name: view.run.draftFilename, sha256: view.run.draftFileSha256 } : null} />
       )}

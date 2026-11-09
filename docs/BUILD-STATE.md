@@ -23,7 +23,24 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 13b Review fixes (paid-state consistency, screenshot 05b) | Done | none (read-only recapture of the Phase 13 run) |
 | 14 UX and accessibility pass | Done | none (local; test-only fixture data) |
 | 15 Reproducibility and targeted regression tests | Done | read-only: `npm run judge:verify` re-checks the live evidence (22/22) |
-| 16 Live testnet rehearsal | Done; awaiting Andre's review | **Yes**: final locked vault, fund migration, demo, maker release, duplicate refusal, Awaiting funding (docs/TESTNET.md) |
+| 16 Live testnet rehearsal | Done, approved by Andre (independently verified on testnet) | **Yes**: final locked vault, fund migration, demo, maker release, duplicate refusal, Awaiting funding (docs/TESTNET.md) |
+| 16b Paid time from the chain; run page actions | Done | read-only backfill of 16 block times from the chain; `judge:verify` 115/115 |
+
+---
+
+## Phase 16b · Paid time from the chain; run page actions (9 Nov 2026)
+
+1. **Paid time = block time of the payout transaction.** Before, history and both CSVs used the worker's record time (`updatedAt`): 1–8 s earlier than the chain, and in one case earlier than the run's release. Now:
+   - `VaultClient.txBlockTime` reads the timestamp of the block that includes a transaction, the time the explorer shows.
+   - `payout_actions.chain_block_time` (migration `0007_chain_block_time.sql`) is set once at confirmation by `fillBlockTimes` (`src/server/payouts/settle.ts`, called by the worker and by reconciliation). Two triggers make it final and only allow it on succeeded transactions. If the RPC cannot answer, the worker fills it on a later tick; it is never guessed.
+   - History, both CSVs, the run page (new "Paid (UTC)" column, timeline times for release and payouts) and `judge:verify` all use this value. A run enters reports only when every paid time is known.
+   - Backfill: `scripts/testnet/backfill-block-times.ts` set the 16 existing confirmed actions from the chain (dry run first, then applied; a second run sets 0). Log: `docs/evidence/backfill-block-times-16b.json`, plus an audit event per value. Database backed up first (`.tmp/gajian-before-16b.sqlite`).
+   - Regression `tests/integration/paid-time.test.ts` (3): the stand-in vault's chain clock runs 4 h from the app clock. Run page, history and both CSVs equal the block time of each payout, never the app time; the release's block time comes before every payout's; the value is set once and a later tick, a reconcile or a direct SQL update cannot change it; with the RPC unavailable the run stays out of reports until the worker reads the times.
+   - Both CSVs re-downloaded into `docs/evidence/exports/`. `npm run judge:verify` now also checks every exported paid time against its payout's block: **115/115 PASS**.
+2. **Run page actions in one place.** The header is a grid of back link | title + chips (wraps inside its column) | actions (top right, on the title row) for every run state. The new e2e test checks every fixture state (including a long-title run) at 1280x720 and 1440x900: actions at the right edge, on the title row, never overlapped by the title. The recipients table on the run page truncates accounts with a copy action, so the new Paid column fits at 1280.
+3. **Found while testing: the upload confirmation disappeared.** The draft page keyed the upload panel by draft revision, so after an accepted file the page refresh remounted the panel and dropped the "Accepted …: N rows, exact total …" message within moments. This was the cause of the transient failure in the 16c live spec and of an intermittent `upload.spec.ts` failure (2 of 3 runs). The panel is now keyed by run and only the review table's pager resets on a new file; `upload.spec.ts` passed 4 of 4 in a row afterwards.
+
+Evidence: `npm run lint`, `npm run typecheck` pass; `npm test` **158/158**; `npm run build` pass; `npm run test:e2e` **22/22**; `npm run judge:verify` **115/115**.
 
 ---
 

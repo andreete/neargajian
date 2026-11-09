@@ -55,7 +55,7 @@ async function render() {
   const html = renderToStaticMarkup(await RunPage({ params: Promise.resolve({ runId: RUN }) }));
   const text = (x: string) => x.replace(/<[^>]+>/g, '').trim();
   const head = /<div class="run-head">([\s\S]*?)<\/div>/.exec(html)?.[1] ?? '';
-  const badge = text(/<\/h1><span class="chip chip-\w+">([\s\S]*?)<\/span>/.exec(head)?.[1] ?? '');
+  const badge = text(/<\/h1><span class="run-chips"><span class="chip chip-\w+">([\s\S]*?)<\/span>/.exec(head)?.[1] ?? '');
   const stat = /<div class="label">Paid<\/div><div class="value">(\d+) of (\d+)<\/div><div class="foot">([\d.]+) of ([\d.]+) tUSDC confirmed<\/div>/.exec(html);
   const timeline = /Payouts: (\d+) of (\d+) paid/.exec(html);
   const banner = /Releasing: (\d+) of (\d+) recipients paid/.exec(html);

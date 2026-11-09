@@ -175,7 +175,7 @@ Every balance changed by exactly the paid amount. History shows the run in both 
 
 ## Phase 16: final vault and live rehearsal through the app (9 Nov 2026)
 
-Everything below is on NEAR testnet. App steps were driven in a browser (`npm run live:phase16`, `tests/live/phase16.spec.ts`) against the production build and the release worker on 127.0.0.1:8092. Operations outside the app's normal flow used `scripts/testnet/phase16-deploy.sh` and `scripts/testnet/phase16.ts`. Vault actions were always signed with the role's restricted function-call key. Re-check everything read-only with `npm run judge:verify` (93/93 checks pass) and `npm run judge:deployment`.
+Everything below is on NEAR testnet. App steps were driven in a browser (`npm run live:phase16`, `tests/live/phase16.spec.ts`) against the production build and the release worker on 127.0.0.1:8092. Operations outside the app's normal flow used `scripts/testnet/phase16-deploy.sh` and `scripts/testnet/phase16.ts`. Vault actions were always signed with the role's restricted function-call key. Re-check everything read-only with `npm run judge:verify` (115/115 checks pass since Phase 16b) and `npm run judge:deployment`. Paid times in this section's CSV notes were corrected to chain block times in Phase 16b (below).
 
 ### 16a · Final vault from the release commit, locked
 
@@ -264,6 +264,40 @@ Every balance changed by exactly the paid amounts. NEAR across all our accounts:
 ### Not done on testnet (labelled)
 
 The old vault (`vault.gajian-payroll.testnet`) keeps its full-access key; it is retired and holds no tUSDC. The tUSDC token was not redeployed (unchanged since Phase 02). Paths proven only locally or in the sandbox: an unknown transaction outcome (landed or lost), two release workers at once, a failed token transfer with bounded retries, and a worker crash between claim and signing. They need fault injection that testnet does not allow safely.
+
+## Phase 16b: paid times from the chain (9 Nov 2026)
+
+**Correction, not a rewrite.** Until Phase 16b the app showed and exported a payout's paid time from the worker's own clock (when it recorded the result). That was 1–8 s earlier than the chain, and once before the release itself had landed. Every paid time is now the timestamp of the block that includes the payout's `pay_row` transaction, which is the time NearBlocks shows. It is read from the chain once at confirmation and can never change (database trigger). The existing confirmed records were filled from the chain by `scripts/testnet/backfill-block-times.ts`: idempotent, read-only RPC, every value logged with its block (`docs/evidence/backfill-block-times-16b.json`) and an audit event. Amounts, references, statuses and transactions are unchanged. Times are UTC on 9 Nov 2026:
+
+| Vault run | Action | Tx | Block | Chain time (now used) | Previous app time | Difference |
+| --- | --- | --- | --- | --- | --- | --- |
+| `gjn-c042c3e14af142669ce4-v1` | release | [`8M53CacB…`](https://testnet.nearblocks.io/txns/8M53CacBjHr5Dhhr2G6Fh6Sr3ecZJhLcYqpNbGUJfrmK) | 276926220 | 13:28:57.844 | 13:28:54.748 | +3.1 s |
+| `gjn-c042c3e14af142669ce4-v1` | pay_row 0 | [`Awh72Fb6…`](https://testnet.nearblocks.io/txns/Awh72Fb6syidtHQ488FEU6DVtSruhYvSsZubcQoGuQ9X) | 276926228 | 13:29:02.753 | 13:28:54.748 | +8.0 s |
+| `gjn-c042c3e14af142669ce4-v1` | pay_row 1 | [`BcXTo8SA…`](https://testnet.nearblocks.io/txns/BcXTo8SA84kVy6reY7hCenkY831Phn2p6aZxqRdS9V9o) | 276926245 | 13:29:13.037 | 13:29:11.635 | +1.4 s |
+| `gjn-c042c3e14af142669ce4-v1` | pay_row 2 | [`Ee67Kff6…`](https://testnet.nearblocks.io/txns/Ee67Kff6BNer8FpBUT9yKJGaJ6AWTJWfedxYXCKaCkQz) | 276926261 | 13:29:22.667 | 13:29:21.762 | +0.9 s |
+| `gjn-b3bbdf502fcd477d958b-v1` | release | [`BhiKobSB…`](https://testnet.nearblocks.io/txns/BhiKobSBJdaaK73UmhhLMwBiZSn1uw6T6qjoJ28dur1o) | 276933828 | 14:43:29.599 | 14:43:28.098 | +1.5 s |
+| `gjn-b3bbdf502fcd477d958b-v1` | pay_row 0 | [`1BKKAueP…`](https://testnet.nearblocks.io/txns/1BKKAueP99jyq3HrqARzNSp93fRXK4ZAjphyztkjepc) | 276933836 | 14:43:34.407 | 14:43:28.098 | +6.3 s |
+| `gjn-b3bbdf502fcd477d958b-v1` | pay_row 1 | [`CbbvUE7p…`](https://testnet.nearblocks.io/txns/CbbvUE7pbyNXhDtBKdQ1P5ojU2epmHYSzRkBHHMMQkVM) | 276933880 | 14:44:01.047 | 14:43:59.391 | +1.7 s |
+| `gjn-b3bbdf502fcd477d958b-v1` | pay_row 2 | [`6xjYGwVY…`](https://testnet.nearblocks.io/txns/6xjYGwVYmQEqPNSzUjdqBAKD3qUnbAdFn65QFrtgxHME) | 276933923 | 14:44:26.783 | 14:44:25.699 | +1.1 s |
+| `gjn-b8686812506e46a58811-v1` | release | [`Cor9XzgL…`](https://testnet.nearblocks.io/txns/Cor9XzgLdty47newTqZWzbPKofj9AVRN5cgHz3ySH5g9) | 276934052 | 14:45:37.788 | 14:45:36.677 | +1.1 s |
+| `gjn-b8686812506e46a58811-v1` | pay_row 0 | [`4uKNnqpD…`](https://testnet.nearblocks.io/txns/4uKNnqpD6snGDUBrs6kCUU8TrzRYPtJ52WcPBKNH6NrE) | 276934083 | 14:45:53.565 | 14:45:52.040 | +1.5 s |
+| `gjn-b8686812506e46a58811-v1` | pay_row 1 | [`9r5NuZpL…`](https://testnet.nearblocks.io/txns/9r5NuZpLVV6xnXThbRvFUJufwsB8PCabX9jdd5CcGmj) | 276934131 | 14:46:19.126 | 14:46:18.256 | +0.9 s |
+| `gjn-b8686812506e46a58811-v1` | pay_row 2 | [`5ocd2h98…`](https://testnet.nearblocks.io/txns/5ocd2h98tu7T7bE7vUvF3oNZq8hEqGXH9TwrTodSNHv6) | 276934177 | 14:46:45.314 | 14:46:44.027 | +1.3 s |
+| `gjn-648622d67c1e4c47a8b3-v1` | release | [`Hu2czk1h…`](https://testnet.nearblocks.io/txns/Hu2czk1hR6w21qaseoagxZ3DL59dNz4wu2n1bfaCgmb3) | 276934370 | 14:48:40.946 | 14:48:39.496 | +1.4 s |
+| `gjn-648622d67c1e4c47a8b3-v1` | pay_row 0 | [`56UPmkwb…`](https://testnet.nearblocks.io/txns/56UPmkwb4fyhnyBaimqCjoZvG17Lbo9dv1zBUyjzYAQT) | 276934378 | 14:48:45.735 | 14:48:39.496 | +6.2 s |
+| `gjn-648622d67c1e4c47a8b3-v1` | pay_row 1 | [`93Yp7k4g…`](https://testnet.nearblocks.io/txns/93Yp7k4gyHxXXeWJxsaJe8dUmjD6qDSCUHuyMF164hjv) | 276934424 | 14:49:13.688 | 14:49:10.589 | +3.1 s |
+| `gjn-648622d67c1e4c47a8b3-v1` | pay_row 2 | [`Hnaz3p3P…`](https://testnet.nearblocks.io/txns/Hnaz3p3PtRQeBYU1gQvRMuoFPRNPvvbn94LLdjUo5wfv) | 276934467 | 14:49:39.718 | 14:49:38.487 | +1.2 s |
+
+Both CSVs were downloaded again from the app after the correction (`docs/evidence/exports/`). `npm run judge:verify` checks every exported paid time against the block of its payout transaction (115/115 PASS). First lines:
+
+```
+reference,posting_mode,run_title,run_version,vault_run_id,line,paid_at_utc,amount,currency,status
+GJN-X9YQEYYV-0001,detailed,Phase 16 rehearsal: November bonuses,1,gjn-648622d67c1e4c47a8b3-v1,1,2026-11-09T14:48:45Z,0.300000,tUSDC,paid
+```
+```
+reference,run_title,run_version,file_row,near_account_id,receiver_name,email,paid_at_utc,amount,currency,tx_hash,explorer_url
+GJN-X9YQEYYV-0001,Phase 16 rehearsal: November bonuses,1,2,recipient1.gajian-payroll.testnet,Emma Clark,emma.clark@example.com,2026-11-09T14:48:45Z,0.300000,tUSDC,56UPmkwb4fyhnyBaimqCjoZvG17Lbo9dv1zBUyjzYAQT,https://testnet.nearblocks.io/txns/56UPmkwb4fyhnyBaimqCjoZvG17Lbo9dv1zBUyjzYAQT
+```
 
 ## Live runs and NEAR spent
 

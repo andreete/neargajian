@@ -62,6 +62,7 @@ const ids = {
   awaitingFunding: await run('November bonuses', 'consolidated', three, 'awaiting_funding'),
   pending: await run('November contractors', 'detailed', three, 'pending'),
   rejected: await run('November expenses', 'consolidated', three, 'rejected'),
+  longTitle: await run('November contractors and freelance designers: second payroll batch for the product team', 'detailed', three, 'pending'),
 };
 console.log(JSON.stringify(ids));
 closeDatabase();

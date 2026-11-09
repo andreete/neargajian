@@ -43,6 +43,8 @@ export interface VaultClient {
   view<T>(method: string, args: Record<string, unknown>): Promise<T>;
   call(role: ChainRole, method: string, args: Record<string, unknown>, opts?: CallOptions): Promise<TxOutcome>;
   txOutcome(txHash: string, role: ChainRole): Promise<TxOutcome>;
+  /** Timestamp of the block that includes the transaction (what the explorer shows), or null if unknown yet. */
+  txBlockTime(txHash: string, role: ChainRole): Promise<Date | null>;
 }
 
 const ENV_KEY: Record<ChainRole, { account: string; key: string }> = {
@@ -141,6 +143,16 @@ export class NearVaultClient implements VaultClient {
       return classify(txHash, res.status as RpcStatus);
     } catch {
       return { txHash, status: 'unknown' };
+    }
+  }
+
+  async txBlockTime(txHash: string, role: ChainRole): Promise<Date | null> {
+    try {
+      const res = await this.provider.viewTransactionStatus({ txHash, accountId: this.accountFor(role), waitUntil: 'FINAL' });
+      const block = await this.provider.viewBlock({ blockId: res.transaction_outcome.block_hash });
+      return new Date(Number(BigInt(block.header.timestamp_nanosec) / 1_000_000n));
+    } catch {
+      return null; // not final or RPC unavailable: filled in later, never guessed
     }
   }
 }
