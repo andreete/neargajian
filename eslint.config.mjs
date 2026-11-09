@@ -17,7 +17,7 @@ const config = [
     rules: { 'no-console': 'off' },
   },
   {
-    ignores: ['.next/**', 'node_modules/**', 'contracts/**', 'coverage/**', 'playwright-report/**', 'next-env.d.ts'],
+    ignores: ['.next/**', '.tmp/**', 'node_modules/**', 'contracts/**', 'coverage/**', 'playwright-report/**', 'next-env.d.ts'],
   },
 ];
 

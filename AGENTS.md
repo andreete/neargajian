@@ -18,6 +18,7 @@ The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex incl
 - No public repo, X post, submission or force-push without Andre's explicit yes.
 - No PII on-chain or in logs.
 - `nice -n 19` for heavy commands, `CARGO_BUILD_JOBS=2`, never a Rust build and a Node install/build/test at the same time.
+- Temp files go to the repo's git-ignored `.tmp/`, never the shared `/tmp` tmpfs: use the npm scripts (they run through `scripts/with-tmp.sh`), or prefix other commands with `./scripts/with-tmp.sh` or `TMPDIR=$PWD/.tmp`.
 
 ## QA role (Phase 18)
 

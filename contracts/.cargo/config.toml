@@ -1,0 +1,8 @@
+# Shared-host rules (CLAUDE.md): at most 2 parallel compile jobs, and temp files
+# in the repo's git-ignored .tmp/ folder instead of the shared /tmp tmpfs.
+# [env] applies to rustc, build scripts, and the binaries run by cargo test/run.
+[build]
+jobs = 2
+
+[env]
+TMPDIR = { value = "../.tmp", relative = true, force = true }

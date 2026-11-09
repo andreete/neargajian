@@ -10,17 +10,18 @@
     "npm": ">=11"
   },
   "scripts": {
-    "dev": "next dev -H 127.0.0.1 -p 8092",
-    "build": "next build",
-    "start": "next start -H 127.0.0.1 -p 8092",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "dev": "./scripts/with-tmp.sh next dev -H 127.0.0.1 -p 8092",
+    "build": "./scripts/with-tmp.sh next build",
+    "start": "./scripts/with-tmp.sh next start -H 127.0.0.1 -p 8092",
+    "lint": "./scripts/with-tmp.sh eslint .",
+    "typecheck": "./scripts/with-tmp.sh tsc --noEmit",
+    "test": "./scripts/with-tmp.sh vitest run",
     "check": "npm run lint && npm run typecheck && npm run test",
-    "samples:check": "node scripts/generate-sample-payroll.mjs && git diff --exit-code -- public/templates docs/SAMPLE-DATA.md",
-    "contracts:build": "cd contracts && cargo near build non-reproducible-wasm --manifest-path smoke/Cargo.toml --locked",
-    "contracts:test": "cd contracts && cargo test --workspace --locked",
-    "contracts:lint": "cd contracts && cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings"
+    "samples:check": "./scripts/with-tmp.sh node scripts/generate-sample-payroll.mjs && git diff --exit-code -- public/templates docs/SAMPLE-DATA.md",
+    "contracts:build": "./scripts/with-tmp.sh -C contracts sh ../scripts/build-contracts.sh",
+    "contracts:test": "./scripts/with-tmp.sh -C contracts cargo test --workspace --locked",
+    "contracts:lint": "./scripts/with-tmp.sh -C contracts sh -c 'cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings'",
+    "clean:tmp": "rm -rf .tmp && mkdir .tmp"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

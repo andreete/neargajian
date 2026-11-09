@@ -83,4 +83,4 @@ This repository is built with AI coding assistants (Claude Code as implementer; 
 
 ## License
 
-MIT (to be confirmed; `LICENSE` file added before submission).
+MIT, see `LICENSE` (Copyright (c) 2026 GAJIAN team).

@@ -24,11 +24,11 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 ## Resource rules (shared host: 4 cores, ~3 GB free RAM, swap in use)
 
 - Every heavy command (cargo builds/tests, `npm install`, test suites, `next build`, Playwright) runs with `nice -n 19`.
-- Rust: `CARGO_BUILD_JOBS=2`. Node: `NODE_OPTIONS=--max-old-space-size=1536` for builds if needed.
+- Rust: `CARGO_BUILD_JOBS=2` (also set as `build.jobs = 2` in `contracts/.cargo/config.toml`). Node: `NODE_OPTIONS=--max-old-space-size=1536` for builds if needed.
 - **Never run a Rust build and a Node install/build/test at the same time.** Heavy steps run one after another.
 - No heavy work Saturday or Sunday 07:00–14:00 WIB (production batch window).
 - Do not leave dev servers, sandboxes or watchers running.
-- **`/tmp` is a 3.5 GB RAM-backed tmpfs** shared with other users. Never put build output there (a Rust `target/` is 1.5–3 GB). Keep `target/` and `node_modules/` on the home disk; for throwaway builds use `CARGO_TARGET_DIR=~/.cache/gajian-fresh-target` and `TMPDIR=~/.cache/tmp`, and delete them afterwards.
+- **Temp files go to the repo's git-ignored `.tmp/`, never `/tmp`** (a 3.5 GB RAM-backed tmpfs shared with other users). Every npm script runs through `scripts/with-tmp.sh`, which sets `TMPDIR`/`TMP`/`TEMP` to `<repo>/.tmp`; `contracts/.cargo/config.toml` forces the same `TMPDIR` for rustc, build scripts and test binaries. For any command outside an npm script (`npm ci`, `near …`, ad-hoc `cargo`), prefix `TMPDIR=$PWD/.tmp` or use `./scripts/with-tmp.sh <cmd>`. Throwaway builds use `CARGO_TARGET_DIR=~/.cache/gajian-fresh-target`, deleted afterwards. `npm run clean:tmp` empties `.tmp/`.
 
 ## Engineering rules (production-grade prototype)
 
@@ -54,15 +54,14 @@ If `cargo` is not on PATH in a non-login shell: `. ~/.cargo/env`.
 
 ```sh
 # App (repo root)
-nice -n 19 npm ci
+./scripts/with-tmp.sh nice -n 19 npm ci
 npm run lint && npm run typecheck && nice -n 19 npm test
 npm run samples:check            # regenerates sample files; must produce no git diff
 nice -n 19 npm run build
 npm run dev                      # http://127.0.0.1:8092 ; health: /api/health
 
 # Contracts (one at a time, never alongside Node work)
-export CARGO_BUILD_JOBS=2
-nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm
+nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm (tusdc, vault)
 nice -n 19 npm run contracts:test    # unit + sandbox tests (local nearcore 2.14.0 on 127.0.0.1)
 nice -n 19 npm run contracts:lint    # fmt + clippy -D warnings
 ```
@@ -86,4 +85,4 @@ Commit message: `phase-NN: summary`. Before every commit, secret-scan the staged
 git diff --cached | grep -nE 'ed25519:|secp256k1:|PRIVATE KEY|seed phrase' ; git diff --cached --name-only | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'
 ```
 
-Both must print nothing (except rule text in docs). Push to `origin` only after Andre adds the remote; never force-push.
+Both must print nothing (except rule text in docs). Then `git push -u origin main` (origin = `git@github.com:andreete/neargajian.git`, deploy key `~/.ssh/gajian_deploy` via repo-local `core.sshCommand`). If auth fails, note it in `docs/NEXT-STEPS.md` and retry at the next phase end. Never force-push, never change repo visibility.

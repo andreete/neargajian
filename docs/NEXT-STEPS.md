@@ -4,14 +4,7 @@ Updated: Mon 9 Nov 2026, end of Phase 01. Schedule: on track (kickoff section 8:
 
 ## Single next action
 
-**Andre reviews Phase 01** (commit `phase-01: …`; evidence in `docs/BUILD-STATE.md`, decisions D-019 … D-033 in `docs/DECISIONS.md`). Points for Andre to confirm or change:
-
-1. Toolchain pins (D-019, D-020): Rust 1.95.0, cargo-near 0.23.0, near-cli-rs 0.31.1, near-sdk 5.30.1.
-2. TypeScript 6.0.3 / ESLint 9.39.5 instead of the newest majors (D-024, D-025).
-3. License MIT and the copyright holder name for the `LICENSE` file (D-032).
-4. Repo-local git identity `Andre <andre@courseeker.com>` (D-033).
-
-After approval, start **Phase 02** without further stops (unless a hard limit or a missing system package needs Andre).
+**Phase 02** (single-payout walking skeleton). Phase 01 was approved by Andre on 9 Nov 2026 (D-032 … D-038). Follow-ups done: MIT `LICENSE`, git identity `Andre <andre.tuwan@gmail.com>` with both earlier commits rewritten, repo-local `.tmp/` for temp files, deploy key + origin `andreete/neargajian`, permission allowlist. Phases 02, 03 and 04 run back to back; stop after Phase 04 for Andre's review.
 
 ## Phase 02 plan (single-payout walking skeleton)
 
@@ -25,4 +18,4 @@ Carry-over: add the importer test for the three sample files' exact totals in Ph
 
 ## Resume prompt
 
-> Read CLAUDE.md, docs/NEXT-STEPS.md and docs/BUILD-STATE.md. Andre has approved Phase 01. Execute Phase 02 from docs/build/04-BUILD-PHASES.md as adjusted by docs/build/00-KICKOFF.md, then continue phase by phase.
+> Read CLAUDE.md, docs/NEXT-STEPS.md and docs/BUILD-STATE.md. Execute the current phase from docs/build/04-BUILD-PHASES.md as adjusted by docs/build/00-KICKOFF.md, then continue phase by phase.

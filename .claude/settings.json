@@ -1,5 +1,31 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(cargo *)",
+      "Bash(rustup *)",
+      "Bash(./scripts/*)",
+      "Bash(near --version)",
+      "Bash(near * network-config testnet *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git diff)",
+      "Bash(git diff *)",
+      "Bash(git log)",
+      "Bash(git log *)",
+      "Bash(git push)",
+      "Bash(git push -u origin main)",
+      "Bash(git push origin main)",
+      "Bash(nice -n 19 npm *)",
+      "Bash(nice -n 19 npx *)",
+      "Bash(nice -n 19 node *)",
+      "Bash(nice -n 19 cargo *)",
+      "Bash(nice -n 19 ./scripts/*)"
+    ],
     "deny": [
       "Bash(sudo)",
       "Bash(sudo *)",
@@ -18,7 +44,14 @@
       "Bash(git push * -f*)",
       "Bash(git push * +*)",
       "Bash(*mainnet*)",
-      "Read(~/.near-credentials/**)"
+      "Read(~/.near-credentials/**)",
+      "Bash(git push * --mirror*)",
+      "Bash(git push * --delete*)",
+      "Bash(gh repo edit*)",
+      "Bash(npm publish*)",
+      "Bash(cargo publish*)",
+      "Read(~/.ssh/gajian_deploy)",
+      "Read(.env)"
     ]
   }
 }

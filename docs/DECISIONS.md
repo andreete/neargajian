@@ -92,10 +92,35 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 
 - Chromium's system libraries are already on the server (checked 9 Nov), so no `sudo` step is expected. The `@playwright/test` package and browser download are added with the first e2e test (Phase 06/14) to keep Phase 01 light on disk and memory.
 
-### D-032 · License: MIT (proposed, Andre to confirm)
+### D-032 · License: MIT, "Copyright (c) 2026 GAJIAN team" (confirmed by Andre, 9 Nov 2026)
 
-- `package.json` and the Cargo workspace declare MIT; HACKATHON.md Q-014 accepts MIT. The `LICENSE` file is added in Phase 17 after Andre confirms the holder name.
+- `package.json` and the Cargo workspace declare MIT; HACKATHON.md Q-014 accepts MIT. Andre confirmed the license and holder name in the Phase 01 review; `LICENSE` added on 9 Nov 2026.
 
-### D-033 · Git identity
+### D-033 · Git identity (changed by Andre, 9 Nov 2026)
 
-- Repo-local `user.name = Andre`, `user.email = andre@courseeker.com` (no global git config existed). Commits carry a `Co-Authored-By: Claude` trailer.
+- Repo-local `user.name = Andre`, `user.email = andre.tuwan@gmail.com` (no global git config exists). Commits carry a `Co-Authored-By: Claude` trailer.
+- Andre asked to rewrite the author and committer of the two local commits (phase-00, phase-01) to this identity before the first push. Done with `git rebase --root --exec 'git commit --amend --no-edit --reset-author'`; the file trees of both commits were checked identical before and after. New hashes: `ba205f7` (phase-00), `e4cae2d` (phase-01). Nothing had been pushed, so no published history changed.
+
+## Phase 01 review decisions (9 Nov 2026, Andre)
+
+### D-034 · Toolchain pins accepted
+
+- Andre accepted D-019 … D-025 as proposed, including TypeScript 6.0.3 and ESLint 9.39.5.
+
+### D-035 · Temp files live in the repo's `.tmp/`, never the shared `/tmp`
+
+- **Reason:** `/tmp` is a 3.5 GB RAM-backed tmpfs shared with other users; a fresh-checkout cargo test filled it in Phase 01.
+- **How:** `scripts/with-tmp.sh` sets `TMPDIR`/`TMP`/`TEMP` to `<repo>/.tmp` (git-ignored) and every npm script runs through it (`-C contracts` for cargo). `contracts/.cargo/config.toml` also forces `TMPDIR` for rustc, build scripts and test binaries (`[env] … force = true`) and caps `build.jobs = 2`. Ad-hoc commands outside npm scripts are prefixed by hand: `TMPDIR=$PWD/.tmp`. `npm run clean:tmp` empties it.
+
+### D-036 · GitHub remote and deploy key
+
+- Private repo `git@github.com:andreete/neargajian.git` (Andre corrected the first URL `andreete/gajian`). Dedicated ed25519 deploy key `~/.ssh/gajian_deploy` (no passphrase, outside the repo, never printed); only the public key was shown to Andre. Repo-local `core.sshCommand = ssh -i ~/.ssh/gajian_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new`.
+- `git push -u origin main` at the end of every phase. If authentication fails, note it in `docs/NEXT-STEPS.md` and retry at the next phase end. Never force-push, never change visibility.
+
+### D-037 · Unattended permissions in `.claude/settings.json`
+
+- Allow rules for routine project commands (npm, npx, node, cargo, rustup, `./scripts/*`, near-cli only with `network-config testnet`, git add/commit/status/diff/log, non-force push to origin main, and the same commands under `nice -n 19`). Every Phase 01 deny rule is kept; extra denies: `git push --mirror`/`--delete`, `gh repo edit`, `npm publish`, `cargo publish`, reading `~/.ssh/gajian_deploy` and `.env`. Deny always wins over allow.
+
+### D-038 · Testnet authority for Phases 02–04
+
+- Andre authorised account creation, contract deploys and testnet transactions without asking first. One faucet-funded master account; sub-accounts per role (tusdc, vault, admin, maker, approver1, approver2, worker, 2–3 recipients). Payouts 0.01–0.10 tUSDC. Keys only in `~/.near-credentials` and `.env` (written by a script, never printed).
