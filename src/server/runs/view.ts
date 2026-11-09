@@ -4,7 +4,9 @@ import type { RunDetail } from './lifecycle.ts';
 
 export interface RowView { index: number; line: number | null; account: string; name: string; amount: string; status: 'pending' | 'inflight' | 'paid' | 'failed' | 'unknown'; txHash: string | null }
 
-export function rowStates(d: RunDetail): RowView[] {
+type PaymentInput = Pick<RunDetail, 'version' | 'rows' | 'actions'>;
+
+export function rowStates(d: PaymentInput): RowView[] {
   const latest = new Map<number, (typeof d.actions)[number]>();
   for (const a of d.actions) if (a.kind === 'pay_row' && a.rowIndex !== null) {
     const prev = latest.get(a.rowIndex);
@@ -33,7 +35,7 @@ export interface PaymentState {
   complete: boolean;
 }
 
-export function paymentState(d: RunDetail): PaymentState {
+export function paymentState(d: PaymentInput): PaymentState {
   const v = d.version;
   const rows = rowStates(d);
   const paid = rows.filter((r) => r.status === 'paid');
@@ -53,7 +55,7 @@ export function paymentState(d: RunDetail): PaymentState {
 }
 
 /** Run status for display, including the derived "Awaiting funding" and "Needs attention". */
-export function displayStatus(d: RunDetail): RunStatus {
+export function displayStatus(d: PaymentInput): RunStatus {
   return paymentState(d).status;
 }
 

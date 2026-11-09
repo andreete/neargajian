@@ -51,8 +51,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
       <div className="stats">
         <div className="card stat"><div className="label">Recipients</div><div className="value">{s.validCount.toLocaleString('en-US')}</div></div>
         <div className="card stat"><div className="label">Exact total</div><div className="value amount">{displayAmount(s.validTotal)}<small>tUSDC</small></div></div>
-        <div className="card stat"><div className="label">Posting</div><div className="value sm">{view.run.postingMode === 'detailed' ? 'Detailed (one entry per recipient)' : 'Consolidated (one entry)'}</div></div>
-        <div className="card stat"><div className="label">Source</div><div className="value sm">{view.run.source === 'upload' ? <span className="mono">{view.run.draftFilename}</span> : 'Manual entry'}</div>{view.run.draftFileSha256 ? <div className="foot mono">SHA-256 {view.run.draftFileSha256.slice(0, 16)}…</div> : null}</div>
+        <div className="card stat"><div className="label">Posting</div><div className="value sm">{view.run.postingMode === 'detailed' ? 'Detailed' : 'Consolidated'}</div><div className="foot">{view.run.postingMode === 'detailed' ? 'One company entry per recipient' : 'One company entry for the run'}</div></div>
+        <div className="card stat"><div className="label">Source</div><div className="value sm">{view.run.source === 'upload' ? <span className="mono trunc" title={view.run.draftFilename ?? ''}>{view.run.draftFilename}</span> : 'Manual entry'}</div>{view.run.draftFileSha256 ? <div className="foot mono">SHA-256 {view.run.draftFileSha256.slice(0, 16)}…</div> : null}</div>
       </div>
       <div className="stack">
         {wf ? (

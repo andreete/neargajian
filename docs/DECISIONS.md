@@ -354,3 +354,17 @@ Andre verified the key transactions and balances independently on testnet.
 
 - A version moves to Paid only when the vault reports Paid AND every row's payout record is confirmed AND the confirmed count and total equal the approved version. Reconciliation settles open payout records from `get_row` before deciding. The run page derives badge, counters, banner and timeline from one `paymentState`. A confirmed payout record is never changed by a later answer.
 
+## Phase 14 decisions (9 Nov 2026, by the agent)
+
+### D-085 · Dense tables: one line, truncate with copy, page the detailed history
+
+- In history and review tables, identifiers never wrap: they truncate with an ellipsis, keep the full value in the tooltip and offer a copy button. The detailed history groups lines under a run header row and shows 100 lines per page; the line number lives in the reference suffix on screen and in the CSV `line` column.
+
+### D-086 · One derived display status
+
+- Every list and the run page use the same derived status (`paymentState` / `displayStatusFor`): Awaiting funding, Needs attention, and never Paid before every payout is confirmed.
+
+### D-087 · Test-only e2e fixture
+
+- Browser tests seed runs in every lifecycle state with `scripts/e2e-fixture.ts` against the stand-in vault in the isolated `.tmp/e2e` database only (the script refuses other paths). Its tx hashes are fake and screenshots made from it are labelled as fixture data.
+

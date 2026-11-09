@@ -6,6 +6,8 @@ import { formatTusdc, shortHash } from '@/lib/format';
 
 export const KIND_LABEL = { one: 'One approver', two_sequential: 'Two approvers in sequence', two_parallel: 'Two approvers in parallel' } as const;
 export const RELEASE_LABEL = { automatic: 'Automatic release', maker: 'Maker releases' } as const;
+/** Short form for stat cards. */
+export const KIND_SHORT = { one: '1 approver', two_sequential: '2 in sequence', two_parallel: '2 in parallel' } as const;
 
 export function WorkflowPanel({ workflow, meId, title = 'Active approval path' }: { workflow: ActiveWorkflow | null; meId?: string; title?: string }) {
   if (!workflow) {

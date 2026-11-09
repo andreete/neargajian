@@ -6,13 +6,15 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Queryable } from '../db/client.ts';
 import {
   approvalEvents, draftRows, payrollRuns, runVersions, testnetRunEvents, testnetRunRows, testnetRuns, users, workflowConfigs,
-  type PostingMode, type ReleaseMode, type VersionStatus, type WorkflowKind,
+  type PostingMode, type ReleaseMode, type WorkflowKind,
 } from '../db/schema.ts';
 import { parseAmount } from '../money.ts';
 import type { RunContext } from '../auth/policy.ts';
 import type { WorkflowSnapshot } from '../runs/repository.ts';
+import type { RunStatus } from '../../components/status-chip.tsx';
+import { displayStatusFor } from '../runs/status.ts';
 
-export type RunDisplayStatus = 'draft' | VersionStatus;
+export type RunDisplayStatus = RunStatus;
 
 export interface RunSummary {
   id: string;
@@ -38,7 +40,7 @@ export function makerRuns(db: Queryable, makerUserId: string): RunSummary[] {
     const latest = versions.find((v) => v.runId === run.id);
     if (latest) {
       return {
-        id: run.id, title: run.title, postingMode: latest.postingMode, source: run.source, status: latest.status,
+        id: run.id, title: run.title, postingMode: latest.postingMode, source: run.source, status: displayStatusFor(db, latest),
         versionNo: latest.versionNo, rowCount: latest.rowCount, total: latest.total, invalidRows: 0, updatedAt: latest.statusUpdatedAt,
       };
     }
@@ -65,7 +67,7 @@ export interface QueueItem {
   rowCount: number;
   total: bigint;
   postingMode: PostingMode;
-  status: VersionStatus;
+  status: RunStatus;
   myStep: number;
   actionable: boolean;
   submittedAt: Date;
@@ -94,7 +96,7 @@ export function approverQueue(db: Queryable, approverUserId: string): { pending:
       .filter((e) => e.status !== 'failed').at(-1);
     const item: QueueItem = {
       versionId: v.id, runId: v.runId, title, versionNo: v.versionNo, rowCount: v.rowCount, total: v.total,
-      postingMode: v.postingMode, status: v.status, myStep: step + 1, actionable, submittedAt: v.createdAt,
+      postingMode: v.postingMode, status: displayStatusFor(db, v), myStep: step + 1, actionable, submittedAt: v.createdAt,
       myDecision: mine?.decision ?? null, myDecisionStatus: (mine?.status as 'pending' | 'confirmed' | undefined) ?? null, myDecisionTx: mine?.chainTxHash ?? null,
     };
     (v.status === 'pending_approval' && !decided.has(v.id) ? pending : reviewed).push(item);

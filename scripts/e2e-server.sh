@@ -10,4 +10,6 @@ mkdir -p .tmp/e2e
 export DATABASE_URL="file:./.tmp/e2e/gajian.sqlite"
 export DEMO_MODE=true
 node --env-file-if-exists=.env scripts/db.ts seed >/dev/null
+# Test-only runs in every lifecycle state (stand-in vault, no testnet); IDs for the specs.
+node --env-file-if-exists=.env scripts/e2e-fixture.ts > .tmp/e2e/fixture.json
 exec ./scripts/with-tmp.sh node_modules/.bin/next start -H 127.0.0.1 -p 8092

@@ -15,6 +15,8 @@ import { formatAmount } from '../money.ts';
 import { escapeCsvCell } from '../payroll/error-report.ts';
 import { contextOf } from '../runs/lifecycle.ts';
 import { referenceBase } from './entries.ts';
+import { displayStatusFor } from '../runs/status.ts';
+import type { RunStatus } from '../../components/status-chip.tsx';
 
 export interface PaidLine {
   reference: string;
@@ -33,6 +35,8 @@ export interface HistoryRun {
   versionNo: number;
   postingMode: 'consolidated' | 'detailed';
   status: string;
+  /** Same derived status as the run page (never Paid before every payout is confirmed). */
+  displayStatus: RunStatus;
   chainRunId: string;
   rowCount: number;
   total: bigint;
@@ -85,7 +89,7 @@ export function historyFor(db: Db, principal: Principal): History {
     const confirmed = lines.reduce((s, l) => s + l.amount, 0n);
     const paidAt = lines.reduce<Date | null>((m, l) => (l.paidAt && (!m || l.paidAt > m) ? l.paidAt : m), null);
     const run: HistoryRun = {
-      runId: v.runId, versionId: v.id, title, versionNo: v.versionNo, postingMode: v.postingMode, status: v.status, chainRunId: v.chainRunId,
+      runId: v.runId, versionId: v.id, title, versionNo: v.versionNo, postingMode: v.postingMode, status: v.status, displayStatus: displayStatusFor(db, v), chainRunId: v.chainRunId,
       rowCount: v.rowCount, total: v.total, confirmedTotal: confirmed, paidCount: lines.length, paidAt,
       reference: entries.find((e) => e.rowIndex === null)?.reference ?? base, lines,
     };

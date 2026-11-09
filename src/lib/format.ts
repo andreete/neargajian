@@ -10,6 +10,11 @@ export function formatDateTime(d: Date): string {
   return `${UTC.format(d)} UTC`;
 }
 
+/** For table columns whose header already says "(UTC)". */
+export function formatUtcCell(d: Date): string {
+  return UTC.format(d);
+}
+
 /** Display amount: exact, trailing zeros removed down to 2 decimals ("0.15", "1.00", "0.000001"). */
 export function displayAmount(units: bigint): string {
   const [whole = '0', frac = ''] = formatAmountShort(units).split('.');

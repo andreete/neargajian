@@ -10,7 +10,7 @@ import { auditEvents, users } from '@/server/db/schema';
 import { activeWorkflow, allTestnetRuns, operationsTransfers, testnetTotals } from '@/server/dashboard/queries';
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime } from '@/lib/format';
-import { KIND_LABEL, RELEASE_LABEL, SignerPanel, WorkflowPanel } from '../workflow-panel';
+import { KIND_LABEL, KIND_SHORT, RELEASE_LABEL, SignerPanel, WorkflowPanel } from '../workflow-panel';
 import { OperationsTransfers, TestnetChip, TxLink } from '../history-bits';
 
 export const metadata: Metadata = { title: 'Workflow settings' };
@@ -54,7 +54,7 @@ export default async function AdminDashboard() {
       <div className="section-gap" />
 
       <div className="stats">
-        <div className="card stat"><div className="label">Active policy</div><div className="value sm">{workflow ? `${KIND_LABEL[workflow.kind]}, ${RELEASE_LABEL[workflow.releaseMode].toLowerCase()}` : '—'}</div></div>
+        <div className="card stat"><div className="label">Active policy</div><div className="value sm">{workflow ? KIND_SHORT[workflow.kind] : '—'}</div>{workflow ? <div className="foot">{KIND_LABEL[workflow.kind]}, {RELEASE_LABEL[workflow.releaseMode].toLowerCase()}</div> : null}</div>
         <div className="card stat"><div className="label">Paid on testnet</div><div className="value amount">{displayAmount(totals.paidTotal)}<small>tUSDC</small></div><div className="foot">{totals.payouts} payouts in {totals.paidRuns} runs</div></div>
         <div className="card stat"><div className="label">Rejected runs</div><div className="value">{totals.rejectedRuns}</div></div>
         <div className="card stat"><div className="label">Refused on-chain</div><div className="value">{totals.refusedAttempts}</div><div className="foot">out-of-order, wrong-role or repeat attempts</div></div>

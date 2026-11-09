@@ -21,6 +21,31 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 12 Release worker and maker release | Done | **Yes** (Phase 13 live run: worker release + 3 payouts); maker release proven in sandbox/integration only |
 | 13 History and accounting CSVs | Done, approved by Andre (live run independently verified) | **Yes**: complete flow through the app, see docs/TESTNET.md |
 | 13b Review fixes (paid-state consistency, screenshot 05b) | Done | none (read-only recapture of the Phase 13 run) |
+| 14 UX and accessibility pass | Done | none (local; test-only fixture data) |
+
+---
+
+## Phase 14 · UX and accessibility pass (9 Nov 2026)
+
+### Changed
+
+- **Detailed history table (Andre's point):** no wrapping of references, accounts, amounts or times at 1280 and 1440 px. Each run is a group header row (title, version, posting, lines, total) instead of a repeated Run column; the Line column is dropped from the screen (the reference suffix `-0001` is the line number; the CSV keeps `line`). Long values (references, NEAR accounts, vault run IDs) sit on one line, truncate with an ellipsis, carry the full value as a tooltip and have a **copy button** (`src/components/copy-value.tsx`, announced via `aria-live`). Paged at **100 lines per page** with Previous/Next, so a 1,000-row run no longer renders a 48,000 px page. Times in "(UTC)" columns no longer repeat "UTC".
+- **Consolidated history table:** vault run ID moved under the run title (truncated + copy), fits at 1280.
+- **Review table (draft review and upload):** dropped the redundant Currency column (only tUSDC is accepted; stated in the hint and the "Amount (tUSDC)" header); email shown under the receiver name; fits at 1280 with full account IDs.
+- **Stat cards** never wrap a long value: review page "Posting: Detailed" + footnote, admin "Active policy: 2 in sequence" + footnote, long file names truncated with a tooltip.
+- **One derived status everywhere:** `src/server/runs/status.ts` (`displayStatusFor`) applies the run page's `paymentState` rule to the maker list, the approver queue and the history in-progress list. Before, a run waiting for funding showed "Ready to release" in the list and "Awaiting funding" on its page.
+- **Awaiting funding** reads as a wait, not a failure: banner "Awaiting funding: the release worker retries once the vault holds enough tUSDC" (maker mode: "release again"), timeline "Release waiting for funding" in the waiting tone.
+- **Layout bug:** screen-reader-only text inside scrollable tables (absolutely positioned, no positioned ancestor) escaped the scroll container and widened the page at narrow widths; `.table-wrap` is now the containing block.
+
+### Checks (sandbox / local only; no testnet)
+
+- `tests/e2e/pages.spec.ts` (6 tests) with a **test-only fixture** (`scripts/e2e-fixture.ts`, run by `scripts/e2e-server.sh`; refuses any database outside `.tmp/`): runs in every state (paid detailed, paid 1,000-row consolidated, releasing, awaiting funding, pending approval, rejected) built through the real lifecycle against the stand-in vault. Every page for maker, approver and admin (landing, dashboards, new run, draft, review, run detail in six states, history both views and page 2, admin setup) at **1280x720 and 1440x900**: no horizontal page scroll, every table fits its card, references/accounts/amounts/times/chips/copy values/headers on one line, no CSP violation or page error. Narrow check at **1024x768**: no horizontal page scroll (tables may scroll inside their region). Copy action puts the full account on the clipboard; pagination 1,003 lines → 11 pages; list and run page agree on Awaiting funding; submit, cancel, approve and reject dialogs close with Escape and return focus to their trigger (login dialog already covered: focus in, Tab trapped, Escape restores).
+- `npm run lint`, `npm run typecheck` pass; `npm test` **142/142**; `npm run build` pass; `npm run test:e2e` **21/21**.
+- QA screenshots: `docs/screenshots/phase-14/` (fixture data, labelled in its README).
+
+### Not changed
+
+- Below 1024 px the app is usable (sidebar becomes a top nav, tables scroll inside their region) but not optimised: desktop first, as agreed.
 
 ---
 

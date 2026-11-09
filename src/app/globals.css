@@ -500,7 +500,7 @@ a.nav-item[aria-current='page'] { background: var(--sky-50); color: var(--navy);
 .panel-body p.muted { font-size: 14px; }
 .stack { display: grid; gap: 24px; }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; position: relative; } /* contains .sr-only spans so they cannot widen the page */
 table.data { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.data th { position: sticky; top: 0; background: #f9fbfe; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 table.data td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -741,3 +741,28 @@ table.data.review td.acct { max-width: 260px; overflow: hidden; text-overflow: e
 .downloads.exports { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .downloads .locked { display: flex; padding: 14px; border-radius: var(--radius); border: 1px dashed var(--border-strong); color: var(--muted); }
 table.data tfoot td { padding: 12px 16px; border-top: 1px solid var(--border); background: #f9fbfe; }
+
+/* Phase 14: one-line cells, truncation with a copy action (history and other dense tables) */
+.nowrap { white-space: nowrap; }
+.trunc { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.cell-name { max-width: 130px; }
+.copy-value { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; min-width: 0; vertical-align: middle; }
+.copy-value .cv-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; font-size: 13px; }
+.copy-value.cv-sm { max-width: 120px; }
+.copy-value.cv-md { max-width: 200px; }
+.copy-value.cv-lg { max-width: clamp(160px, 15vw, 260px); }
+.copy-value.cv-fit { max-width: none; }
+.cv-btn { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.cv-btn:hover { background: var(--sky-50); color: var(--blue-600); }
+.cv-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+table.data.history-table th, table.data.history-table td { padding-left: 10px; padding-right: 10px; }
+table.data.history-table td { padding-top: 10px; padding-bottom: 10px; }
+table.data.history-table .trunc { max-width: 240px; }
+table.data.history-table tr.group-row th { position: static; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--ink); background: #f3f6fb; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+table.data.history-table tr.group-row .group-title { display: inline-block; vertical-align: bottom; max-width: 360px; font-weight: 700; font-size: 14px; margin-right: 10px; }
+table.data.history-table tr.group-row .group-meta { color: var(--muted); font-weight: 500; }
+table.data.history-table tbody + tbody tr.group-row th { border-top: 1px solid var(--border); }
+table.data.history-table .run-title { max-width: clamp(170px, 17vw, 300px); }
+table.data.review td.who .trunc { max-width: 230px; }
+table.data.review td.acct { max-width: 290px; }
+.pager .btn[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }

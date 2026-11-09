@@ -201,19 +201,17 @@ export function ReviewTable({ rows, total }: { rows: Row[]; total: bigint }) {
         <h2 id="review-title">Review ({rows.length.toLocaleString('en-US')} rows, read-only)</h2>
         <span className="hint">Total <strong className="num">{displayAmount(total)} tUSDC</strong> · rows {from.toLocaleString('en-US')}–{to.toLocaleString('en-US')} of {rows.length.toLocaleString('en-US')}</span>
       </div>
-      <p className="hint review-hint" id="file-row-hint">File row is the row number in the uploaded file (the header is row 1), the same number used in error messages.</p>
+      <p className="hint review-hint" id="file-row-hint">File row is the row number in the uploaded file (the header is row 1), the same number used in error messages. Every row is in tUSDC, the only accepted currency.</p>
       <div className="table-wrap review-scroll" role="region" aria-labelledby="review-title" aria-describedby="file-row-hint" tabIndex={0}>
         <table className="data review" data-testid="review-table">
-          <thead><tr><th scope="col" title="Row number in the uploaded file (the header is row 1)">File row</th><th scope="col">NEAR account</th><th scope="col">Receiver</th><th scope="col">Currency</th><th scope="col" className="amount">Amount</th><th scope="col">Mobile phone</th><th scope="col">Email</th></tr></thead>
+          <thead><tr><th scope="col" title="Row number in the uploaded file (the header is row 1)">File row</th><th scope="col">NEAR account</th><th scope="col">Receiver and email</th><th scope="col" className="amount">Amount (tUSDC)</th><th scope="col">Mobile phone</th></tr></thead>
           <tbody>{slice.map((r, i) => (
             <tr key={from + i}>
               <td className="num sub">{r.sourceLine ?? from + i}</td>
               <td className="mono acct" title={r.near_account_id}>{r.near_account_id}</td>
-              <td>{r.receiver_name}</td>
-              <td>{r.currency}</td>
+              <td className="who"><span className="trunc" title={r.receiver_name}>{r.receiver_name}</span><span className="sub trunc" title={r.email}>{r.email}</span></td>
               <td className="amount">{displayAmount(parseAmountOrZero(r.amount))}</td>
               <td className="num">{r.mobile_phone}</td>
-              <td>{r.email}</td>
             </tr>
           ))}</tbody>
         </table>
