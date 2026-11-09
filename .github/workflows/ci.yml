@@ -34,6 +34,20 @@ jobs:
       - run: npm run build
       - name: Dependency audit (fails on high/critical, dev deps included)
         run: npm audit --audit-level=high
+      - name: Browser tests (production build, isolated DB, stand-in vault fixture; no testnet)
+        run: |
+          npx playwright install --with-deps chromium
+          echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - run: npm run test:e2e
+
+  secrets:
+    name: Credential scan (working tree + full Git history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: sh scripts/secret-scan.sh
 
   contracts:
     name: Contracts (fmt, clippy, unit + sandbox tests)

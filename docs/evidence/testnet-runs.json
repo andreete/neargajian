@@ -1,0 +1,30 @@
+{
+  "$comment": "Public testnet evidence only (account IDs, run IDs, tx hashes, amounts in tUSDC base units, 6 decimals). Checked by `npm run judge:verify` with read-only RPC calls; no keys.",
+  "network": "testnet",
+  "token": "tusdc.gajian-payroll.testnet",
+  "runs": [
+    {
+      "phase": "13",
+      "label": "Complete flow through the app (detailed posting, automatic release)",
+      "vault": "vault.gajian-payroll.testnet",
+      "runId": "gjn-c042c3e14af142669ce4-v1",
+      "status": "Paid",
+      "total": "120000",
+      "rows": [
+        { "index": 0, "receiver": "recipient1.gajian-payroll.testnet", "amount": "40000" },
+        { "index": 1, "receiver": "recipient2.gajian-payroll.testnet", "amount": "60000" },
+        { "index": 2, "receiver": "recipient3.gajian-payroll.testnet", "amount": "20000" }
+      ],
+      "txs": [
+        { "step": "create_run (maker)", "hash": "4oyBhx2kATjLb7Cesfp6LioEfVxmuP9WSUEFAeNCcPMF", "signer": "maker.gajian-payroll.testnet" },
+        { "step": "approve (approver 1)", "hash": "BtCpa3C4CBca9KyrWquRdfzAdpYLfasC9SviFovWeUgH", "signer": "approver1.gajian-payroll.testnet" },
+        { "step": "approve (approver 2)", "hash": "2XfXfgzNqsqajrEoj8KaFRU4FwAjYZc5LSgGY84DUKuo", "signer": "approver2.gajian-payroll.testnet" },
+        { "step": "start_release (worker)", "hash": "8M53CacBjHr5Dhhr2G6Fh6Sr3ecZJhLcYqpNbGUJfrmK", "signer": "worker.gajian-payroll.testnet" },
+        { "step": "pay_row 0 (worker)", "hash": "Awh72Fb6syidtHQ488FEU6DVtSruhYvSsZubcQoGuQ9X", "signer": "worker.gajian-payroll.testnet" },
+        { "step": "pay_row 1 (worker)", "hash": "BcXTo8SA84kVy6reY7hCenkY831Phn2p6aZxqRdS9V9o", "signer": "worker.gajian-payroll.testnet" },
+        { "step": "pay_row 2 (worker)", "hash": "Ee67Kff6BNer8FpBUT9yKJGaJ6AWTJWfedxYXCKaCkQz", "signer": "worker.gajian-payroll.testnet" }
+      ]
+    }
+  ],
+  "expectedFailures": []
+}
