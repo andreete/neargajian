@@ -4,7 +4,7 @@
 
 GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 02 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 03 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
@@ -23,6 +23,7 @@ GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manu
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
 | Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
+| Money math and payout commitments | `npm test` | Exact 6-decimal parsing; Merkle commitments with shared Rust/TypeScript vectors (`docs/COMMITMENTS.md`); 1,000-row sample proofs generated and verified in ~40 ms |
 | Contracts (live testnet) | `scripts/testnet/phase02-single-payout.sh` | First contract-controlled payout of 0.05 tUSDC, see `docs/TESTNET.md` |
 
 ## Requirements

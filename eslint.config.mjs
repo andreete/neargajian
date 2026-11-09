@@ -12,8 +12,8 @@ const config = [
     },
   },
   {
-    // The handoff generator is a standalone Node script that reports to stdout.
-    files: ['scripts/**/*.mjs'],
+    // Standalone Node scripts report to stdout; tests may print measured timings.
+    files: ['scripts/**/*.mjs', 'tests/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
   {

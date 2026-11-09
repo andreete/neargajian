@@ -1,0 +1,271 @@
+{
+  "spec": "docs/COMMITMENTS.md",
+  "leaves": [
+    {
+      "index": 0,
+      "account_id": "ab",
+      "amount": "1",
+      "leaf": "e6257a39e60a587f7fd46854361a9834633984458162b9bc4878d692eb997181"
+    },
+    {
+      "index": 4294967295,
+      "account_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "amount": "340282366920938463463374607431768211455",
+      "leaf": "6d77d518f0f0a1854d01562d57ee6af541106673c5a57bfa1fa944938610908f"
+    },
+    {
+      "index": 999,
+      "account_id": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "amount": "1000000",
+      "leaf": "163ee085bdc471dd428fc2ca17b6ed5ffc97d0b7607aaf5267d5ce13742262d8"
+    }
+  ],
+  "trees": [
+    {
+      "name": "one",
+      "row_count": 1,
+      "total": "50000",
+      "root": "be3d1d16840e332486f44da0fb51cf8b5bd191363b6527bf3c00eb80cfd0661b",
+      "rows": [
+        {
+          "index": 0,
+          "account_id": "recipient1.gajian-payroll.testnet",
+          "amount": "50000",
+          "leaf": "be3d1d16840e332486f44da0fb51cf8b5bd191363b6527bf3c00eb80cfd0661b",
+          "proof": []
+        }
+      ]
+    },
+    {
+      "name": "two",
+      "row_count": 2,
+      "total": "70000",
+      "root": "d40696d8ef0e4871b10525983a996432859e167fcac88fc33392e59496a0b817",
+      "rows": [
+        {
+          "index": 0,
+          "account_id": "recipient1.gajian-payroll.testnet",
+          "amount": "50000",
+          "leaf": "be3d1d16840e332486f44da0fb51cf8b5bd191363b6527bf3c00eb80cfd0661b",
+          "proof": [
+            "7efc707c301bb10a787d33614e78868aa491d936a6c462b6ccd3fc84f5eca993"
+          ]
+        },
+        {
+          "index": 1,
+          "account_id": "recipient2.gajian-payroll.testnet",
+          "amount": "20000",
+          "leaf": "7efc707c301bb10a787d33614e78868aa491d936a6c462b6ccd3fc84f5eca993",
+          "proof": [
+            "be3d1d16840e332486f44da0fb51cf8b5bd191363b6527bf3c00eb80cfd0661b"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "three_odd",
+      "row_count": 3,
+      "total": "60000",
+      "root": "2c00c73824320e31e82a3e771d6fbbc52a015c3651750543de1cdef6fd3b1251",
+      "rows": [
+        {
+          "index": 0,
+          "account_id": "recipient1.gajian-payroll.testnet",
+          "amount": "10000",
+          "leaf": "298dfc2e94bba1f7ad219900f6d21295a13bf51f55f519ffea4b6b1d39d78b66",
+          "proof": [
+            "7efc707c301bb10a787d33614e78868aa491d936a6c462b6ccd3fc84f5eca993",
+            "ecee5848c5ca9f8a9b88315b22d7325cd2512ab5d7812fda781082e935233171"
+          ]
+        },
+        {
+          "index": 1,
+          "account_id": "recipient2.gajian-payroll.testnet",
+          "amount": "20000",
+          "leaf": "7efc707c301bb10a787d33614e78868aa491d936a6c462b6ccd3fc84f5eca993",
+          "proof": [
+            "298dfc2e94bba1f7ad219900f6d21295a13bf51f55f519ffea4b6b1d39d78b66",
+            "ecee5848c5ca9f8a9b88315b22d7325cd2512ab5d7812fda781082e935233171"
+          ]
+        },
+        {
+          "index": 2,
+          "account_id": "recipient3.gajian-payroll.testnet",
+          "amount": "30000",
+          "leaf": "ecee5848c5ca9f8a9b88315b22d7325cd2512ab5d7812fda781082e935233171",
+          "proof": [
+            "c42d9155ddd3d9b2a7a1eb235bdde47d846eb120e032be2a643a512885333ad6"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "five_duplicate_wallet",
+      "row_count": 5,
+      "total": "140001",
+      "root": "f43c8b1daabb95f129ef4773eec3ca03fff5f2a02fd908a81f35659345918219",
+      "rows": [
+        {
+          "index": 0,
+          "account_id": "recipient1.gajian-payroll.testnet",
+          "amount": "10000",
+          "leaf": "298dfc2e94bba1f7ad219900f6d21295a13bf51f55f519ffea4b6b1d39d78b66",
+          "proof": [
+            "7efc707c301bb10a787d33614e78868aa491d936a6c462b6ccd3fc84f5eca993",
+            "f0f0089b7043cd8a39b95a23f601c81d8c59501664f5cf40e8db1cd5aec5eac5",
+            "af42f2dfcc8b740d416e2b3fefb844fadacb974b987824992943f9939a859fdb"
+          ]
+        },
+        {
+          "index": 1,
+          "account_id": "recipient2.gajian-payroll.testnet",
+          "amount": "20000",
+          "leaf": "7efc707c301bb10a787d33614e78868aa491d936a6c462b6ccd3fc84f5eca993",
+          "proof": [
+            "298dfc2e94bba1f7ad219900f6d21295a13bf51f55f519ffea4b6b1d39d78b66",
+            "f0f0089b7043cd8a39b95a23f601c81d8c59501664f5cf40e8db1cd5aec5eac5",
+            "af42f2dfcc8b740d416e2b3fefb844fadacb974b987824992943f9939a859fdb"
+          ]
+        },
+        {
+          "index": 2,
+          "account_id": "recipient1.gajian-payroll.testnet",
+          "amount": "10000",
+          "leaf": "bee10d401e5a4e310af0065a866ede5393e5aa7c5d779e918671b93c35bbd4db",
+          "proof": [
+            "751f70f762d1beef31ccc5fbba70a09290b4331f97ee5169cd8a77260e85d4f9",
+            "c42d9155ddd3d9b2a7a1eb235bdde47d846eb120e032be2a643a512885333ad6",
+            "af42f2dfcc8b740d416e2b3fefb844fadacb974b987824992943f9939a859fdb"
+          ]
+        },
+        {
+          "index": 3,
+          "account_id": "recipient3.gajian-payroll.testnet",
+          "amount": "100000",
+          "leaf": "751f70f762d1beef31ccc5fbba70a09290b4331f97ee5169cd8a77260e85d4f9",
+          "proof": [
+            "bee10d401e5a4e310af0065a866ede5393e5aa7c5d779e918671b93c35bbd4db",
+            "c42d9155ddd3d9b2a7a1eb235bdde47d846eb120e032be2a643a512885333ad6",
+            "af42f2dfcc8b740d416e2b3fefb844fadacb974b987824992943f9939a859fdb"
+          ]
+        },
+        {
+          "index": 4,
+          "account_id": "recipient2.gajian-payroll.testnet",
+          "amount": "1",
+          "leaf": "af42f2dfcc8b740d416e2b3fefb844fadacb974b987824992943f9939a859fdb",
+          "proof": [
+            "8662c41586a22acb76a7a1a247157f42a0a9fb84d62b42b0f8ad969a2fbeb665"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "seven",
+      "row_count": 7,
+      "total": "280000",
+      "root": "1fe20b420b478b5de8bb93f76ff87e1f31abcae9c3ff6c85112d5001750576a7",
+      "rows": [
+        {
+          "index": 0,
+          "account_id": "gjn-emp-0001.testnet",
+          "amount": "10000",
+          "leaf": "a74c7fcc9b65d0b20893fd2ffe886ce89aa114c92c38f515dfe027fdd4e70452",
+          "proof": [
+            "f5243471f86bf543d4b1700873235486ddf0bdcb0a549e2d672f885814ed48e2",
+            "ee3ff398841de48b30fe2f7a80f699b5deb460f79947b6cc97d6e0195938f749",
+            "d2b3d476bfb0ea2010be0281c9c27a768967fc20739fc9816f9b6d6b1a0e01d1"
+          ]
+        },
+        {
+          "index": 1,
+          "account_id": "gjn-emp-0002.testnet",
+          "amount": "20000",
+          "leaf": "f5243471f86bf543d4b1700873235486ddf0bdcb0a549e2d672f885814ed48e2",
+          "proof": [
+            "a74c7fcc9b65d0b20893fd2ffe886ce89aa114c92c38f515dfe027fdd4e70452",
+            "ee3ff398841de48b30fe2f7a80f699b5deb460f79947b6cc97d6e0195938f749",
+            "d2b3d476bfb0ea2010be0281c9c27a768967fc20739fc9816f9b6d6b1a0e01d1"
+          ]
+        },
+        {
+          "index": 2,
+          "account_id": "gjn-emp-0003.testnet",
+          "amount": "30000",
+          "leaf": "a5bf44fe29bdf1c49a7fbfacafc6d336fdd05b41611f96accef7d90bb17042ed",
+          "proof": [
+            "4933f8f0fbb7a5fa6b66572d190be2744f26543e79ebfa213edca5010a283a26",
+            "53e6cb9b49d90f9c8221ea76e7790a87f765f3a08be0c1979601823427ebd26a",
+            "d2b3d476bfb0ea2010be0281c9c27a768967fc20739fc9816f9b6d6b1a0e01d1"
+          ]
+        },
+        {
+          "index": 3,
+          "account_id": "gjn-emp-0004.testnet",
+          "amount": "40000",
+          "leaf": "4933f8f0fbb7a5fa6b66572d190be2744f26543e79ebfa213edca5010a283a26",
+          "proof": [
+            "a5bf44fe29bdf1c49a7fbfacafc6d336fdd05b41611f96accef7d90bb17042ed",
+            "53e6cb9b49d90f9c8221ea76e7790a87f765f3a08be0c1979601823427ebd26a",
+            "d2b3d476bfb0ea2010be0281c9c27a768967fc20739fc9816f9b6d6b1a0e01d1"
+          ]
+        },
+        {
+          "index": 4,
+          "account_id": "gjn-emp-0005.testnet",
+          "amount": "50000",
+          "leaf": "ab6694419c28132638d092bfc728c691b063e583bdf49f703bc95bd63676d271",
+          "proof": [
+            "a8720f3315f02ae46839f480a69d3c4b5b9d870cc3261978db19419016b7c32e",
+            "9c8e63fb7ce1bf0a42f759f87d33418bbbff90e58a19ae17d2da93f698020863",
+            "87872b611ea59908545645fced798d749d19665bb89f46baac6a44a89409f99e"
+          ]
+        },
+        {
+          "index": 5,
+          "account_id": "gjn-emp-0006.testnet",
+          "amount": "60000",
+          "leaf": "a8720f3315f02ae46839f480a69d3c4b5b9d870cc3261978db19419016b7c32e",
+          "proof": [
+            "ab6694419c28132638d092bfc728c691b063e583bdf49f703bc95bd63676d271",
+            "9c8e63fb7ce1bf0a42f759f87d33418bbbff90e58a19ae17d2da93f698020863",
+            "87872b611ea59908545645fced798d749d19665bb89f46baac6a44a89409f99e"
+          ]
+        },
+        {
+          "index": 6,
+          "account_id": "gjn-emp-0007.testnet",
+          "amount": "70000",
+          "leaf": "9c8e63fb7ce1bf0a42f759f87d33418bbbff90e58a19ae17d2da93f698020863",
+          "proof": [
+            "ca70f40d9960df3d85041e17e2dbe19c148148a311aa3d5029d23f9ddb128d59",
+            "87872b611ea59908545645fced798d749d19665bb89f46baac6a44a89409f99e"
+          ]
+        }
+      ]
+    }
+  ],
+  "review_digest": {
+    "salt": "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20",
+    "posting_mode": "detailed",
+    "rows": [
+      {
+        "accountId": "recipient1.gajian-payroll.testnet",
+        "receiverName": "Dewi Lestari",
+        "currency": "tUSDC",
+        "amount": "50000",
+        "mobilePhone": "+628000000001",
+        "email": "dewi@example.com"
+      },
+      {
+        "accountId": "recipient2.gajian-payroll.testnet",
+        "receiverName": "José Ramírez",
+        "currency": "tUSDC",
+        "amount": "20000",
+        "mobilePhone": "+628000000002",
+        "email": "jose@example.com"
+      }
+    ],
+    "digest": "ae854eb0518de768fa27930dc0e2567a20b3854778131effe182c2e63cb534c2"
+  }
+}

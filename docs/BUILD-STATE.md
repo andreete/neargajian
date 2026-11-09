@@ -7,8 +7,29 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 00 Handoff commit | Done (`e66a953`) | n/a |
 | 01 Repository and toolchain | Done, approved by Andre 9 Nov (`e4cae2d`, follow-ups `phase-01: review follow-ups`) | none |
 | 02 Single-payout walking skeleton | Done | **Yes**: first contract-controlled payout `p02-run-1`, see docs/TESTNET.md |
-| 03 Commitments and money math | Not started | — |
+| 03 Commitments and money math | Done | none (sandbox + local only by design; live use of proofs comes with the Phase 04 redeploy) |
 | 04 Contract policy and payout recovery | Not started | — |
+
+---
+
+## Phase 03 · Immutable run commitments and money math (9 Nov 2026)
+
+### Built
+
+- `src/server/money.ts`: decimal tUSDC ↔ bigint base units (6 decimals). Rejects empty, signs, exponents, grouping, `.5`/`1.`, more than 6 decimals, zero, values above a cap or above u128; comma decimals get the D-028 message "Use a dot as the decimal separator, e.g. 1500.50". Exact formatting, strict JSON base-unit strings, bounded sums (run cap, u128).
+- `src/server/near-account.ts`: NEAR account ID syntax check (nearcore rules).
+- `src/server/commitments.ts` + `contracts/vault/src/commitment.rs`: domain-separated leaf/node hashes, ordered Merkle tree with promoted odd node, proofs, verification, salted review digest. Spec: **`docs/COMMITMENTS.md`**. Shared vectors: `tests/vectors/commitments.json` (3 leaf cases incl. index 2^32−1 / u128 max / 64-char account, trees of 1, 2, 3, 5 (duplicate wallet), 7 rows with every proof, 1 review digest).
+- Vault now stores `row_count`, `total`, `payout_root`, `review_digest` per run (no rows on-chain, up to 1,000 rows). `pay_row(run_id, index, receiver_id, amount, proof)` verifies the proof with `env::sha256_array` before anything else; per-row `RowRecord {status, receiver_id, amount, attempts}`; view `get_row`.
+
+### Evidence (local / sandbox only)
+
+| Command | Result |
+| --- | --- |
+| `npm test` | **26/26** (money 9, commitments 8, sample data 6, platform 3). 1,000-row sample: tree + 1,000 proofs generated and verified in **39 ms**, total 56.690860 tUSDC (matches docs/SAMPLE-DATA.md), max proof length 10 |
+| `python3 -I .tmp/xcheck.py tests/vectors/commitments.json` (independent re-implementation of the spec, throwaway) | 9/9 vectors match |
+| `cargo test --lib` | tusdc 3/3, **vault 22/22**: Rust side reproduces every shared vector (leaves, roots, all proofs); changed amount / destination / index rejected; same wallet + amount on indexes 0 and 2 paid as two payouts; a paid row cannot be paid again; a root whose leaves exceed the declared total cannot overpay (reservation guard); malformed root and >1,000 rows rejected; 1,000-leaf tree has 10-level proofs |
+| `cargo test --test sandbox` | **1/1** in 41 s (peak RSS 1.09 GB): everything from Phase 02 plus, on-chain: tampered amount and tampered destination fail "proof does not match", row 0's proof replayed as index 2 fails, rows 0 and 2 (same wallet, same amount) both paid, failed row retried with `attempts = 2` |
+| `npm run lint`, `typecheck`, `contracts:lint` | clean |
 
 ---
 

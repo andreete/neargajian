@@ -5,6 +5,8 @@
 #   M=gajian-payroll.testnet (faucet-funded master) and sub-accounts tusdc, vault, admin,
 #   maker, approver1, worker, recipient1.
 # Build first: npm run contracts:build. Each step prints its transaction ID.
+# NOTE: written for the Phase 02 vault API (rows stored on-chain). From Phase 03 the vault
+# takes a Merkle commitment; kept unchanged as the record of the Phase 02 live run.
 set -eu
 here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 root=$(CDPATH='' cd -- "$here/../.." && pwd)

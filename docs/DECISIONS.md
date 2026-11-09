@@ -142,3 +142,16 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 
 - Master `gajian-payroll.testnet` (faucet service, 10 NEAR) and sub-accounts `tusdc`, `vault`, `admin`, `maker`, `approver1`, `approver2`, `worker`, `recipient1..3`. Budget: contracts 2.2 / 2.6 NEAR (≈1.6 NEAR storage each), signers 0.4–0.5, recipients 0.05; ~2.9 NEAR kept on the master for redeploys. Explorer links use `testnet.nearblocks.io`.
 - A later vault with an incompatible state layout is deployed by deleting and recreating `vault.gajian-payroll.testnet` (storage NEAR returns to the master) rather than creating new accounts.
+
+## Phase 03 decisions (9 Nov 2026, by the agent)
+
+### D-042 · Commitment format v1
+
+- Ordered Merkle tree over `(index, account, amount)` leaves, SHA-256 with ASCII domain tags, odd node promoted (not duplicated), proofs skip promoted levels; salted review digest over all private fields + posting mode. Full spec: `docs/COMMITMENTS.md`.
+- **Why promotion, not duplication:** duplicating the last node lets two different row lists share a root (the Bitcoin CVE-2012-2459 pattern). Promotion is unambiguous because `row_count` is fixed on-chain at run creation.
+- **Why the index is in the leaf:** the same wallet can legitimately appear twice (PRD §4); hashing the index makes every row a distinct payout and stops proof replay across indexes.
+- **Overpayment guard independent of the tree:** committed (in flight + paid) ≤ reserved = declared total, checked on every `pay_row`.
+
+### D-043 · No testnet redeploy for Phase 03
+
+- The vault API changes again in Phase 04 (policies, cancel/reject, admin config). To save testnet NEAR, the commitment-based vault is proven in sandbox now and deployed to testnet once, at the end of Phase 04. The Phase 02 deployment stays live until then.

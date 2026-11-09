@@ -1,9 +1,14 @@
-//! GAJIAN payroll vault (NEAR testnet only). Phase 02 walking skeleton.
+//! GAJIAN payroll vault (NEAR testnet only).
 //!
 //! Flow: the maker creates an immutable run → the assigned approver (a different account)
 //! approves → the release worker reserves the run total from the vault's tUSDC balance →
 //! the worker pays each row with `ft_transfer`, and a private callback records the real
 //! asynchronous outcome per row.
+//!
+//! Runs commit to their rows with a Merkle root over `(index, receiver, amount)` leaves
+//! (see `commitment.rs` and docs/COMMITMENTS.md); every payout must present a proof, so a
+//! changed amount, destination or index cannot be paid. No private data is ever on-chain:
+//! the run stores only the root, the row count, the total and a salted review digest.
 //!
 //! Money invariants enforced here:
 //! - The vault is credited only by the configured token, through `ft_on_transfer`.
@@ -14,6 +19,9 @@
 
 use near_contract_standards::fungible_token::core::ext_ft_core;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
+pub mod commitment;
+
+use commitment::{Hash, MAX_ROWS, leaf_hash, parse_hash, verify_proof};
 use near_sdk::json_types::U128;
 use near_sdk::store::LookupMap;
 use near_sdk::{
@@ -25,9 +33,6 @@ use near_sdk::{
 pub const GAS_FOR_FT_TRANSFER: Gas = Gas::from_tgas(15);
 /// Gas reserved for our own outcome callback.
 pub const GAS_FOR_PAYOUT_CALLBACK: Gas = Gas::from_tgas(10);
-/// Maximum rows in a Phase 02 run (rows are stored on-chain; Phase 03 replaces this with
-/// a Merkle commitment that scales to 1,000 rows).
-pub const MAX_ROWS_PHASE02: usize = 10;
 /// Run IDs are chosen by the app (deterministic per version) so retries are idempotent.
 pub const MAX_RUN_ID_LEN: usize = 64;
 
@@ -58,11 +63,16 @@ pub enum RowStatus {
     Failed,
 }
 
+/// Per-row payout state, keyed by (run_id, index). Destination and amount are copied from
+/// the verified leaf so a retry can only repeat the original approved transfer.
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Payout {
+pub struct RowRecord {
+    pub status: RowStatus,
     pub receiver_id: AccountId,
     pub amount: U128,
+    /// Number of transfer attempts (1 + retries after proven failures).
+    pub attempts: u32,
 }
 
 #[near(serializers = [borsh, json])]
@@ -71,8 +81,12 @@ pub struct Run {
     pub maker: AccountId,
     /// Approver snapshotted at creation; later config changes do not affect this run.
     pub approver: AccountId,
-    pub payouts: Vec<Payout>,
+    pub row_count: u32,
     pub total: U128,
+    /// Merkle root (hex) over the ordered payout leaves.
+    pub payout_root: String,
+    /// Salted SHA-256 (hex) of the private review snapshot; the salt stays off-chain.
+    pub review_digest: String,
     pub status: RunStatus,
     /// Amount reserved from the vault balance at release.
     pub reserved: U128,
@@ -112,7 +126,7 @@ pub struct Vault {
     total_balance: u128,
     total_reserved: u128,
     runs: LookupMap<String, Run>,
-    rows: LookupMap<(String, u32), RowStatus>,
+    rows: LookupMap<(String, u32), RowRecord>,
 }
 
 fn require_distinct(accounts: &[&AccountId]) {
@@ -165,8 +179,15 @@ impl Vault {
 
     // ---------------------------------------------------------------- maker
 
-    /// Maker creates an immutable run. The approver is snapshotted into the run.
-    pub fn create_run(&mut self, run_id: String, payouts: Vec<Payout>) -> Run {
+    /// Maker creates an immutable run from its commitment. The approver is snapshotted.
+    pub fn create_run(
+        &mut self,
+        run_id: String,
+        row_count: u32,
+        total: U128,
+        payout_root: String,
+        review_digest: String,
+    ) -> Run {
         require!(
             env::predecessor_account_id() == self.maker,
             "Only the maker can create runs"
@@ -174,21 +195,25 @@ impl Vault {
         validate_run_id(&run_id);
         require!(!self.runs.contains_key(&run_id), "Run already exists");
         require!(
-            !payouts.is_empty() && payouts.len() <= MAX_ROWS_PHASE02,
-            "A run needs 1-10 rows"
+            (1..=MAX_ROWS).contains(&row_count),
+            "A run needs 1-1000 rows"
         );
-        let mut total: u128 = 0;
-        for p in &payouts {
-            require!(p.amount.0 > 0, "Every amount must be positive");
-            total = total
-                .checked_add(p.amount.0)
-                .unwrap_or_else(|| env::panic_str("Total overflows"));
-        }
+        require!(total.0 > 0, "Total must be positive");
+        require!(
+            parse_hash(&payout_root).is_some(),
+            "payout_root must be 64 lowercase hex characters"
+        );
+        require!(
+            parse_hash(&review_digest).is_some(),
+            "review_digest must be 64 lowercase hex characters"
+        );
         let run = Run {
             maker: self.maker.clone(),
             approver: self.approver.clone(),
-            payouts,
-            total: U128(total),
+            row_count,
+            total,
+            payout_root,
+            review_digest,
             status: RunStatus::PendingApproval,
             reserved: U128(0),
             committed: U128(0),
@@ -244,46 +269,73 @@ impl Vault {
         RunStatus::Releasing
     }
 
-    /// Pay one row. Marks it in flight, then calls `ft_transfer`; `on_payout` records the
-    /// real outcome. A row in flight or paid cannot be paid again.
-    pub fn pay_row(&mut self, run_id: String, index: u32) -> Promise {
+    /// Pay one row. The row must be proven against the run's payout root. Marks it in
+    /// flight, then calls `ft_transfer`; `on_payout` records the real outcome. A row in
+    /// flight or paid cannot be paid again; a proven failure can be retried.
+    pub fn pay_row(
+        &mut self,
+        run_id: String,
+        index: u32,
+        receiver_id: AccountId,
+        amount: U128,
+        proof: Vec<String>,
+    ) -> Promise {
         require!(
             env::predecessor_account_id() == self.worker,
             "Only the release worker can pay rows"
         );
         let token = self.token.clone();
         let key = (run_id.clone(), index);
-        let prior = self.rows.get(&key).copied();
+        let prior = self.rows.get(&key).cloned();
         let run = self.run_mut(&run_id);
         require!(run.status == RunStatus::Releasing, "Run is not releasing");
-        let payout = run
-            .payouts
-            .get(index as usize)
-            .cloned()
-            .unwrap_or_else(|| env::panic_str("Row index out of range"));
-        match prior {
-            None | Some(RowStatus::Failed) => {}
-            Some(RowStatus::InFlight) => env::panic_str("Row is already in flight"),
-            Some(RowStatus::Paid) => env::panic_str("Row is already paid"),
-        }
+        require!(index < run.row_count, "Row index out of range");
+        require!(amount.0 > 0, "Amount must be positive");
+        let root = parse_hash(&run.payout_root)
+            .unwrap_or_else(|| env::panic_str("Stored payout_root is invalid"));
+        let proof: Vec<Hash> = proof
+            .iter()
+            .map(|h| parse_hash(h).unwrap_or_else(|| env::panic_str("Invalid proof hash")))
+            .collect();
+        let leaf = leaf_hash(sha256, index, receiver_id.as_str(), amount.0);
+        require!(
+            verify_proof(sha256, &root, run.row_count, index, leaf, &proof),
+            "Payout proof does not match the approved run"
+        );
+        let attempts = match &prior {
+            None => 1,
+            Some(r) if r.status == RowStatus::Failed => r.attempts + 1,
+            Some(r) if r.status == RowStatus::InFlight => {
+                env::panic_str("Row is already in flight")
+            }
+            Some(_) => env::panic_str("Row is already paid"),
+        };
         let committed = run
             .committed
             .0
-            .checked_add(payout.amount.0)
+            .checked_add(amount.0)
             .unwrap_or_else(|| env::panic_str("Committed overflows"));
         require!(
             committed <= run.reserved.0,
             "Payout would exceed the reserved run total"
         );
         run.committed = U128(committed);
-        self.rows.insert(key, RowStatus::InFlight);
+        self.rows.insert(
+            key,
+            RowRecord {
+                status: RowStatus::InFlight,
+                receiver_id: receiver_id.clone(),
+                amount,
+                attempts,
+            },
+        );
 
         ext_ft_core::ext(token)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(GAS_FOR_FT_TRANSFER)
             .ft_transfer(
-                payout.receiver_id,
-                payout.amount,
+                receiver_id,
+                amount,
                 Some(format!("gajian:{run_id}:{index}")),
             )
             .then(
@@ -302,30 +354,33 @@ impl Vault {
         #[callback_result] result: Result<(), PromiseError>,
     ) -> bool {
         let key = (run_id.clone(), index);
-        require!(
-            self.rows.get(&key) == Some(&RowStatus::InFlight),
-            "Row is not in flight"
-        );
+        let amount = match self.rows.get(&key) {
+            Some(r) if r.status == RowStatus::InFlight => r.amount.0,
+            _ => env::panic_str("Row is not in flight"),
+        };
         // ft_transfer returns no value; any successful receipt means the tokens moved.
         let success = !matches!(result, Err(PromiseError::Failed));
         let run = self.run_mut(&run_id);
-        let amount = run.payouts[index as usize].amount.0;
         if success {
             run.paid = U128(run.paid.0 + amount);
             run.paid_count += 1;
             let mut released_extra = 0;
-            if run.paid_count as usize == run.payouts.len() {
+            if run.paid_count == run.row_count {
                 run.status = RunStatus::Paid;
                 // Any reservation left above the paid sum goes back to the available balance.
                 released_extra = run.reserved.0 - run.paid.0;
             }
             self.total_balance -= amount;
             self.total_reserved -= amount + released_extra;
-            self.rows.insert(key, RowStatus::Paid);
         } else {
             run.committed = U128(run.committed.0 - amount);
-            self.rows.insert(key, RowStatus::Failed);
         }
+        let row = self.rows.get_mut(&key).expect("row exists");
+        row.status = if success {
+            RowStatus::Paid
+        } else {
+            RowStatus::Failed
+        };
         success
     }
 
@@ -353,9 +408,13 @@ impl Vault {
         self.runs.get(&run_id).cloned()
     }
 
-    pub fn get_row_status(&self, run_id: String, index: u32) -> Option<RowStatus> {
-        self.rows.get(&(run_id, index)).copied()
+    pub fn get_row(&self, run_id: String, index: u32) -> Option<RowRecord> {
+        self.rows.get(&(run_id, index)).cloned()
     }
+}
+
+fn sha256(data: &[u8]) -> Hash {
+    env::sha256_array(data)
 }
 
 impl Vault {

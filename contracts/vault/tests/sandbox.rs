@@ -1,7 +1,8 @@
 //! Sandbox tests: real Wasm (built with cargo-near) on a local nearcore 2.14.0 sandbox
 //! (127.0.0.1). These exercise the real asynchronous `ft_transfer` outcome, which unit
-//! tests cannot. Phase 02: single-approver walking skeleton.
+//! tests cannot. Payout rows are proven against the run's Merkle commitment.
 
+use gajian_vault::commitment;
 use near_api::{AccountId, NearGas, NearToken, NetworkConfig, Signer};
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::{Value, json};
@@ -158,8 +159,54 @@ fn u128_of(v: &Value) -> u128 {
     v.as_str().expect("U128 string").parse().expect("u128")
 }
 
+fn sha(data: &[u8]) -> commitment::Hash {
+    near_sdk::env::sha256_array(data)
+}
+
+fn hex(h: &commitment::Hash) -> String {
+    h.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// A run's rows with their commitment, computed the way the app does it.
+pub struct Committed {
+    pub rows: Vec<(AccountId, u128)>,
+    pub root: String,
+    pub proofs: Vec<Vec<String>>,
+}
+
+impl Committed {
+    pub fn new(rows: &[(&AccountId, u128)]) -> Self {
+        let leaves: Vec<_> = rows
+            .iter()
+            .enumerate()
+            .map(|(i, (a, amt))| commitment::leaf_hash(sha, i as u32, a.as_str(), *amt))
+            .collect();
+        let (root, proofs) = commitment::root_and_proofs(sha, &leaves);
+        Self {
+            rows: rows.iter().map(|(a, amt)| ((*a).clone(), *amt)).collect(),
+            root: hex(&root),
+            proofs: proofs.iter().map(|p| p.iter().map(hex).collect()).collect(),
+        }
+    }
+
+    pub fn create_args(&self, run_id: &str) -> Value {
+        let total: u128 = self.rows.iter().map(|r| r.1).sum();
+        json!({
+            "run_id": run_id, "row_count": self.rows.len(), "total": total.to_string(),
+            "payout_root": self.root, "review_digest": "ab".repeat(32),
+        })
+    }
+
+    pub fn pay_args(&self, run_id: &str, index: usize) -> Value {
+        json!({
+            "run_id": run_id, "index": index, "receiver_id": self.rows[index].0,
+            "amount": self.rows[index].1.to_string(), "proof": self.proofs[index],
+        })
+    }
+}
+
 #[tokio::test]
-async fn single_payout_walking_skeleton() -> R<()> {
+async fn committed_payouts_end_to_end() -> R<()> {
     let tusdc_wasm = build("../tusdc/Cargo.toml")?;
     let vault_wasm = build("Cargo.toml")?;
     let env = Env::start().await?;
@@ -192,19 +239,15 @@ async fn single_payout_walking_skeleton() -> R<()> {
     env.register(&admin, &fake, &vault).await?;
 
     // Fund: mint 1 tUSDC to admin, transfer it into the vault via ft_transfer_call.
-    env.ok(
-        &admin,
-        &tusdc,
-        "mint",
-        json!({ "account_id": admin, "amount": "1000000" }),
-    )
-    .await?;
+    let mint = json!({ "account_id": admin, "amount": "1000000" });
+    env.ok(&admin, &tusdc, "mint", mint).await?;
+    let fund = json!({ "receiver_id": vault, "amount": "1000000", "msg": "" });
     let funded = env
         .call(
             &admin,
             &tusdc,
             "ft_transfer_call",
-            json!({ "receiver_id": vault, "amount": "1000000", "msg": "" }),
+            fund,
             NearToken::from_yoctonear(1),
         )
         .await?;
@@ -214,28 +257,20 @@ async fn single_payout_walking_skeleton() -> R<()> {
     assert_eq!(env.ft_balance(&tusdc, &vault).await?, 1_000_000);
 
     // Wrong token: the vault rejects it and the fake token refunds the sender.
-    env.ok(
-        &admin,
-        &fake,
-        "mint",
-        json!({ "account_id": admin, "amount": "500" }),
-    )
-    .await?;
+    let mint = json!({ "account_id": admin, "amount": "500" });
+    env.ok(&admin, &fake, "mint", mint).await?;
+    let fund = json!({ "receiver_id": vault, "amount": "500", "msg": "" });
     let _ = env
         .call(
             &admin,
             &fake,
             "ft_transfer_call",
-            json!({ "receiver_id": vault, "amount": "500", "msg": "" }),
+            fund,
             NearToken::from_yoctonear(1),
         )
         .await?;
     assert_eq!(env.ft_balance(&fake, &vault).await?, 0, "wrong token kept");
-    assert_eq!(
-        env.ft_balance(&fake, &admin).await?,
-        500,
-        "wrong token not refunded"
-    );
+    assert_eq!(env.ft_balance(&fake, &admin).await?, 500, "not refunded");
     let balances = env.view(&vault, "get_balances", json!({})).await?;
     assert_eq!(
         u128_of(&balances["total"]),
@@ -243,38 +278,29 @@ async fn single_payout_walking_skeleton() -> R<()> {
         "wrong token credited"
     );
 
-    // Maker creates run-1: one payout of 0.05 tUSDC.
-    let rows = json!([{ "receiver_id": recipient, "amount": "50000" }]);
+    // Maker creates run-1: one payout of 0.05 tUSDC, committed by its Merkle root.
+    let run1 = Committed::new(&[(&recipient, 50_000)]);
+    let create1 = run1.create_args("run-1");
     env.fails(
         &approver,
         &vault,
         "create_run",
-        json!({ "run_id": "run-1", "payouts": rows }),
+        create1.clone(),
         "Only the maker",
     )
     .await?;
-    env.ok(
-        &maker,
-        &vault,
-        "create_run",
-        json!({ "run_id": "run-1", "payouts": rows }),
-    )
-    .await?;
-    env.fails(
-        &maker,
-        &vault,
-        "create_run",
-        json!({ "run_id": "run-1", "payouts": rows }),
-        "Run already exists",
-    )
-    .await?;
+    env.ok(&maker, &vault, "create_run", create1.clone())
+        .await?;
+    env.fails(&maker, &vault, "create_run", create1, "Run already exists")
+        .await?;
 
     // Premature release: before approval nothing can be reserved or paid.
+    let run_1 = json!({ "run_id": "run-1" });
     env.fails(
         &worker,
         &vault,
         "start_release",
-        json!({ "run_id": "run-1" }),
+        run_1.clone(),
         "not approved",
     )
     .await?;
@@ -282,7 +308,7 @@ async fn single_payout_walking_skeleton() -> R<()> {
         &worker,
         &vault,
         "pay_row",
-        json!({ "run_id": "run-1", "index": 0 }),
+        run1.pay_args("run-1", 0),
         "not releasing",
     )
     .await?;
@@ -292,62 +318,49 @@ async fn single_payout_walking_skeleton() -> R<()> {
         &maker,
         &vault,
         "approve",
-        json!({ "run_id": "run-1" }),
+        run_1.clone(),
         "assigned approver",
     )
     .await?;
-    env.ok(&approver, &vault, "approve", json!({ "run_id": "run-1" }))
+    env.ok(&approver, &vault, "approve", run_1.clone()).await?;
+    env.fails(&approver, &vault, "approve", run_1.clone(), "not waiting")
         .await?;
-    env.fails(
-        &approver,
-        &vault,
-        "approve",
-        json!({ "run_id": "run-1" }),
-        "not waiting",
-    )
-    .await?;
 
     // Release: only the worker; the total is reserved first.
     env.fails(
         &maker,
         &vault,
         "start_release",
-        json!({ "run_id": "run-1" }),
+        run_1.clone(),
         "release worker",
     )
     .await?;
-    env.ok(
-        &worker,
-        &vault,
-        "start_release",
-        json!({ "run_id": "run-1" }),
-    )
-    .await?;
+    env.ok(&worker, &vault, "start_release", run_1.clone())
+        .await?;
     let balances = env.view(&vault, "get_balances", json!({})).await?;
     assert_eq!(u128_of(&balances["reserved"]), 50_000);
 
-    // Pay: real async ft_transfer, callback records the outcome.
+    // Tampered payouts: a changed amount or destination fails the proof check on-chain.
+    let mut tampered = run1.pay_args("run-1", 0);
+    tampered["amount"] = json!("50001");
+    env.fails(&worker, &vault, "pay_row", tampered, "proof does not match")
+        .await?;
+    let mut tampered = run1.pay_args("run-1", 0);
+    tampered["receiver_id"] = json!(late);
+    env.fails(&worker, &vault, "pay_row", tampered, "proof does not match")
+        .await?;
+
+    // Pay: real async ft_transfer, the callback records the outcome.
     let paid = env
-        .ok(
-            &worker,
-            &vault,
-            "pay_row",
-            json!({ "run_id": "run-1", "index": 0 }),
-        )
+        .ok(&worker, &vault, "pay_row", run1.pay_args("run-1", 0))
         .await?;
     assert_eq!(paid, json!(true));
     assert_eq!(env.ft_balance(&tusdc, &recipient).await?, 50_000);
-    let run = env
-        .view(&vault, "get_run", json!({ "run_id": "run-1" }))
-        .await?;
+    let run = env.view(&vault, "get_run", run_1.clone()).await?;
     assert_eq!(run["status"], json!("Paid"));
+    let row = json!({ "run_id": "run-1", "index": 0 });
     assert_eq!(
-        env.view(
-            &vault,
-            "get_row_status",
-            json!({ "run_id": "run-1", "index": 0 })
-        )
-        .await?,
+        env.view(&vault, "get_row", row).await?["status"],
         json!("Paid")
     );
 
@@ -356,73 +369,52 @@ async fn single_payout_walking_skeleton() -> R<()> {
         &worker,
         &vault,
         "pay_row",
-        json!({ "run_id": "run-1", "index": 0 }),
+        run1.pay_args("run-1", 0),
         "not releasing",
     )
     .await?;
     assert_eq!(env.ft_balance(&tusdc, &recipient).await?, 50_000);
 
-    // run-2: row 0 to a registered recipient, row 1 to an unregistered account.
-    let rows = json!([
-        { "receiver_id": recipient, "amount": "20000" },
-        { "receiver_id": late, "amount": "10000" }
-    ]);
-    env.ok(
-        &maker,
-        &vault,
-        "create_run",
-        json!({ "run_id": "run-2", "payouts": rows }),
-    )
-    .await?;
-    env.ok(&approver, &vault, "approve", json!({ "run_id": "run-2" }))
+    // run-2: rows 0 and 2 pay the same wallet the same amount (two intended payouts);
+    // row 1 goes to an account that is not registered with tUSDC yet.
+    let run2 = Committed::new(&[(&recipient, 20_000), (&late, 10_000), (&recipient, 20_000)]);
+    let run_2 = json!({ "run_id": "run-2" });
+    env.ok(&maker, &vault, "create_run", run2.create_args("run-2"))
         .await?;
-    env.ok(
-        &worker,
-        &vault,
-        "start_release",
-        json!({ "run_id": "run-2" }),
-    )
-    .await?;
-    env.ok(
-        &worker,
-        &vault,
-        "pay_row",
-        json!({ "run_id": "run-2", "index": 0 }),
-    )
-    .await?;
+    env.ok(&approver, &vault, "approve", run_2.clone()).await?;
+    env.ok(&worker, &vault, "start_release", run_2.clone())
+        .await?;
+    env.ok(&worker, &vault, "pay_row", run2.pay_args("run-2", 0))
+        .await?;
     env.fails(
         &worker,
         &vault,
         "pay_row",
-        json!({ "run_id": "run-2", "index": 0 }),
+        run2.pay_args("run-2", 0),
         "already paid",
     )
     .await?;
+    // Row 0's proof cannot be replayed as index 2, although wallet and amount match.
+    let mut replay = run2.pay_args("run-2", 0);
+    replay["index"] = json!(2);
+    env.fails(&worker, &vault, "pay_row", replay, "proof does not match")
+        .await?;
+    env.ok(&worker, &vault, "pay_row", run2.pay_args("run-2", 2))
+        .await?;
 
     // Real asynchronous failure: the token rejects the transfer to an unregistered account.
-    // The transaction itself succeeds; the callback returns false and marks the row Failed.
+    // The transaction succeeds; the callback returns false and marks the row Failed.
     let outcome = env
-        .ok(
-            &worker,
-            &vault,
-            "pay_row",
-            json!({ "run_id": "run-2", "index": 1 }),
-        )
+        .ok(&worker, &vault, "pay_row", run2.pay_args("run-2", 1))
         .await?;
     assert_eq!(outcome, json!(false));
+    let row1 = json!({ "run_id": "run-2", "index": 1 });
     assert_eq!(
-        env.view(
-            &vault,
-            "get_row_status",
-            json!({ "run_id": "run-2", "index": 1 })
-        )
-        .await?,
+        env.view(&vault, "get_row", row1.clone()).await?["status"],
         json!("Failed")
     );
     assert_eq!(env.ft_balance(&tusdc, &late).await?, 0);
-    let run = env
-        .view(&vault, "get_run", json!({ "run_id": "run-2" }))
-        .await?;
+    let run = env.view(&vault, "get_run", run_2.clone()).await?;
     assert_eq!(run["status"], json!("Releasing"));
     let balances = env.view(&vault, "get_balances", json!({})).await?;
     assert_eq!(
@@ -431,30 +423,26 @@ async fn single_payout_walking_skeleton() -> R<()> {
         "failed row stays reserved"
     );
 
-    // Recovery: register the account, retry the proven-failed row, run completes.
+    // Recovery: register the account, retry the proven-failed row, the run completes.
     env.register(&admin, &tusdc, &late).await?;
-    assert_eq!(
-        env.ok(
-            &worker,
-            &vault,
-            "pay_row",
-            json!({ "run_id": "run-2", "index": 1 })
-        )
-        .await?,
-        json!(true)
-    );
-    let run = env
-        .view(&vault, "get_run", json!({ "run_id": "run-2" }))
+    let retried = env
+        .ok(&worker, &vault, "pay_row", run2.pay_args("run-2", 1))
         .await?;
+    assert_eq!(retried, json!(true));
+    assert_eq!(
+        env.view(&vault, "get_row", row1).await?["attempts"],
+        json!(2)
+    );
+    let run = env.view(&vault, "get_run", run_2).await?;
     assert_eq!(run["status"], json!("Paid"));
 
     // Books reconcile with the token ledger.
     let balances = env.view(&vault, "get_balances", json!({})).await?;
-    let expected = 1_000_000 - 50_000 - 20_000 - 10_000;
+    let expected = 1_000_000 - 50_000 - 20_000 - 10_000 - 20_000;
     assert_eq!(u128_of(&balances["total"]), expected);
     assert_eq!(u128_of(&balances["reserved"]), 0);
     assert_eq!(env.ft_balance(&tusdc, &vault).await?, expected);
-    assert_eq!(env.ft_balance(&tusdc, &recipient).await?, 70_000);
+    assert_eq!(env.ft_balance(&tusdc, &recipient).await?, 90_000);
     assert_eq!(env.ft_balance(&tusdc, &late).await?, 10_000);
     Ok(())
 }
