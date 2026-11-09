@@ -80,7 +80,16 @@ export default async function ApproverDashboard() {
               <div className="table-wrap" role="region" aria-labelledby="reviewed-title" tabIndex={0}>
                 <table className="data">
                   <thead><tr><th scope="col">Run</th><th scope="col">Your decision</th><th scope="col">Run status</th><th scope="col" className="amount">Total (tUSDC)</th><th scope="col">Decided (UTC)</th><th scope="col">Proof</th></tr></thead>
-                  <tbody>{decisions.map((d) => (
+                  <tbody>{queue.reviewed.map((i) => (
+                    <tr key={i.versionId}>
+                      <td><div className="title"><Link href={`/runs/${i.runId}`}>{i.title}</Link></div><div className="sub">Version {i.versionNo} · step {i.myStep}</div></td>
+                      <td>{i.myDecision === 'approve' ? <Chip tone={i.myDecisionStatus === 'pending' ? 'waiting' : 'success'} icon={<CheckIcon size={13} />}>{i.myDecisionStatus === 'pending' ? 'Approval pending on NEAR' : 'Approved'}</Chip> : i.myDecision === 'reject' ? <Chip tone="danger" icon={<XIcon size={13} />}>Rejected</Chip> : <span className="muted">Not needed</span>}</td>
+                      <td><StatusChip status={i.status} /></td>
+                      <td className="amount">{displayAmount(i.total)}</td>
+                      <td className="sub when">{formatDateTime(i.submittedAt)}</td>
+                      <td><TxLink hash={i.myDecisionTx} /></td>
+                    </tr>
+                  ))}{decisions.map((d) => (
                     <tr key={d.id}>
                       <td><div className="title">{d.title}</div><div className="sub mono">{d.id}</div></td>
                       <td>{d.decision === 'approved' ? <Chip tone="success" icon={<CheckIcon size={13} />}>Approved</Chip> : <Chip tone="danger" icon={<XIcon size={13} />}>Rejected</Chip>}</td>

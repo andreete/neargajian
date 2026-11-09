@@ -17,9 +17,18 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 09 Template and upload | Done, approved by Andre | none (local) |
 | 09b Review fixes | Done | none |
 | 10 Read-only preview and immutable submission | Done | proven live at the end of Phase 13 |
-| 11 Approver queues and review | Not started | — |
+| 11 Approver queues and review | Done | proven live at the end of Phase 13 |
 | 12 Release worker and maker release | Not started | — |
 | 13 History and accounting CSVs | Not started | — |
+
+---
+
+## Phase 11 · Approver queues and review (10 Nov 2026)
+
+- `decide` (lifecycle): only an approver snapshotted into the **latest** version, only while it waits for approval, once per approver, in the vault's order (approver 2 only after approver 1 is **confirmed on NEAR**); rejection needs a 3–500 character reason that stays off-chain. The event is stored `pending` with its tx hash before signing (approver's restricted key, mapped from the snapshotted chain account); a vault refusal is stored as `failed` with the error; reconciliation confirms from the vault's approval list.
+- API `POST /api/runs/[id]/decision` (approver role, assignment checked in the service; maker/admin 404).
+- UI: decision panel on the shared run detail (approve / reject dialogs naming version and exact total; reject reason field), approval map nodes "Waiting for NEAR" / "Approved" / "Rejected" / "After step 1", queue rows link to the run, reviewed list shows each approver's own decision (pending or confirmed) with its tx link.
+- Tests `tests/integration/decisions.test.ts` (5): sequence order incl. "step 2 waits while step 1 is still pending on NEAR"; repeated, maker, admin and stale-version decisions refused; fresh approvals for a new version; rejection reason required, terminal, blocks release, never on-chain; refused decision recorded as failed; assigned approvers keep access, admin does not. `npm test` 127/127.
 
 ---
 

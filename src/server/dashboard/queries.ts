@@ -69,6 +69,9 @@ export interface QueueItem {
   myStep: number;
   actionable: boolean;
   submittedAt: Date;
+  myDecision: 'approve' | 'reject' | null;
+  myDecisionStatus: 'pending' | 'confirmed' | null;
+  myDecisionTx: string | null;
 }
 
 /** Versions whose snapshotted workflow assigns this approver. */
@@ -87,9 +90,12 @@ export function approverQueue(db: Queryable, approverUserId: string): { pending:
       .where(and(eq(approvalEvents.versionId, v.id), eq(approvalEvents.status, 'confirmed'), eq(approvalEvents.decision, 'approve'))).all().length;
     const actionable = v.status === 'pending_approval' && !decided.has(v.id)
       && (snapshot.kind !== 'two_sequential' || step === confirmedBefore);
+    const mine = db.select().from(approvalEvents).where(and(eq(approvalEvents.versionId, v.id), eq(approvalEvents.approverUserId, approverUserId))).all()
+      .filter((e) => e.status !== 'failed').at(-1);
     const item: QueueItem = {
       versionId: v.id, runId: v.runId, title, versionNo: v.versionNo, rowCount: v.rowCount, total: v.total,
       postingMode: v.postingMode, status: v.status, myStep: step + 1, actionable, submittedAt: v.createdAt,
+      myDecision: mine?.decision ?? null, myDecisionStatus: (mine?.status as 'pending' | 'confirmed' | undefined) ?? null, myDecisionTx: mine?.chainTxHash ?? null,
     };
     (v.status === 'pending_approval' && !decided.has(v.id) ? pending : reviewed).push(item);
   }

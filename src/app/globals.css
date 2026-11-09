@@ -729,3 +729,9 @@ table.data.review td.acct { max-width: 260px; overflow: hidden; text-overflow: e
 .run-sub { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
 .action-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-left: auto; }
 .continue-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.decision { margin-bottom: 20px; border-color: var(--navy); box-shadow: inset 4px 0 0 var(--navy); }
+.decision-body { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; }
+.decision-body h2 { font-size: 18px; margin-bottom: 4px; }
+.decision-body p { color: var(--muted); font-size: 14px; }
+.decision-actions { display: flex; gap: 10px; }
+.textarea { width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); font: inherit; resize: vertical; }

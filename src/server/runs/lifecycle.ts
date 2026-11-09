@@ -239,3 +239,52 @@ export function runDetail(db: Db, principal: Principal, runId: string): RunDetai
     canViewRecipients: can(principal, 'run.view_recipients', ctx),
   };
 }
+
+// ------------------------------------------------------------------ decisions
+
+export const MAX_REASON = 500;
+
+/**
+ * An assigned approver approves or rejects the exact version shown to them. Server-side
+ * mirror of the vault's rules (assignment, order, once per approver); the vault decides.
+ * The event is stored as `pending` with its tx hash before sending; the run page reconciles.
+ */
+export async function decide(db: Db, client: VaultClient, principal: Principal, runId: string, input: {
+  versionId: string; decision: 'approve' | 'reject'; reason?: string; now?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const ctx = contextOf(db, runId);
+  if (!ctx || !can(principal, 'run.decide', ctx)) throw new DomainError('not_found', 'Payroll run not found.');
+  const v = latestVersion(db, runId);
+  if (!v || v.id !== input.versionId) throw new DomainError('conflict', 'This version was replaced. Open the latest version and review it again.');
+  if (v.status !== 'pending_approval') throw new DomainError('conflict', 'This version is not waiting for approval.');
+  const snap = snapshotOf(v);
+  const step = snap.approvers.findIndex((a) => a.userId === principal.id) + 1;
+  if (step === 0) throw new DomainError('forbidden', 'You are not assigned to this version.');
+  const events = db.select().from(approvalEvents).where(eq(approvalEvents.versionId, v.id)).all();
+  if (events.some((e) => e.approverUserId === principal.id && e.status !== 'failed')) throw new DomainError('conflict', 'You already decided on this version.');
+  if (snap.kind === 'two_sequential' && step === 2 && !events.some((e) => e.step === 1 && e.decision === 'approve' && e.status === 'confirmed')) {
+    throw new DomainError('conflict', 'Approver 2 can act only after approver 1 has approved on NEAR.');
+  }
+  const reason = input.reason?.trim() ?? '';
+  if (input.decision === 'reject' && (reason.length < 3 || reason.length > MAX_REASON)) throw new DomainError('invalid', `Give a reason for the rejection (3–${MAX_REASON} characters).`);
+  const account = snap.approvers[step - 1]!.chainAccountId;
+  const id = `${v.id}:${principal.id}:${now.getTime()}`;
+  try {
+    db.insert(approvalEvents).values({
+      id, versionId: v.id, approverUserId: principal.id, step, decision: input.decision, reason: input.decision === 'reject' ? reason : null,
+      status: 'pending', createdAt: now,
+    }).run();
+  } catch {
+    throw new DomainError('conflict', 'You already decided on this version.');
+  }
+  audit(db, principal.id, `run.${input.decision}_requested`, v.id, { step }, now);
+  const outcome = await client.call(roleForAccount(client, account), input.decision, { run_id: v.chainRunId }, {
+    gasTgas: 30, waitUntil: 'INCLUDED', onSigned: (h) => db.update(approvalEvents).set({ chainTxHash: h }).where(eq(approvalEvents.id, id)).run(),
+  });
+  if (outcome.status === 'failure') {
+    db.update(approvalEvents).set({ status: 'failed', error: outcome.error ?? 'Refused by the vault.' }).where(eq(approvalEvents.id, id)).run();
+    throw new DomainError('conflict', `The vault refused this decision: ${outcome.error ?? 'unknown reason'}.`);
+  }
+  return { status: 'pending' as const, txHash: outcome.txHash, step };
+}
