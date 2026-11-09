@@ -303,3 +303,13 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-074 · Screenshot specs are opt-in
 
 - `npm run test:e2e` skips `tests/e2e/screenshots-*.spec.ts`; `npm run screenshots` (Phase 09 set) and `npm run screenshots:06b` run them with `SCREENSHOTS=1`, so review screenshots are never overwritten by a normal test run.
+
+## Phase 09b decisions (10 Nov 2026, Andre's review)
+
+### D-075 · Operations transfers are not payroll
+
+- Imported testnet runs carry `category` (`payroll` | `operations`). Operations transfers keep their proof links in a separate section and never count toward payroll runs, payouts or paid totals (dashboards, landing facts).
+
+### D-076 · Manual builder currency
+
+- The manual builder fixes the currency to tUSDC (the only allowed value) and shows it in the amount header; the stored row still carries `tUSDC` and the shared validation still checks it (files can contain other values and are rejected).

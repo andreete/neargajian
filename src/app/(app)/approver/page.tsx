@@ -7,7 +7,7 @@ import { activeWorkflow, approverQueue, approverTestnetDecisions } from '@/serve
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime } from '@/lib/format';
 import { SignerPanel, WorkflowPanel } from '../workflow-panel';
-import { TestnetChip, TxLink } from '../history-bits';
+import { OperationsTransfers, TestnetChip, TxLink } from '../history-bits';
 
 export const metadata: Metadata = { title: 'Review queue' };
 
@@ -15,7 +15,9 @@ export default async function ApproverDashboard() {
   const session = await requireRole(['approver']);
   const db = getDb();
   const queue = approverQueue(db, session.user.id);
-  const decisions = approverTestnetDecisions(db, session.user.chainAccountId);
+  const allDecisions = approverTestnetDecisions(db, session.user.chainAccountId);
+  const decisions = allDecisions.filter((d) => d.category === 'payroll');
+  const operations = allDecisions.filter((d) => d.category === 'operations');
   const workflow = activeWorkflow(db);
   const step = workflow?.approvers.findIndex((a) => a.userId === session.user.id) ?? -1;
   const position = step < 0
@@ -93,6 +95,8 @@ export default async function ApproverDashboard() {
           </section>
         </div>
       </div>
+      {operations.length ? <div className="section-gap" /> : null}
+      <OperationsTransfers runs={operations} />
       <div className="panels">
           <WorkflowPanel workflow={workflow} meId={session.user.id} />
           <SignerPanel account={session.user.chainAccountId} />

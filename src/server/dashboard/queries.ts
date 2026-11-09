@@ -137,6 +137,8 @@ export function runContext(db: Queryable, runId: string): (RunContext & { title:
 export interface TestnetRunSummary {
   id: string;
   title: string;
+  /** payroll runs count toward payroll totals; operations transfers never do. */
+  category: 'payroll' | 'operations';
   status: 'paid' | 'rejected' | 'incomplete';
   kind: WorkflowKind;
   releaseMode: ReleaseMode;
@@ -158,7 +160,7 @@ function summarizeTestnetRuns(db: Queryable, runs: (typeof testnetRuns.$inferSel
     const paid = mine.filter((x) => x.paidTxHash);
     const last = paid.sort((a, b) => (b.paidAt?.getTime() ?? 0) - (a.paidAt?.getTime() ?? 0))[0];
     return {
-      id: r.id, title: r.title, status: r.status, kind: r.kind, releaseMode: r.releaseMode, rowCount: r.rowCount, total: r.total,
+      id: r.id, title: r.title, category: r.category, status: r.status, kind: r.kind, releaseMode: r.releaseMode, rowCount: r.rowCount, total: r.total,
       paidTotal: paid.reduce((s, x) => s + x.amount, 0n), createdAt: r.createdAt, createdTxHash: r.createdTxHash,
       lastPaidTxHash: last?.paidTxHash ?? null, vaultGeneration: r.vaultGeneration, rejectionReason: r.rejectionReason,
     };
@@ -203,10 +205,12 @@ export interface TestnetTotals {
   duplicatePayoutsRefused: number;
 }
 
+/** Payroll totals from imported testnet runs. Operations transfers are excluded. */
 export function testnetTotals(db: Queryable): TestnetTotals {
-  const runs = db.select().from(testnetRuns).all();
-  const rows = db.select().from(testnetRunRows).all();
-  const events = db.select().from(testnetRunEvents).all();
+  const runs = db.select().from(testnetRuns).where(eq(testnetRuns.category, 'payroll')).all();
+  const ids = new Set(runs.map((r) => r.id));
+  const rows = db.select().from(testnetRunRows).all().filter((r) => ids.has(r.runId));
+  const events = db.select().from(testnetRunEvents).all().filter((e) => ids.has(e.runId));
   const paidRows = rows.filter((r) => r.paidTxHash);
   return {
     runs: runs.length,
@@ -217,4 +221,9 @@ export function testnetTotals(db: Queryable): TestnetTotals {
     refusedAttempts: events.filter((e) => !e.success).length,
     duplicatePayoutsRefused: events.filter((e) => !e.success && e.method === 'pay_row' && /already paid|not releasing/i.test(e.error ?? '')).length,
   };
+}
+
+/** Imported operations transfers (not payroll), shown separately with their proof links. */
+export function operationsTransfers(db: Queryable): TestnetRunSummary[] {
+  return summarizeTestnetRuns(db, db.select().from(testnetRuns).where(eq(testnetRuns.category, 'operations')).orderBy(desc(testnetRuns.createdAt)).all());
 }

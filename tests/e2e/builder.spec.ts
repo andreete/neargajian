@@ -41,3 +41,30 @@ test('maker builds a manual run, sees inline errors and keeps only the valid row
   await expect(page.getByLabel('Row 1 Amount')).toHaveValue('0.05');
   await expect(page.getByLabel('Row 2 Amount')).toHaveCount(0);
 });
+
+test('builder fits the container at 1280x720 and 1440x900: full account IDs, remove buttons inside', async ({ page }) => {
+  await signInLocal(page, 'maker@gajian.my.id');
+  await page.waitForURL('**/maker');
+  await page.goto('/maker/runs/new');
+  await page.getByLabel('Run title').fill('Fit check');
+  await page.getByText('Enter rows manually').click();
+  await page.getByRole('button', { name: 'Create draft run' }).click();
+  await page.waitForURL(/\/maker\/runs\/[^/]+$/);
+  await page.getByLabel('Row 1 NEAR account ID').fill('recipient1.gajian-payroll.testnet');
+  await page.getByLabel('Row 1 Email').fill('emma.clark@example.com');
+  for (const [width, height] of [[1280, 720], [1440, 900]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(() => document.fonts.ready);
+    const account = page.getByLabel('Row 1 NEAR account ID');
+    const fits = await account.evaluate((el: HTMLInputElement) => el.scrollWidth <= el.clientWidth);
+    expect(fits, `${width}: account ID fully visible`).toBe(true);
+    const card = await page.locator('section[aria-labelledby="rows-title"]').boundingBox();
+    const remove = await page.getByRole('button', { name: 'Remove row 1' }).boundingBox();
+    expect(card && remove, `${width}`).toBeTruthy();
+    expect(remove!.x + remove!.width, `${width}: remove button inside the card`).toBeLessThanOrEqual(card!.x + card!.width);
+    expect(card!.x + card!.width, `${width}: card inside the viewport gutter`).toBeLessThanOrEqual(width - 48);
+    const noScroll = await page.locator('section[aria-labelledby="rows-title"] .table-wrap').evaluate((el) => el.scrollWidth <= el.clientWidth);
+    expect(noScroll, `${width}: table needs no horizontal scroll`).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});

@@ -14,8 +14,19 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 06b Design review fixes | Done | read-only: history export from testnet RPC |
 | 07 Admin setup and approval map | Done | **Yes**: 2 workflow updates through the app, see docs/TESTNET.md |
 | 08 Manual payroll builder | Done | none (local) |
-| 09 Template and upload | **Done, awaiting Andre's review** | none (local) |
+| 09 Template and upload | Done, approved by Andre | none (local) |
+| 09b Review fixes | Done | none |
 | 10 Read-only preview and immutable submission | Not started (stop requested) | — |
+
+---
+
+## Phase 09b · Review fixes (10 Nov 2026)
+
+1. **Manual builder fits at 1280 px and wider**: fixed table layout with an account column wide enough for `recipient1.gajian-payroll.testnet`; the currency (only `tUSDC` is allowed) moved into the "Amount (tUSDC)" header, its errors show under the amount; remove buttons inside the card; header labels may wrap. New e2e test at 1280x720 and 1440x900: account input `scrollWidth ≤ clientWidth`, remove button inside the card, card inside the 48 px gutter, no horizontal scroll in the table or the page.
+2. **Operations transfer**: the vault retirement (`p02-drain`, 10 × 0.095 tUSDC back to the admin) is now `category = operations` (export script, `db/seed/testnet-history.json` re-exported and `--check` = matches the chain; migration `0004_testnet_category.sql` adds the column and corrects the existing row without rebuilding the table). It is listed in a separate "Operations transfers" section (maker, approver, admin) with its explorer link and excluded from every payroll count and total: payroll on testnet is now **0.23 tUSDC in 6 payouts across 3 paid runs** (was 1.18 / 16 / 4); the landing proof strip says "3 testnet runs".
+3. **Review table**: "File row" column with the hint "row number in the uploaded file (the header is row 1), the same number used in error messages"; the error panel and the landing mock use "File row" too.
+
+Evidence: `npm test` 114/114 (+ `tests/integration/testnet-history.test.ts`), `npm run test:e2e` 15/15 (+ builder fit test), screenshots in `docs/screenshots/phase-09b/`.
 
 ---
 

@@ -49,7 +49,8 @@ export interface TestnetFacts {
 let cachedFacts: TestnetFacts | undefined;
 export function testnetFacts(): TestnetFacts {
   if (cachedFacts) return cachedFacts;
-  const runs = readTestnetHistory();
+  // Payroll runs only: operations transfers (e.g. the vault retirement) are not payroll.
+  const runs = readTestnetHistory().filter((r) => (r.category ?? 'payroll') === 'payroll');
   let doublePayments = 0;
   let repeatAttemptsRefused = 0;
   for (const run of runs) {

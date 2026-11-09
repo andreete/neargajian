@@ -167,7 +167,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
                 <div className="table-wrap">
                   <table className="review-table">
                     <caption className="sr-only">First rows of the review table, in file order</caption>
-                    <thead><tr><th scope="col">Row</th><th scope="col">NEAR account</th><th scope="col">Receiver</th><th scope="col" className="amount">Amount</th></tr></thead>
+                    <thead><tr><th scope="col">File row</th><th scope="col">NEAR account</th><th scope="col">Receiver</th><th scope="col" className="amount">Amount</th></tr></thead>
                     <tbody>
                       {sample.firstRows.map((r) => (
                         <tr key={r.line}><td className="rownum">{r.line}</td><td className="mono">{r.account}</td><td>{r.name}</td><td className="amount">{displayAmount(r.amount)}</td></tr>

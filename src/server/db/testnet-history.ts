@@ -10,7 +10,7 @@ import type { Db } from './client.ts';
 import { testnetRunEvents, testnetRunRows, testnetRuns, users, type ReleaseMode, type WorkflowKind } from './schema.ts';
 
 export interface HistoryRun {
-  runId: string; vault: string; vaultGeneration: string; title: string; kind: WorkflowKind; releaseMode: ReleaseMode;
+  runId: string; vault: string; vaultGeneration: string; title: string; category?: 'payroll' | 'operations'; kind: WorkflowKind; releaseMode: ReleaseMode;
   approvers: string[]; status: 'paid' | 'rejected' | 'incomplete'; rejectionReason: string | null; maker: string;
   total: string; rowCount: number; payoutRoot: string | null; reviewDigest: string | null; createdAt: string;
   rows: { index: number; receiver: string; amount: string; paidTxHash?: string; paidAt?: string }[];
@@ -30,7 +30,7 @@ export function importTestnetHistory(db: Db, runs: HistoryRun[]): number {
       const create = run.events[0];
       if (!create) throw new Error(`${run.runId}: no events`);
       tx.insert(testnetRuns).values({
-        id: run.runId, vaultAccount: run.vault, vaultGeneration: run.vaultGeneration, title: run.title, makerUserId: maker?.id ?? null,
+        id: run.runId, vaultAccount: run.vault, vaultGeneration: run.vaultGeneration, title: run.title, category: run.category ?? 'payroll', makerUserId: maker?.id ?? null,
         kind: run.kind, releaseMode: run.releaseMode, approverAccounts: JSON.stringify(run.approvers), status: run.status,
         rejectionReason: run.rejectionReason, rowCount: run.rowCount, total: BigInt(run.total), payoutRoot: run.payoutRoot,
         reviewDigest: run.reviewDigest, createdAt: new Date(run.createdAt), createdTxHash: create.txHash,

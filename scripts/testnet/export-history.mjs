@@ -24,7 +24,7 @@ const RUNS = [
   },
   {
     runId: 'p02-drain', vault: `vault.${M}`, vaultGeneration: 'phase-02 (deleted in Phase 04)',
-    title: 'Vault retirement: funds returned to the admin', kind: 'one', releaseMode: 'automatic', approvers: [`approver1.${M}`],
+    title: 'Vault retirement: funds returned to the admin', category: 'operations', kind: 'one', releaseMode: 'automatic', approvers: [`approver1.${M}`],
     txs: ['BZNkzBYvvzKE3fiCeoq4rqWbAi9LBVWofuZwzZgnL1uM', '71wbYGD2wXdhQFcxD1w3ywAiN8TJ8ZsacRqYWikUSovG', 'cVv7s38hiQ33ErYTukK83QR3u7vsYrnrLq49nXtA2Mi',
       'Fet8zYwNr1DC9DDiwycHrANWd2CMwRYmitxkazVJ7zCL', '58sZkJPpUviztiSGx83wugtw9bx89pP5HMpR5ChetxWR', 'J4xBVnczPdX9N4VTqdCw3gUZKTXRWvQ9mcLcBhqkq6iH',
       '9ZRizR2yyCxM8GdoCsghwcpBMRgSYHK9d1LkunpsbUEC', 'G2GzToeS7dsQMgfEKtrsccPptwxSQ2aBJxfGWvahcFTw', '2nBWGQWfTvzmDUmvGJ7FywATPoxHCDgL6Jw2qSqyxUVD',
@@ -151,6 +151,8 @@ async function exportRun(def) {
   const allPaid = rows.every((r) => r.paidTxHash);
   return {
     runId: def.runId, vault: def.vault, vaultGeneration: def.vaultGeneration, title: def.title,
+    // payroll = a payroll run; operations = a treasury movement through the vault (not payroll)
+    category: def.category ?? 'payroll',
     kind: def.kind, releaseMode: def.releaseMode, approvers: def.approvers,
     status: rejected ? 'rejected' : allPaid ? 'paid' : 'incomplete',
     rejectionReason: null, // reasons are recorded off-chain by the app; these runs predate it

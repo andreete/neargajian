@@ -7,7 +7,7 @@ import { activeWorkflow, makerRuns, makerTestnetRuns } from '@/server/dashboard/
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime } from '@/lib/format';
 import { SignerPanel, WorkflowPanel } from '../workflow-panel';
-import { TestnetChip, TxLink } from '../history-bits';
+import { OperationsTransfers, TestnetChip, TxLink } from '../history-bits';
 
 export const metadata: Metadata = { title: 'My runs' };
 
@@ -25,7 +25,9 @@ export default async function MakerDashboard() {
   const session = await requireRole(['maker']);
   const db = getDb();
   const runs = makerRuns(db, session.user.id);
-  const testnet = makerTestnetRuns(db, session.user.id);
+  const allTestnet = makerTestnetRuns(db, session.user.id);
+  const testnet = allTestnet.filter((r) => r.category === 'payroll');
+  const operations = allTestnet.filter((r) => r.category === 'operations');
   const workflow = activeWorkflow(db);
   const paidRuns = runs.filter((r) => r.status === 'paid').length + testnet.filter((r) => r.status === 'paid').length;
   const paidTotal = testnet.reduce((s, r) => s + r.paidTotal, 0n) + runs.filter((r) => r.status === 'paid').reduce((s, r) => s + r.total, 0n);
@@ -89,6 +91,8 @@ export default async function MakerDashboard() {
           )}
         </section>
       </div>
+      {operations.length ? <div className="section-gap" /> : null}
+      <OperationsTransfers runs={operations} />
       <div className="panels">
           <WorkflowPanel workflow={workflow} />
           <SignerPanel account={session.user.chainAccountId} />

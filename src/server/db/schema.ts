@@ -277,6 +277,8 @@ export const testnetRuns = sqliteTable('testnet_runs', {
   vaultAccount: text('vault_account').notNull(),
   vaultGeneration: text('vault_generation').notNull(),
   title: text('title').notNull(),
+  /** payroll = a payroll run; operations = a treasury transfer through the vault (excluded from payroll counts and totals). */
+  category: text('category', { enum: ['payroll', 'operations'] }).notNull().default('payroll'),
   makerUserId: text('maker_user_id').references(() => users.id),
   kind: text('kind', { enum: WORKFLOW_KINDS }).notNull(),
   releaseMode: text('release_mode', { enum: RELEASE_MODES }).notNull(),
@@ -291,6 +293,7 @@ export const testnetRuns = sqliteTable('testnet_runs', {
   createdTxHash: text('created_tx_hash').notNull(),
 }, (t) => [
   check('testnet_runs_status_ck', inList('status', ['paid', 'rejected', 'incomplete'])),
+  check('testnet_runs_category_ck', inList('category', ['payroll', 'operations'])),
   index('testnet_runs_maker_ix').on(t.makerUserId),
 ]);
 

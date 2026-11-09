@@ -25,7 +25,6 @@ interface Props {
 const COLUMNS: { field: Field; className: string; placeholder: string; inputMode?: 'decimal' | 'email' | 'tel' }[] = [
   { field: 'near_account_id', className: 'col-account', placeholder: 'name.testnet' },
   { field: 'receiver_name', className: 'col-name', placeholder: 'Full name' },
-  { field: 'currency', className: 'col-cur', placeholder: 'tUSDC' },
   { field: 'amount', className: 'col-amount', placeholder: '0.05', inputMode: 'decimal' },
   { field: 'mobile_phone', className: 'col-phone', placeholder: '+44 7700 900123', inputMode: 'tel' },
   { field: 'email', className: 'col-email', placeholder: 'name@example.com', inputMode: 'email' },
@@ -128,9 +127,9 @@ export function ManualBuilder(props: Props) {
           <table className="rows-table">
             <thead>
               <tr>
-                <th scope="col">Row</th>
-                {COLUMNS.map((c) => <th key={c.field} scope="col" className={c.className}>{FIELD_LABEL[c.field]}</th>)}
-                <th scope="col"><span className="sr-only">Remove</span></th>
+                <th scope="col" className="col-row">Row</th>
+                {COLUMNS.map((c) => <th key={c.field} scope="col" className={c.className}>{c.field === 'amount' ? 'Amount (tUSDC)' : FIELD_LABEL[c.field]}</th>)}
+                <th scope="col" className="col-remove"><span className="sr-only">Remove</span></th>
               </tr>
             </thead>
             <tbody>
@@ -143,7 +142,7 @@ export function ManualBuilder(props: Props) {
                   <tr key={i} className={rowHasError ? 'has-error' : undefined} data-testid={`row-${i + 1}`}>
                     <td className="rownum">{i + 1}</td>
                     {COLUMNS.map((c) => {
-                      const error = show ? result?.errors.find((e) => e.field === c.field)?.message : undefined;
+                      const error = show ? (result?.errors.filter((e) => e.field === c.field || (c.field === 'amount' && e.field === 'currency')).map((e) => e.message).join(' ') || undefined) : undefined;
                       const id = `r${i}-${c.field}`;
                       const label = `Row ${i + 1} ${FIELD_LABEL[c.field]}`;
                       return (

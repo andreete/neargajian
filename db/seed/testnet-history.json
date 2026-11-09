@@ -8,6 +8,7 @@
       "vault": "vault.gajian-payroll.testnet",
       "vaultGeneration": "phase-02 (deleted in Phase 04)",
       "title": "First contract-controlled payout",
+      "category": "payroll",
       "kind": "one",
       "releaseMode": "automatic",
       "approvers": [
@@ -106,6 +107,7 @@
       "vault": "vault.gajian-payroll.testnet",
       "vaultGeneration": "phase-02 (deleted in Phase 04)",
       "title": "Vault retirement: funds returned to the admin",
+      "category": "operations",
       "kind": "one",
       "releaseMode": "automatic",
       "approvers": [
@@ -352,6 +354,7 @@
       "vault": "vault.gajian-payroll.testnet",
       "vaultGeneration": "phase-04",
       "title": "Two approvers in sequence, automatic release",
+      "category": "payroll",
       "kind": "two_sequential",
       "releaseMode": "automatic",
       "approvers": [
@@ -522,6 +525,7 @@
       "vault": "vault.gajian-payroll.testnet",
       "vaultGeneration": "phase-04",
       "title": "Two approvers in parallel, maker release",
+      "category": "payroll",
       "kind": "two_parallel",
       "releaseMode": "maker",
       "approvers": [
@@ -651,6 +655,7 @@
       "vault": "vault.gajian-payroll.testnet",
       "vaultGeneration": "phase-04",
       "title": "Rejected by approver 1",
+      "category": "payroll",
       "kind": "two_parallel",
       "releaseMode": "maker",
       "approvers": [

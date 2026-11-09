@@ -7,11 +7,11 @@ import { StatusChip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
 import { getDb } from '@/server/db/client';
 import { auditEvents, users } from '@/server/db/schema';
-import { activeWorkflow, allTestnetRuns, testnetTotals } from '@/server/dashboard/queries';
+import { activeWorkflow, allTestnetRuns, operationsTransfers, testnetTotals } from '@/server/dashboard/queries';
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime } from '@/lib/format';
 import { KIND_LABEL, RELEASE_LABEL, SignerPanel, WorkflowPanel } from '../workflow-panel';
-import { TestnetChip, TxLink } from '../history-bits';
+import { OperationsTransfers, TestnetChip, TxLink } from '../history-bits';
 
 export const metadata: Metadata = { title: 'Workflow settings' };
 
@@ -26,7 +26,8 @@ export default async function AdminDashboard() {
   const workflow = activeWorkflow(db);
   const pending = pendingWorkflow(db);
   const totals = testnetTotals(db);
-  const runs = allTestnetRuns(db);
+  const runs = allTestnetRuns(db).filter((r) => r.category === 'payroll');
+  const operations = operationsTransfers(db);
   const events = db.select({ at: auditEvents.at, action: auditEvents.action, actor: users.displayName })
     .from(auditEvents).leftJoin(users, eq(auditEvents.actorUserId, users.id)).orderBy(desc(auditEvents.id)).limit(6).all();
 
@@ -60,7 +61,7 @@ export default async function AdminDashboard() {
       </div>
 
       <section className="card" aria-labelledby="testnet-title">
-            <div className="panel-title"><h2 id="testnet-title">Testnet runs</h2><span className="muted">{runs.length}</span></div>
+            <div className="panel-title"><h2 id="testnet-title">Testnet payroll runs</h2><span className="muted">{runs.length}</span></div>
             <div className="table-wrap" role="region" aria-labelledby="testnet-title" tabIndex={0}>
               <table className="data">
                 <thead><tr><th scope="col">Run</th><th scope="col">Status</th><th scope="col" className="amount">Rows</th><th scope="col" className="amount">Total (tUSDC)</th><th scope="col">Created (UTC)</th><th scope="col">Proof</th></tr></thead>
@@ -77,6 +78,8 @@ export default async function AdminDashboard() {
               </table>
             </div>
       </section>
+      {operations.length ? <div className="section-gap" /> : null}
+      <OperationsTransfers runs={operations} />
       <div className="grid-2 panels">
         <div className="stack">
           <section className="card" aria-labelledby="reviewers-title">

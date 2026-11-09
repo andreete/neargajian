@@ -133,7 +133,7 @@ export function UploadPanel(props: {
               </div>
               <div className="table-wrap">
                 <table className="data">
-                  <thead><tr><th scope="col">Row</th><th scope="col">Column</th><th scope="col">Problem</th></tr></thead>
+                  <thead><tr><th scope="col">File row</th><th scope="col">Column</th><th scope="col">Problem</th></tr></thead>
                   <tbody>{rejected.errors.slice(0, 100).map((e, i) => (
                     <tr key={i}><td className="num">{e.line ?? '—'}</td><td>{e.column ? FIELD_LABEL[e.column as Field] ?? e.column : 'File'}</td><td>{e.message}</td></tr>
                   ))}</tbody>
@@ -195,9 +195,10 @@ export function ReviewTable({ rows, total }: { rows: Row[]; total: bigint }) {
         <h2 id="review-title">Review ({rows.length.toLocaleString('en-US')} rows, read-only)</h2>
         <span className="hint">Total <strong className="num">{displayAmount(total)} tUSDC</strong> · rows {from.toLocaleString('en-US')}–{to.toLocaleString('en-US')} of {rows.length.toLocaleString('en-US')}</span>
       </div>
-      <div className="table-wrap review-scroll" role="region" aria-labelledby="review-title" tabIndex={0}>
+      <p className="hint review-hint" id="file-row-hint">File row is the row number in the uploaded file (the header is row 1), the same number used in error messages.</p>
+      <div className="table-wrap review-scroll" role="region" aria-labelledby="review-title" aria-describedby="file-row-hint" tabIndex={0}>
         <table className="data review" data-testid="review-table">
-          <thead><tr><th scope="col">Row</th><th scope="col">NEAR account</th><th scope="col">Receiver</th><th scope="col">Currency</th><th scope="col" className="amount">Amount</th><th scope="col">Mobile phone</th><th scope="col">Email</th></tr></thead>
+          <thead><tr><th scope="col" title="Row number in the uploaded file (the header is row 1)">File row</th><th scope="col">NEAR account</th><th scope="col">Receiver</th><th scope="col">Currency</th><th scope="col" className="amount">Amount</th><th scope="col">Mobile phone</th><th scope="col">Email</th></tr></thead>
           <tbody>{slice.map((r, i) => (
             <tr key={from + i}>
               <td className="num sub">{r.sourceLine ?? from + i}</td>

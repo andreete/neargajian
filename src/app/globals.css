@@ -698,3 +698,15 @@ table.data.review td.acct { max-width: 260px; overflow: hidden; text-overflow: e
 .rows-table { min-width: 1120px; }
 .col-account { width: 21%; } .col-name { width: 15%; } .col-cur { width: 104px; } .col-amount { width: 12%; } .col-phone { width: 15%; } .col-email { width: 20%; }
 .rows-table select { padding: 0 6px; }
+
+/* 09b: builder fits the container at 1280 px and wider (no horizontal scroll). */
+.rows-table { min-width: 0; table-layout: fixed; }
+.rows-table .col-row { width: 44px; } .rows-table .col-account { width: 292px; } .rows-table .col-name { width: 140px; }
+.rows-table .col-amount { width: 104px; } .rows-table .col-phone { width: 144px; } .rows-table .col-email { width: auto; } .rows-table .col-remove { width: 52px; }
+.rows-table th, .rows-table td { padding-inline: 5px; }
+.rows-table td:first-child, .rows-table th:first-child { padding-left: 14px; }
+.rows-table td:last-child, .rows-table th:last-child { padding-right: 12px; }
+.rows-table input { padding: 0 8px; font-size: 13.5px; }
+.rows-table .col-account input { font-size: 13px; letter-spacing: -0.01em; }
+.review-hint { padding: 10px 24px 0; }
+.rows-table th { white-space: normal; font-size: 11px; letter-spacing: 0.04em; line-height: 1.25; vertical-align: bottom; }
