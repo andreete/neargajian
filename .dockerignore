@@ -1,0 +1,14 @@
+# Keep secrets, local data and build output out of the image build context.
+.env
+.env.*
+!.env.example
+.hosting/
+data/
+.tmp/
+.next/
+node_modules/
+.git/
+contracts/target/
+**/target/
+docs/screenshots/
+*.log

@@ -12,6 +12,7 @@ GAJIAN is a payroll approval and payout app on NEAR testnet. A finance team prep
 | Vault contract (used by the app) | `vault2.gajian-payroll.testnet`: release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, **no access keys** (code cannot change) |
 | Earlier vault (retired, readable) | `vault.gajian-payroll.testnet` (Phases 04–13) |
 | Live proof | `docs/TESTNET.md`: every transaction with explorer links, balances before and after. Re-check without keys: `npm run judge:verify` |
+| Try it online | **`<HOSTED-URL>` (not live yet; planned at submission, online until at least 25 Nov 2026)**. See "Try it online" below |
 | Demo sign-in (demo mode) | `maker@gajian.my.id`, `app1@gajian.my.id`, `app2@gajian.my.id`, `admin@gajian.my.id`, password `12345678` |
 | Stack | Next.js 16 + React 19 (TypeScript), SQLite (Drizzle), Rust contracts with near-sdk 5.30.1, near-api-js 7.4.0 |
 | Recipient directory | Admin page "Recipients": name, division, NEAR account, email, phone, maximum per payout, active/inactive, change log. With "Pay registered recipients only" on (the demo default), every payroll row must match an active recipient within its maximum. **Enforced by the app and the approvers, not by the vault contract** |
@@ -31,6 +32,31 @@ A small company paying staff or contractors in stablecoins usually has one perso
 3. **Approve.** One approver, two in sequence, or two in parallel, as configured by the admin. The vault enforces the order and the assigned accounts.
 4. **Release and pay.** Release is automatic (by the release worker) or done by the maker, depending on the workflow. The vault reserves the run total. The worker then pays one recipient per transaction (`pay_row` with the row's Merkle proof). The vault refuses wrong signers, early release, tampered amounts or accounts, and a second payment of a row. If the vault holds less than the run total, the run waits as "Awaiting funding" and pays once funded.
 5. **Report.** A run is Paid only when every payout is confirmed and the confirmed count and total equal the approved count and total. History shows each run as one consolidated entry or as one entry per recipient. Exports: a company CSV for the books (no personal data) and a recipient-detail CSV (only for the maker and the run's approvers). A payout's paid time is the timestamp of the block that includes its transaction, the time the explorer shows.
+
+## Try it online
+
+**`<HOSTED-URL>`** (placeholder until the hosted demo is live; planned address `https://app.gajian.my.id`, status in `docs/HOSTING.md`). It is a **public demo on NEAR testnet** with a zero-value test token and **shared demo data**: everyone uses the same four demo accounts (password `12345678`) and sees the same runs.
+
+**Use separate browser windows for the roles.** A sign-in belongs to one browser profile, so:
+- **Window 1, normal window:** `maker@gajian.my.id`
+- **Window 2, private/incognito window:** `app1@gajian.my.id` (approver 1). All private windows of one browser share one sign-in.
+- **Window 3, another browser or another browser profile:** `app2@gajian.my.id` (approver 2)
+- `admin@gajian.my.id` in any window when you want the admin view. Signing in replaces the window's current role.
+
+Do, see:
+1. **Maker → New run → Upload a file** with a CSV of the three live recipients, for example `docs/video/november-2026-contractors.csv` or `docs/hosting/smoke-test-0.01.csv` → **Continue to review** → **Submit**. See: Awaiting approval, with the `create_run` transaction link.
+2. **Approver 1, then approver 2 → Review queue → the run → Approve.** See: the vault enforces the order.
+3. **Maker → the run.** Within a minute: **Paid**, a NearBlocks link per payout, and the paid time equal to the block time.
+4. **Maker → New run → Payroll assistant:** "Create a disbursement for the Sales division, 0.03 tUSDC each, called November commissions". See: a preview of Daniel Hall and Emma Clark; **Create draft**.
+5. **History and reports:** consolidated and detailed views, CSV exports.
+
+What the online copy does **not** let you do (on purpose, because the passwords are public):
+- It pays only the three live testnet recipients. A run with any recipient not in the directory and "Ready to receive tUSDC" is refused at submit; the 1,000-row sample uploads and previews but cannot be submitted.
+- The recipient directory and the approval workflow are read-only. The host never holds the admin key.
+- The assistant has a daily cap.
+- The vault holds at most 2 tUSDC.
+
+Run the app locally (step 5 below) to try everything else.
 
 ## For judges: do X, see Y (no keys needed)
 
@@ -132,6 +158,12 @@ More detail: `docs/JUDGE.md`. Acceptance checks A01–A08, with app/sandbox evid
 - **Recipient directory: an app guardrail, not a contract rule.** "Pay registered recipients only" is enforced by the app (upload, manual draft, a server re-check at submit) and shown to the approvers, who see "Every row matched the recipient directory" on the run page. The vault contract does not know the directory: it enforces approvals, caps, the committed rows and the vault balance. Someone holding a maker key outside the app could submit rows that are not in the directory; the approvers are the check for that.
 - **Payroll assistant (optional).** The model only turns the maker's words into a structured request (title, divisions or names, amount per person, posting mode). The app resolves recipients from the directory itself and checks every amount; the model is sent only the maker's messages and the list of division names, never NEAR accounts, emails, phones or the directory. It can only create a draft for the signed-in maker (never submit, approve, release, change the workflow or add recipients; enforced on the server), at most 20 requests per maker per hour. Model: the Claude API through the official SDK, `ASSISTANT_MODEL` (default `claude-opus-5-5`, from Anthropic's model documentation). The request text is stored with the draft.
 - **Voice input** uses the browser's built-in speech recognition (Chrome and Edge), English. **Browser speech recognition sends the audio to the browser vendor's speech service** (for example Google for Chrome); the transcript only fills the text box, and the maker checks it before sending. The microphone is hidden where the browser has no speech recognition.
+- **Hosted demo (`HOSTED_DEMO=true`).**
+  - Its own restricted function-call keys for the maker, the approvers and the worker (`scripts/testnet/hosting-keys.sh`), never the admin, master or a full-access key; it refuses to start with an admin key.
+  - Submit only when every recipient is "Ready to receive tUSDC"; directory read-only; assistant capped at 200 requests per day.
+  - A sign-in lockout per visitor, so nobody can lock the shared demo accounts.
+  - A kill switch, `HOSTED_READONLY=true`, makes everything read-only and pauses the worker.
+  - Runbook, cost and shutdown: `docs/HOSTING.md`. Tests: `npm run test:hosted`, `tests/integration/hosted.test.ts`.
 - **Synthetic data only.** Phones use the reserved `+44 7700 900xxx` range and emails use `example.com`. The 1,000 sample employees' NEAR accounts (`gjn-emp-NNNN.testnet`) do not exist on testnet; they are in the directory so the 1,000-row sample upload passes the directory check, and are never paid.
 
 ## Hackathon window and diff (Q-003)
@@ -161,6 +193,7 @@ npm run worker                 # release worker (needs the worker signer key; st
 npm run demo:reset             # move the current database to data/backups/ (never deleted), start a clean demo database
 npm run db:seed | db:migrate | db:status
 npm test | npm run test:e2e | npm run lint | npm run typecheck
+npm run test:hosted            # browser tests in hosted demo mode, then with the kill switch
 npm run judge:verify           # read-only testnet evidence check
 npm run judge:deployment       # read-only: local vault Wasm equals the deployed code, no access keys
 npm run secret-scan            # credential scan of the working tree and the full Git history
@@ -201,7 +234,7 @@ public/          logo and payroll templates          docs/         evidence, dec
 - `docs/RECOVERY.md`: how stuck or unknown payouts are resolved.
 - `docs/COMMITMENTS.md`: the on-chain commitment format (Merkle tree, review digest).
 - `docs/SAMPLE-DATA.md`: sample files and checksums.
-- `docs/VIDEO.md`, `docs/SUBMISSION.md`, `docs/QA-HANDOFF.md`: demo video runbook, submission checklist, QA handoff. `docs/HOSTING.md`: not pursued (local-only with a YouTube video).
+- `docs/VIDEO.md`, `docs/SUBMISSION.md`, `docs/QA-HANDOFF.md`: demo video runbook, submission checklist, QA handoff. `docs/HOSTING.md`: Railway runbook for the public demo (deploy, variables, domain, smoke test, updates, backups, reset, kill switch, cost, shutdown).
 - `docs/BUILD-STATE.md`, `docs/DECISIONS.md`: what was built, with evidence, and why.
 
 ## License

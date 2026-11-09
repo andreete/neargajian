@@ -20,6 +20,8 @@ interface Props {
   csrfToken: string;
   explorerTxUrl: string;
   initialKind?: MapKind;
+  /** No admin signer key on this copy (always the case in the public demo): preview only. */
+  readOnly?: boolean;
 }
 
 type Result = { status: 'active' | 'pending' | 'failed'; revision: number; txHash?: string; error?: string }
@@ -36,7 +38,7 @@ const RELEASES: { mode: MapRelease; title: string; desc: string }[] = [
   { mode: 'maker', title: 'Maker releases', desc: 'The maker checks the approved run and clicks Release payments.' },
 ];
 
-export function WorkflowEditor({ active, options, pending, csrfToken, explorerTxUrl, initialKind }: Props) {
+export function WorkflowEditor({ active, options, pending, csrfToken, explorerTxUrl, initialKind, readOnly = false }: Props) {
   const router = useRouter();
   const [kind, setKind] = useState<MapKind>(initialKind ?? active.kind);
   const [a1, setA1] = useState(active.approverUserIds[0] ?? options[0]?.id ?? '');
@@ -149,12 +151,16 @@ export function WorkflowEditor({ active, options, pending, csrfToken, explorerTx
               ))}
             </div>
           </fieldset>
-          <p className="notice">Saving sends one transaction from the admin signer to the vault on NEAR testnet. Runs already submitted keep the path they were submitted with.</p>
+          {readOnly ? (
+            <p className="notice" data-testid="workflow-read-only"><strong>Read-only on this copy:</strong> it has no admin signer key, so the approval workflow cannot be changed here (the public demo never holds the admin key). You can try the templates in the preview; the active path is shown on the right.</p>
+          ) : (
+            <p className="notice">Saving sends one transaction from the admin signer to the vault on NEAR testnet. Runs already submitted keep the path they were submitted with.</p>
+          )}
           <div className="form-actions">
-            <button type="button" className="btn btn-primary" onClick={save} disabled={saving || sameReviewer || unchanged || Boolean(pending)} aria-describedby="save-hint">
+            <button type="button" className="btn btn-primary" onClick={save} disabled={readOnly || saving || sameReviewer || unchanged || Boolean(pending)} aria-describedby="save-hint">
               {saving ? 'Saving on NEAR…' : 'Save workflow'}
             </button>
-            <span id="save-hint" className="hint">{unchanged ? 'No changes yet.' : sameReviewer ? 'Fix the reviewers first.' : 'Changes apply to new runs only.'}</span>
+            <span id="save-hint" className="hint">{readOnly ? 'Saving needs the admin key (not on this copy).' : unchanged ? 'No changes yet.' : sameReviewer ? 'Fix the reviewers first.' : 'Changes apply to new runs only.'}</span>
           </div>
           <div aria-live="polite">
             {result?.status === 'active' ? <div className="result ok" role="status"><CheckIcon size={16} /><span>Active on NEAR testnet as revision {result.revision}. {txLink(result.txHash)}</span></div> : null}

@@ -8,7 +8,8 @@ import { SubmitPanel } from '@/components/submit-panel';
 import { ReviewTable } from '@/components/upload-panel';
 import { AlertIcon, CheckIcon } from '@/components/icons';
 import { AssistantNote } from '@/components/assistant-note';
-import { registeredOnly } from '@/server/recipients/directory';
+import { hostedSubmitProblem, registeredOnly } from '@/server/recipients/directory';
+import { hostedMode } from '@/server/hosted';
 import { getDb } from '@/server/db/client';
 import { activeWorkflow } from '@/server/dashboard/queries';
 import { draftLock, draftView } from '@/server/runs/draft-service';
@@ -37,6 +38,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
   const s = view.summary;
   const ready = !lock && s.invalidCount === 0 && s.runErrors.length === 0 && s.validCount > 0 && wf;
   const amounts = s.rows.flatMap((r) => (r.valid ? [r.valid.amount] : []));
+  const hostedProblem = ready && hostedMode().demo ? hostedSubmitProblem(db, s.rows.flatMap((r) => (r.valid ? [{ accountId: r.valid.accountId, amount: r.valid.amount }] : []))) : null;
   const names = wf?.approvers.map((a) => a.displayName) ?? [];
   const approvalSummary = wf ? `${KIND_LABEL[wf.kind]} (${names.join(wf.kind === 'two_sequential' ? ' then ' : ' and ')}), ${RELEASE_LABEL[wf.releaseMode].toLowerCase()}` : 'No active workflow';
 
@@ -48,6 +50,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
         <StatusChip status="draft" />
       </div>
       {view.run.assistantRequestText ? <AssistantNote text={view.run.assistantRequestText} /> : null}
+      {hostedProblem ? <div className="callout callout-warn" role="note" data-testid="hosted-submit-note"><AlertIcon size={18} /><span>{hostedProblem}</span></div> : null}
       {ready && registeredOnly(db) ? <div className="callout callout-ok" role="note" data-testid="directory-check"><CheckIcon size={18} /><span>Every row matches an active recipient in the directory within that recipient&apos;s maximum. The server checks again when you submit.</span></div> : null}
       {!ready ? (
         <div className="callout" role="note"><AlertIcon size={18} /><span>{lock ?? (s.validCount === 0 ? 'Add at least one row first.' : s.invalidCount ? `${s.invalidCount} row${s.invalidCount === 1 ? ' has' : 's have'} errors. Fix them or keep only the valid rows before submitting.` : 'An admin must activate an approval workflow first.')}</span></div>

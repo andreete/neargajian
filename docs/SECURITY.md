@@ -59,6 +59,20 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 - `ANTHROPIC_API_KEY` is read from `.env` on the server only, never logged, returned to a browser or committed; without it the assistant is off. Requests: 20 s timeout, one retry, at most 20 per maker per hour (counted in `assistant_requests`, which stores the maker's text and the model's structured answer, no directory data).
 - Voice input uses the browser's own speech recognition: the audio goes from the browser to the browser vendor's service, not to GAJIAN. `Permissions-Policy: microphone=(self)` allows it on our pages only.
 
+## Hosted demo mode (Phase 20)
+
+The public demo at `<HOSTED-URL>` uses public demo passwords, so `HOSTED_DEMO=true` narrows what anyone signed in can do. Each rule is enforced on the server; the UI only mirrors it.
+- **Keys:** its own restricted function-call keys for maker, approver 1, approver 2 and worker, least privilege:
+  - maker: only `create_run`, `cancel_run`;
+  - worker: `start_release`, `pay_row`;
+  - small NEAR allowances; created and deleted by `scripts/testnet/hosting-keys.sh`.
+  - Never the admin, master or a full-access key: `loadConfig` refuses to start with `ADMIN_SIGNER_PRIVATE_KEY` in hosted mode.
+- **Payees:** a submit is refused unless every row pays an active directory recipient that is "Ready to receive tUSDC" within its maximum (`hostedSubmitProblem`, checked before anything is frozen or signed). The directory and its setting are read-only (403 `hosted_read_only`); without the admin key the workflow page is read-only.
+- **Exposure caps:** the vault is topped up to at most 2 tUSDC (`phase16.ts top-up` refuses more); the assistant has a separate Anthropic key with a monthly spend limit, 20 requests per maker per hour and 200 per day in total.
+- **Accounts:** the per-email sign-in lockout counts per email and client, so a visitor cannot lock a shared demo account for everyone (the per-client limit stays).
+- **Kill switch** `HOSTED_READONLY=true`: every mutation except sign-out answers 503 `read_only`, the worker pauses, a banner says so.
+- The container binds `0.0.0.0:$PORT` behind Railway's TLS edge (only inside the container; this development host still binds 127.0.0.1 only).
+
 ## Data handling
 
 - No PII in logs or audit events (audit `detail` holds IDs and keyed hashes only). No PII on-chain (payout leaves hold account, amount and index; the review digest is salted and the salt stays in the database).

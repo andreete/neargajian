@@ -49,3 +49,6 @@ npm-debug.log*
 
 # Repo-local temp folder (TMPDIR for every build, install and test; see scripts/with-tmp.sh)
 .tmp/
+
+# Hosted demo signer keys (scripts/testnet/hosting-keys.sh): never commit
+.hosting/

@@ -40,7 +40,7 @@ async function call(url: string, csrfToken: string, init: { method: string; body
   return { ok: res.ok, status: res.status, body };
 }
 
-export function RegisteredOnlySwitch({ on, csrfToken }: { on: boolean; csrfToken: string }) {
+export function RegisteredOnlySwitch({ on, csrfToken, readOnly = false }: { on: boolean; csrfToken: string; readOnly?: boolean }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export function RegisteredOnlySwitch({ on, csrfToken }: { on: boolean; csrfToken
         <p className="hint">When on, every uploaded or manual payroll row must match an <strong>active</strong> recipient below (same NEAR account) and stay within that recipient&apos;s maximum. The server checks again when the maker submits, and approvers see the result. This guardrail is enforced by the app and the approvers, not by the vault contract.</p>
         {error ? <div className="form-error" role="alert"><AlertIcon size={18} />{error}</div> : null}
       </div>
-      <button type="button" role="switch" aria-checked={on} aria-labelledby="registered-only-h" className={`switch ${on ? 'is-on' : ''}`} onClick={toggle} disabled={pending}>
+      <button type="button" role="switch" aria-checked={on} aria-labelledby="registered-only-h" className={`switch ${on ? 'is-on' : ''}`} onClick={toggle} disabled={pending || readOnly}>
         <span className="switch-track" aria-hidden="true"><span className="switch-thumb" /></span>
         <span className="switch-text">{pending ? 'Saving…' : on ? 'On' : 'Off'}</span>
       </button>
@@ -67,7 +67,7 @@ export function RegisteredOnlySwitch({ on, csrfToken }: { on: boolean; csrfToken
   );
 }
 
-export function RecipientDirectory({ rows, csrfToken, divisions, cap }: { rows: RecipientRow[]; csrfToken: string; divisions: string[]; cap: string }) {
+export function RecipientDirectory({ rows, csrfToken, divisions, cap, readOnly = false }: { rows: RecipientRow[]; csrfToken: string; divisions: string[]; cap: string; readOnly?: boolean }) {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const [editing, setEditing] = useState<RecipientRow | null>(null);
@@ -134,7 +134,7 @@ export function RecipientDirectory({ rows, csrfToken, divisions, cap }: { rows: 
     <section className="card" aria-labelledby="directory-title">
       <div className="panel-title">
         <h2 id="directory-title">Directory</h2>
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => open(null)}><PlusIcon size={16} />Add recipient</button>
+        {readOnly ? <span className="hint" data-testid="directory-read-only">Read-only in the public demo</span> : <button type="button" className="btn btn-primary btn-sm" onClick={() => open(null)}><PlusIcon size={16} />Add recipient</button>}
       </div>
       <div aria-live="polite">{notice ? <div className={`result ${notice.tone} inset`} role="status" data-testid="directory-notice">{notice.tone === 'ok' ? <CheckIcon size={16} /> : <AlertIcon size={16} />}<span>{notice.text}</span></div> : null}</div>
       {rows.length === 0 ? (
@@ -150,7 +150,7 @@ export function RecipientDirectory({ rows, csrfToken, divisions, cap }: { rows: 
                 <td><CopyValue value={r.nearAccountId} label="NEAR account" size="md" /></td>
                 <td className="amount">{r.maxDisplay}</td>
                 <td><StatusCell r={r} /></td>
-                <td className="row-actions"><button type="button" className="btn btn-ghost btn-sm" onClick={() => open(r)} aria-label={`Edit ${r.name}`}><EditIcon size={14} />Edit</button></td>
+                <td className="row-actions">{readOnly ? null : <button type="button" className="btn btn-ghost btn-sm" onClick={() => open(r)} aria-label={`Edit ${r.name}`}><EditIcon size={14} />Edit</button>}</td>
               </tr>
             ))}</tbody>
           </table>

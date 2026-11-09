@@ -2,6 +2,8 @@
 
 One complete payroll moment on NEAR testnet: upload → review → submit → two approvals → automatic payout → Paid with an explorer link → history and export, then a short payroll-assistant moment. Total under 3 minutes (about 2:55). Every step is real (final vault `vault2.gajian-payroll.testnet`, real transactions, real database). Nothing is staged or mocked.
 
+**Where to record:** on the **hosted site** (`<HOSTED-URL>`, `docs/HOSTING.md`) once it is live and smoke-tested, so the video shows exactly what judges can open. **Fallback:** this local copy on http://127.0.0.1:8092 with the checklist below. The script is the same in both; on the hosted site the purple "Public demo on NEAR testnet" banner is visible, which is fine (say it once), and steps 1–4 of the checklist are replaced by: kill switch off, `/api/health` ok, vault at 2.00 tUSDC or less (`docs/HOSTING.md` step 9).
+
 Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors.csv`, detailed posting, 3 recipients:
 
 | Recipient | NEAR account | Amount |
@@ -13,7 +15,7 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 
 ## What it costs
 
-- **tUSDC:** 0.20 per take, paid from the vault. On 10 Nov 2026 the vault holds **2.00 tUSDC** (topped up for QA and retakes): enough for about **ten** takes, less any QA runs. The assistant moment creates a draft only and costs nothing.
+- **tUSDC:** 0.20 per take, paid from the vault. On 10 Nov 2026 the vault holds **1.94 tUSDC** (topped up for QA and retakes; while the demo is public it stays at 2.00 or less): enough for about **nine** takes, less any QA runs. The assistant moment creates a draft only and costs nothing.
 - **NEAR (gas):** about 0.003 NEAR per take (Phase 13 measured 0.00297: create_run, two approvals, start_release, three payouts). The maker, approver and worker accounts each hold more than 0.37 NEAR, and the admin 0.48 NEAR. No faucet is needed.
 
 ## Pre-recording checklist

@@ -1,6 +1,6 @@
 # GAJIAN: standing rules for Claude sessions
 
-GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory**; "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. Hosting is not pursued (local-only + YouTube video).
+GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory**; "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo on Railway (`HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) is prepared for submission and kept online until 25 Nov 2026.
 
 ## Start every session here
 
@@ -13,7 +13,7 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 
 1. **No mainnet**: no mainnet config, accounts, keys or transactions.
 2. **No `sudo`, no Docker**, nothing outside `/home/neargajian`. Missing system package → stop, give Andre one exact command (run as user `andre`), record it in `docs/NEXT-STEPS.md`.
-3. Bind only to **127.0.0.1** (app port **8092**). No tunnels (Tailscale Serve/Funnel, ngrok, cloudflared).
+3. Bind only to **127.0.0.1** (app port **8092**) on this host. No tunnels (Tailscale Serve/Funnel, ngrok, cloudflared). The Railway container binds 0.0.0.0 inside Railway only; it is built in Railway's cloud from the `release` branch, never with Docker here, and nothing is pushed to `release`, no Railway account is created and no host key is added on-chain without Andre's explicit yes.
 4. **No secrets in git, chat, logs or docs.** Keys live in `~/.near-credentials` and the git-ignored `.env`. Never print private keys or seed phrases. Never read, print or log `ANTHROPIC_API_KEY` (Andre adds it to `.env` himself), and never rewrite `.env` in a way that drops lines you did not write (`write-env.mjs` keeps them).
 5. No making the GitHub repo public, no X posts, no hackathon submission, no force-push without Andre's explicit yes.
 6. No PII on-chain or in logs. Synthetic data only.
@@ -80,6 +80,9 @@ npm run demo:reset               # move data/gajian.sqlite to data/backups/ (nev
 nice -n 19 npm run test:judge-mode  # Playwright: fresh demo DB and no signer keys (read-only copy)
 npm run judge:deployment         # read-only: vault2 code_hash = local release Wasm, no full-access key
 npm run secret-scan              # credential scan: worktree + full Git history (--staged before commits)
+nice -n 19 npm run test:hosted   # Playwright: hosted demo mode, then the kill switch (fresh demo DB, no admin key)
+scripts/testnet/hosting-keys.sh status          # read-only; add --yes / delete --yes only with Andre's yes (real transactions)
+node scripts/testnet/phase16.ts top-up 2.00     # vault2 up to at most 2 tUSDC (real transactions, with Andre's yes)
 
 # Contracts (one at a time, never alongside Node work)
 nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm (tusdc, vault)

@@ -1,6 +1,6 @@
 import { getDb } from '@/server/db/client';
 import { registeredOnly, setRegisteredOnly } from '@/server/recipients/directory';
-import { json, problem, readJson, requireApiSession, requireMutation } from '@/server/web/api';
+import { json, problem, readJson, requireApiSession, refuseInHostedDemo, requireMutation } from '@/server/web/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +14,8 @@ export function GET(request: Request): Response {
 export async function POST(request: Request): Promise<Response> {
   const guarded = requireMutation(request, ['admin']);
   if (!guarded.ok) return guarded.response;
+  const hosted = refuseInHostedDemo();
+  if (hosted) return hosted;
   const body = await readJson<{ registeredRecipientsOnly?: unknown }>(request, 512);
   if (body instanceof Response) return body;
   if (typeof body.registeredRecipientsOnly !== 'boolean') return problem(422, 'invalid', 'Send {"registeredRecipientsOnly": true | false}.');

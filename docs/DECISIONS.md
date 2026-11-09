@@ -478,3 +478,47 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-108 · Vault top-up for QA and video retakes
 
 - Vault2 topped up from 0.24 to 2.00 tUSDC (admin mint + `ft_transfer_call`, `docs/TESTNET.md`). The funding helper's limit is 10 tUSDC per top-up; it had wrongly reused the 1 tUSDC per-row cap.
+
+## Phase 20 decisions (10 Nov 2026)
+
+### D-109 · Change of plan: a public hosted demo on Railway after all (Andre, 10 Nov)
+
+- GAJIAN goes online at submission, on Railway, until at least 25 Nov 2026; the repository becomes public at submission. This supersedes D-099's "no hosting" (D-014, D-098 stay superseded: not Fly.io).
+- Railway (Andre's choice): deploys from GitHub, keeps the database on a volume with backups, one replica per service with a volume, a web dashboard for variables. Every Railway detail in `docs/HOSTING.md` was checked against Railway's docs on 10 Nov 2026.
+- Railway deploys only from a `release` branch; `main` stays the working branch. Nothing is pushed to `release`, no account is created and no host key is added on-chain without Andre's explicit yes.
+- Order of work: hosting readiness → Andre's accounts → host keys and go live → human QA on the hosted site → fixes → video → public repository and `hackathon-submission` tag → X post → submission by Friday 13 Nov → online until 25 Nov → shutdown.
+
+### D-110 · `railway.json` is not available: dashboard runbook plus an optional IaC file
+
+- Railway's docs (10 Nov 2026): Config as Code is deprecated, existing files keep working only for legacy services until 2026-12-01, and "New services cannot opt into Config as Code". The documented replacement is Infrastructure as Code, `.railway/railway.ts` (applied with the Railway CLI after `railway login`).
+- So the runbook configures the service in the dashboard, click by click. `.railway/railway.ts` records the same settings as the documented equivalent, but it is **optional, not applied and not validated** (no Railway login on this machine). Restart policy, Wait for CI and backups are not in the IaC reference and stay dashboard settings.
+- The build is the root `Dockerfile` (Railway uses it automatically); the start command is its `CMD`.
+
+### D-111 · One service, two processes, fail together
+
+- `scripts/hosted-start.sh`: `hosted-prepare.ts` (migrations; on first boot or a new `DEMO_RESET_TOKEN`: `demo-reset.ts --with-testnet-history`), then the web app and the release worker. If either exits, the other is stopped and the service exits non-zero, so Railway's On Failure policy restarts both. SIGTERM is passed to both.
+- Migrations run in the start command, not in a pre-deploy command, because Railway mounts volumes only at container start.
+- The container binds `0.0.0.0:$PORT` (`PORT=8080`). The 127.0.0.1 rule is for this host.
+- Tested on this host with the real processes bound to 127.0.0.1 and a throwaway database: first boot, second boot, new reset token, same token again, worker killed → service stopped, SIGTERM → clean stop.
+
+### D-112 · Image: Node 26.13.0 pinned by digest, `better-sqlite3` compiled in the image
+
+- `node:26.13.0-bookworm-slim@sha256:add5c17c…` (Docker Hub, 10 Nov). The build stage installs python3/make/g++, runs `npm ci` (install scripts stay denied by `allowScripts`), removes `better-sqlite3`'s shipped prebuilds and compiles it with npm's bundled node-gyp against the image's headers (`--nodedir=/usr/local`), then opens an in-memory database. The same compile command was run on this host on a copy (48 s, loads SQLite 3.53.4). The image itself was not built here (no Docker): the first Railway build is its first real build.
+
+### D-113 · Hosted demo mode (`HOSTED_DEMO=true`)
+
+- A banner on every page (root layout, rendered per request so the deploy's variables count, not the build's).
+- Its own keys, least privilege: maker `create_run, cancel_run` (0.1 NEAR allowance), approvers `approve, reject` (0.05), worker `start_release, pay_row` (0.25) on vault2. Never admin, master or full-access; `loadConfig` refuses `ADMIN_SIGNER_PRIVATE_KEY` in hosted mode. `scripts/testnet/hosting-keys.sh add|delete|status` writes private keys only to the git-ignored `.hosting/host-keys.env` (600). `signer-keys.mjs` now picks the role key that has a local key file, so the extra host keys never confuse this server's tooling.
+- `chainWritesEnabled` now means the four payroll keys; the admin key is separate (`adminWritesEnabled`). Without it the workflow editor is read-only (preview only), on any copy.
+- Directory and setting read-only in hosted mode (403 `hosted_read_only`). Submit allowed only when every row pays an active, "Ready to receive tUSDC" recipient within its maximum.
+- Assistant: a separate Anthropic key with a monthly spend limit (Andre's console), plus a global 200 requests per rolling 24 hours in hosted mode.
+- Sign-in lockout counts per email and client in hosted mode, so a visitor cannot lock the shared demo accounts.
+- Kill switch `HOSTED_READONLY=true`: every mutation except sign-out → 503, the worker pauses, banner.
+- Vault at most 2 tUSDC: `phase16.ts top-up <target ≤ 2>`.
+- Hosted database: `demo:reset` plus the real Phase 02/04 testnet history (clean: separate immutable tables, labelled "Testnet run", already tested), so visitors see paid runs with explorer links on the dashboards right away. The app runs of Phases 13–19b are not copied (they live in backups of this server's database, with rehearsal leftovers).
+
+### D-114 · Domain: `app.gajian.my.id` recommended; the apex needs Andre's decision
+
+- gajian.my.id's DNS is Vercel DNS (`ns1/ns2.vercel-dns.com`, checked 10 Nov), and **the apex already serves a live site** ("Gajian — HR & Payroll Modern untuk UMKM Indonesia"). `app.gajian.my.id` is free.
+- Railway needs CNAME + TXT. A CNAME is not allowed at the apex; Railway supports CNAME flattening and ALIAS, and Vercel DNS supports ALIAS at the apex. So the apex is possible, but it replaces the existing site.
+- Recommendation: `app.gajian.my.id` (CNAME). The runbook covers both, plus Cloudflare and typical registrars.

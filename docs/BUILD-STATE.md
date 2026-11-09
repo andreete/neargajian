@@ -29,6 +29,66 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 18 Independent QA (first half: handoff) | Handoff ready; Codex QA not scheduled (D-099); human QA by Andre after Phase 19 | — |
 | 19 Recipient directory and payroll assistant | Done, approved by Andre | **Yes**: vault2 top-up to 2.00 tUSDC; read-only check of the 3 live recipients |
 | 19b Live assistant run | Done | **Yes**: assistant-drafted Sales run approved in the browser and paid (`gjn-6e2922fcf5cd4d0f91f1-v1`), `judge:verify` 130/130 |
+| 20 Hosting readiness (Railway) | Done: ready, **not live** (no account, deploy, `release` branch or host key yet) | none (read-only checks only) |
+
+---
+
+## Phase 20 · Hosting readiness on Railway (10 Nov 2026)
+
+Nothing was created, deployed or pushed anywhere but `main`, and no key was added on-chain. The Railway details were checked against Railway's documentation on 10 Nov 2026 (sources in `docs/HOSTING.md`).
+
+### Found while checking the docs
+
+- **`railway.json` cannot be used for a new service.** Railway's docs: Config as Code is deprecated, "New services cannot opt into Config as Code", legacy files stop on 2026-12-01. The documented equivalent is Infrastructure as Code (`.railway/railway.ts`, Railway CLI). So: a dashboard runbook, plus an optional, not applied and not validated `.railway/railway.ts` (D-110).
+- **gajian.my.id already serves a live site** on Vercel ("Gajian — HR & Payroll Modern untuk UMKM Indonesia"), DNS on Vercel DNS. `app.gajian.my.id` is free. The apex is possible only with an ALIAS record (Vercel supports it) and would replace that site. Recommendation `app.gajian.my.id`; Andre decides (D-114).
+- **The public demo passwords let anyone lock the shared demo accounts** (5 failures per email). In hosted mode the per-email limit now counts per email and client.
+- **`signer-keys.mjs` assumed exactly one vault key per role**: adding host keys would have broken `write-env.mjs` and the testnet scripts here. It now picks the key with a local key file.
+
+### Built
+
+- **Deploy:**
+  - `Dockerfile`: Node 26.13.0 pinned by tag and digest; `better-sqlite3` compiled from source in the build stage with npm's node-gyp, prebuilds removed, checked by opening a database; `next build`; runtime stage without compilers. Plus `.dockerignore`.
+  - `scripts/hosted-start.sh`: prepare, then web app + worker in one service; if either dies the service stops non-zero; SIGTERM passed to both.
+  - `scripts/hosted-prepare.ts`: migrations, or on first boot / a new `DEMO_RESET_TOKEN` a `demo-reset.ts --with-testnet-history`, once per token.
+  - `/api/health` now also checks the database (503 if unreadable) and reports `hostedDemo` / `readOnly`.
+  - `.railway/railway.ts`: optional IaC.
+- **Hosted demo mode** (`src/server/hosted.ts`, D-113):
+  - banner on every page;
+  - `loadConfig` refuses the admin key;
+  - workflow editor read-only without an admin key (any copy; the Phase 07 e2e test now checks whichever state the page declares);
+  - directory and setting read-only (403 `hosted_read_only`);
+  - submit gate `hostedSubmitProblem` (every row "Ready to receive tUSDC"; checked before freezing or signing; also shown on the review page);
+  - assistant cap of 200 per day;
+  - per-visitor sign-in lockout;
+  - kill switch `HOSTED_READONLY` (mutations except sign-out → 503, worker pauses, banner).
+- **Keys:** `scripts/testnet/hosting-keys.sh status | add --yes | delete --yes` + `hosting-keys.mjs`. Four new least-privilege keys (maker `create_run, cancel_run`; approvers `approve, reject`; worker `start_release, pay_row`; small allowances). Private keys only in the git-ignored `.hosting/host-keys.env` (600), never printed. **Not run.**
+- **Vault cap:** `phase16.ts top-up <target>` funds only the difference and refuses targets above 2 tUSDC.
+- **Smoke file:** `docs/hosting/smoke-test-0.01.csv` (Emma Clark, 0.01).
+- **Docs:**
+  - `docs/HOSTING.md` rewritten as the Railway runbook: accounts, host keys, project from `release`, volume, backups, variables with sources, domain (Vercel / Cloudflare / typical registrar), smoke test, releases, reset, vault cap, kill switch, cost, shutdown.
+  - README "Try it online" (placeholder `<HOSTED-URL>`, separate windows per role).
+  - VIDEO (record on the hosted site, locally as fallback), X-POST (repository, video and demo links; reply 263/280), SUBMISSION (order of work, Friday 13 Nov), SECURITY (hosted mode), QA-HANDOFF (A11), JUDGE, CLAUDE.md, AGENTS.md.
+
+### Evidence (local; nothing on Railway or on-chain)
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck`, `npm run build` | pass |
+| `npm test` | **186/186** (24 files). New `tests/integration/hosted.test.ts` (7): flags and the admin-key refusal; sample refused with nothing sent; ready-only run submits; an unverified recipient blocks; off → the sample submits; all six directory/setting changes 403 with no change; kill switch 503 with sign-in, sign-out, reads and health working; per-visitor lockout; assistant daily cap |
+| `npm run test:e2e` | **29/29** with keys, **29/29** with every key blank |
+| `npm run test:judge-mode` | **1/1** |
+| `npm run test:hosted` (new) | **3/3** hosted (banner on landing and app pages; testnet runs with explorer links; sample uploads, review warns, submit refused; workflow and directory read-only) and **1/1** kill switch (banner, sign-in, create refused, sign-out); same with the payroll keys blank |
+| `npm run judge:verify` | **130/130** |
+| `npm run samples:check` · `npm run secret-scan` · `npm audit --audit-level=high` | no diff · clean · 14 moderate (unchanged), none high |
+| Start script on this host (127.0.0.1, throwaway DB under `.tmp/`, real web + worker, `HOSTED_DEMO=true`, no admin key) | first boot: reset with testnet history (6 runs), three recipients "Ready", health `db ok, hostedDemo true`, banner served; worker killed → script stopped the web app and exited; second boot → migrations only; new `DEMO_RESET_TOKEN` → reset once, old DB moved to `data/backups`; same token → no reset; SIGTERM → both stopped cleanly. A reset is refused while this server's worker PID file is live (correct guard) |
+| `better-sqlite3` source build (copy on this host) | 48 s, loads SQLite 3.53.4 from `build/Release` |
+| `hosting-keys.sh` | refuses without `--yes`; `status` read-only (lists only this server's keys); key generation dry run: files 700/600, no private key printed, second run refused; files removed. No transaction |
+| `phase16.ts top-up` | refuses 2.5; target 1.00 with 1.94 available → "nothing to do" (no transaction) |
+
+### Not done (on purpose)
+
+- No Railway account, project, deploy or `release` branch; no host keys on-chain; no Docker build here. The image's first real build is Railway's first build.
+- The Railway dashboard labels in the runbook come from the docs, not from clicking through a live account.
 
 ---
 

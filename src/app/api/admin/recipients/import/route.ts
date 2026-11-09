@@ -4,7 +4,7 @@ import { activeLimits } from '@/server/runs/draft-service';
 import { applyImport, checkReadiness } from '@/server/recipients/directory';
 import { importRecipientFile } from '@/server/recipients/import';
 import { getReadinessChecker } from '@/server/recipients/readiness';
-import { domainErrorResponse, json, problem, requireMutation } from '@/server/web/api';
+import { domainErrorResponse, json, problem, refuseInHostedDemo, requireMutation } from '@/server/web/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,8 @@ const IMPORT_CHECK_LIMIT = 25;
 export async function POST(request: Request): Promise<Response> {
   const guarded = requireMutation(request, ['admin']);
   if (!guarded.ok) return guarded.response;
+  const hosted = refuseInHostedDemo();
+  if (hosted) return hosted;
   if (Number(request.headers.get('content-length') ?? '0') > MAX_FILE_BYTES + 64 * 1024) return problem(413, 'too_large', 'The file is larger than 2 MB.');
   let form: FormData;
   try {

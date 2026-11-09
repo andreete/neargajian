@@ -9,6 +9,8 @@
 //      recipients only" on). No demo draft, no rehearsal runs, no history.
 // Live evidence stays in docs/TESTNET.md and in the backup. Appends to data/backups/RESET-LOG.jsonl.
 // Usage: npm run demo:reset            (uses DATABASE_URL and VAULT_CONTRACT_ID from .env)
+//        npm run demo:reset -- --with-testnet-history   also imports the real Phase 02/04 testnet runs
+//        (db/seed/testnet-history.json, "Testnet run" with explorer links): the hosted demo's start
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -66,7 +68,8 @@ if (wf.revision !== SEED_WORKFLOW.revision || wf.kind !== 'TwoSequential' || wf.
   throw new Error(`refused: ${vault} is at revision ${wf.revision} (${wf.kind}, ${wf.release_mode}) but the seed mirrors revision ${SEED_WORKFLOW.revision} (TwoSequential, Automatic). Update SEED_WORKFLOW first.${backup ? ` Your previous database is safe at ${backup}; move it back to ${file} to undo.` : ''}`);
 }
 const { db, sqlite } = getDatabase();
-const created = await seedDemo(db, { demoDraft: false, testnetHistory: false, recipientDirectory: true, env: { ...process.env, DEMO_CAP_PER_ROW_BASE_UNITS: wf.max_row_amount, DEMO_CAP_PER_RUN_BASE_UNITS: wf.max_run_total } });
+const withHistory = process.argv.includes('--with-testnet-history');
+const created = await seedDemo(db, { demoDraft: false, testnetHistory: withHistory, recipientDirectory: true, env: { ...process.env, DEMO_CAP_PER_ROW_BASE_UNITS: wf.max_row_amount, DEMO_CAP_PER_RUN_BASE_UNITS: wf.max_run_total } });
 // Read-only testnet check of the three live recipients (exists + registered with tUSDC).
 const live = db.select({ id: recipients.id }).from(recipients).where(eq(recipients.sample, false)).all().map((x) => x.id);
 const checked = await checkReadiness(db, rpcReadinessChecker(), 'usr_admin', live);
@@ -75,4 +78,4 @@ const fresh = counts(sqlite);
 closeDatabase();
 console.log(`fresh database ${file}: ${created.join(', ')}`);
 console.log(`workflow mirrors ${vault} revision ${wf.revision}: two in sequence (${wf.approvers.join(' → ')}), automatic release, caps ${wf.max_row_amount} / ${wf.max_run_total} base units`);
-appendFileSync(join(backups, 'RESET-LOG.jsonl'), `${JSON.stringify({ at: new Date().toISOString(), backup, before, fresh, vault, revision: wf.revision })}\n`);
+appendFileSync(join(backups, 'RESET-LOG.jsonl'), `${JSON.stringify({ at: new Date().toISOString(), backup, before, fresh, vault, revision: wf.revision, testnetHistory: withHistory })}\n`);

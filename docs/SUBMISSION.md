@@ -10,7 +10,8 @@ Source: the live organizer guide https://nearhackathon.com/HACKATHON.md, re-read
 | Repository must be public by | 2026-11-14 23:59 | 2026-11-15 06:59 |
 | Judging starts | 2026-11-16 00:00 | 2026-11-16 07:00 |
 | Results announced by | 2026-11-18 23:59 | 2026-11-19 06:59 |
-| Hosted demo (Q-012, "a plus") | **not pursued** (decided 10 Nov): local-only with a YouTube video | |
+| **Planned submission (our own target)** | **2026-11-13 (Friday)** | |
+| Hosted demo (Q-012, "a plus") kept up | until at least **2026-11-25** (`docs/HOSTING.md`) | |
 
 Submissions are accepted only during the development phase. Changes after submitting go through the organizers' request-changes page, not a second submission. A repository can be submitted only once.
 
@@ -28,7 +29,7 @@ Everything under "Andre" is yours to do. The agent does not make the repository 
 | 6 | List AI-generated code and third-party libraries in the README (Q-005) | Done: README "AI use" and "Third-party software" | — |
 | 7 | If one person enters two projects, each README names the other (Q-015) | **Open (Q-015)**: Andre to confirm: only GAJIAN? If there is a second project, add its name to the README | **Andre** |
 | 8 | Demo post on X by a human: says "built at NEAR HACKATHON", tags @NEARProtocol and #NEARHackathon, attaches the video or screenshots (section 2) | Draft in `docs/X-POST.md` (275/280 characters); **posting open** | **Andre** |
-| 9 | Demo: local-only is accepted with public repo + reproducible README + X post with a video; "screenshots are not enough when judges cannot open the demo"; hosting is a plus (Q-012) | **Local-only with a YouTube video** (decided 10 Nov; hosting not pursued, `docs/HOSTING.md`). **Video open**: runbook `docs/VIDEO.md`, upload to YouTube | **Andre** |
+| 9 | Demo: local-only is accepted with public repo + reproducible README + X post with a video; "screenshots are not enough when judges cannot open the demo"; hosting is a plus (Q-012) | **Hosted demo on Railway + YouTube video** (decided 10 Nov, D-109). Hosting **ready, not live**: runbook `docs/HOSTING.md`; README "Try it online" has a placeholder URL until it is live. **Video open**: `docs/VIDEO.md` (record on the hosted site, locally as a fallback), upload to YouTube | **Andre** |
 | 10 | Submission form: project name (2–80 characters) | Suggested: `GAJIAN` | **Andre** |
 | 11 | Team lead's name (2–80 characters) | **Andre** | **Andre** |
 | 12 | Contact email (≤ 160 characters; at most 2 submissions per email) | **Andre** | **Andre** |
@@ -36,7 +37,7 @@ Everything under "Andre" is yours to do. The agent does not make the repository 
 | 14 | Tracks (one or more track IDs; one submission per project) | `realworld` (Real-World Money) | **Andre** |
 | 15 | **NEAR payout account: a mainnet named account or a 64-character implicit account** (prizes paid in NEAR, Q-016) | **Open**: your mainnet address (never a testnet account; do not put it in the repository) | **Andre** |
 | 16 | Repository link (public, unique) | `https://github.com/andreete/neargajian` once public | **Andre** |
-| 17 | Demo post link (public) | **Open**: the X post URL | **Andre** |
+| 17 | Demo post link (public) | **Open**: the X post URL (the post links the repository, the video and the hosted demo) | **Andre** |
 | 18 | Project description (20–2,000 characters: problem, product, NEAR's role) | Draft below | **Andre** to review |
 | 19 | Consent to the contact notice | **Andre** | **Andre** |
 
@@ -52,6 +53,20 @@ Notes from the guide that apply to us:
 GAJIAN is payroll with approvals that a NEAR contract enforces. A finance team uploads a payroll file (up to 1,000 rows), enters rows by hand, or asks a payroll assistant ("pay the Sales division 0.05 each"), which drafts only from the admin's recipient directory; every row is validated against the directory and the caps, and an invalid file is rejected with every problem listed. The maker submits an immutable version: the app registers a Merkle commitment of the exact accounts and amounts in a custom vault contract. One or two approvers sign off, in sequence or in parallel, as the admin configured. The vault then pays each wallet in its own transaction, but only for an approved run, only the committed amounts, only once per row, and only from funds it holds; otherwise the run waits as "Awaiting funding". Accounting gets the same payouts as one consolidated entry or one entry per recipient, with matching CSV exports, and each paid time is the payout's block time. Built and rehearsed on NEAR testnet with a test token; the vault has no access keys, so its code cannot change, and every claim is re-checkable from the repository with a read-only verifier.
 ```
 
+## Order of work (10 → 25 Nov)
+
+1. Hosting readiness (Phase 20, done in the repository).
+2. Andre's accounts: Railway Hobby with a card, GitHub access to this repository only, a second Anthropic key with a monthly spend limit, the domain choice (`docs/HOSTING.md` step 1).
+3. Host keys (agent, with Andre's yes) and go live: `release` branch, Railway project, variables, domain, smoke test (`docs/HOSTING.md` steps 2–6).
+4. Human QA on the hosted site (`docs/QA-HANDOFF.md`).
+5. Fixes, released with Andre's yes (`git push origin main:release`).
+6. Video, recorded on the hosted site (`docs/VIDEO.md`), uploaded to YouTube.
+7. Repository public and the `hackathon-submission` tag.
+8. X post (`docs/X-POST.md`).
+9. Submission by **Friday 13 Nov 2026** (deadline 2026-11-14 23:59 UTC).
+10. Online until at least 25 Nov 2026; kill switch ready (`docs/HOSTING.md` step 10).
+11. Shutdown after 25 Nov: host keys deleted on-chain, Railway service removed, DNS records removed (`docs/HOSTING.md` step 12).
+
 ## Final steps on submission day (Andre)
 
 1. Re-read https://nearhackathon.com/HACKATHON.md for changes.
@@ -60,4 +75,4 @@ GAJIAN is payroll with approvals that a NEAR contract enforces. A finance team u
 4. Make the repository public (GitHub → Settings → General → Danger Zone → Change visibility).
 5. Upload the video to YouTube; post on X with `docs/X-POST.md` (attach the video file or link it in the reply); copy the post URL.
 6. Submit the form (rows 10–19) before **2026-11-14 23:59 UTC / 2026-11-15 06:59 WIB**. Leave a margin of several hours.
-7. No hosted demo to keep up (local-only, decided 10 Nov).
+7. Keep the hosted demo up until at least 2026-11-25, then shut it down (`docs/HOSTING.md` step 12).

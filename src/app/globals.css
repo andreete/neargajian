@@ -845,3 +845,9 @@ table.data.directory td:first-child { min-width: 170px; }
 .modal-body .rcp-state .btn-primary { width: auto; }
 table.data.directory .rcp-email { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 table.data.directory .copy-value.cv-md { max-width: 180px; }
+
+/* ------------------------------------------------ hosted demo (Phase 20) */
+.hosted-banners { position: relative; z-index: 50; }
+.hosted-banner { display: flex; gap: 10px; align-items: center; justify-content: center; padding: 8px 20px; font-size: 13.5px; background: #f2f0ff; color: #2d1a80; border-bottom: 1px solid #ddd6fb; text-align: center; }
+.hosted-banner svg { flex: none; }
+.hosted-banner.is-paused { background: var(--warning-bg); color: var(--warning); border-bottom-color: #f3d9a6; }

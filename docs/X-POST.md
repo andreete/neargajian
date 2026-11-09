@@ -2,7 +2,7 @@
 
 Andre publishes this himself (organizer rule: the human posts). Required by the organizers: say it was built at NEAR HACKATHON, tag @NEARProtocol and #NEARHackathon, attach the demo video or screenshots. Optional tags: @NearLegion, @NearBuilders.
 
-Fill in one link before posting: `<VIDEO>`, the demo video on YouTube (or attach the video file to the post directly). There is no hosted demo (local-only, decided 10 Nov). The repository must be public first.
+Fill in two links before posting: `<VIDEO>` (the demo video on YouTube; or attach the video file to the post directly) and `<DEMO>` (the hosted demo, `<HOSTED-URL>` from `docs/HOSTING.md`, once it is live and smoke-tested). The repository must be public first.
 
 ## Main post (≤ 280 characters; X counts each link as 23)
 
@@ -17,12 +17,13 @@ What would your finance team need to trust a contract with payroll?
 
 Character count as X counts it: 275 of 280. Attach: the demo video (2:30).
 
-## Reply (thread, optional)
+## Reply (thread, optional; 263/280 characters as X counts them)
 
 ```
-What you can check yourself: the vault has no access keys, so its code can't change; every payout's paid time is its block time on NearBlocks; `npm run judge:verify` re-checks all of it read-only.
+Check it yourself: the vault has no access keys, so its code can't change; each paid time is its NearBlocks block time; `npm run judge:verify` re-checks it all, read-only.
 
-Demo video: <VIDEO>
+Video: <VIDEO>
+Try it (testnet, shared demo data): <DEMO>
 ```
 
 ## Notes

@@ -18,6 +18,7 @@ import { formatAmountShort, parseAmount } from '../money.ts';
 import { divisions } from '../recipients/directory.ts';
 import { activeLimits } from '../runs/draft-service.ts';
 import { createRun, DomainError } from '../runs/repository.ts';
+import { HOSTED_ASSISTANT_DAILY_CAP, hostedMode } from '../hosted.ts';
 import { AssistantModelError, type AssistantModel, type AssistantTurn, type DraftRequest } from './model.ts';
 
 export const RATE_LIMIT_PER_HOUR = 20;
@@ -182,6 +183,12 @@ export function requestsInLastHour(db: Db, userId: string, now: Date): number {
     .where(and(eq(assistantRequests.userId, userId), gte(assistantRequests.createdAt, new Date(now.getTime() - 3_600_000)))).get()?.n ?? 0;
 }
 
+/** All makers together, rolling 24 hours (the public demo's global cap). */
+export function requestsInLastDay(db: Db, now: Date): number {
+  return db.select({ n: sql<number>`count(*)` }).from(assistantRequests)
+    .where(gte(assistantRequests.createdAt, new Date(now.getTime() - 86_400_000))).get()?.n ?? 0;
+}
+
 export async function interpretRequest(db: Db, model: AssistantModel | null, principal: Principal, rawTurns: unknown, now = new Date()): Promise<AssistantReply> {
   if (!can(principal, 'assistant.use')) throw new DomainError('forbidden', 'Only a maker can use the payroll assistant.');
   if (!model) return { kind: 'off', message: OFF_MESSAGE };
@@ -189,6 +196,9 @@ export async function interpretRequest(db: Db, model: AssistantModel | null, pri
   const texts = userText(turns);
   if (requestsInLastHour(db, principal.id, now) >= RATE_LIMIT_PER_HOUR) {
     return { kind: 'rate_limited', message: `You have used the payroll assistant ${RATE_LIMIT_PER_HOUR} times in the last hour. Try again later or create the run by hand.` };
+  }
+  if (hostedMode().demo && requestsInLastDay(db, now) >= HOSTED_ASSISTANT_DAILY_CAP) {
+    return { kind: 'rate_limited', message: `The public demo's payroll assistant has reached its limit of ${HOSTED_ASSISTANT_DAILY_CAP} requests per day. Try again tomorrow, or create the run by hand.` };
   }
   const pre = preCheck(texts);
   if (pre) return { kind: 'refused', requestId: record(db, { userId: principal.id, now, texts, outcome: 'refused', message: pre }), message: pre };

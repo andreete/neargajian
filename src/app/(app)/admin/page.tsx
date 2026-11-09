@@ -51,6 +51,7 @@ export default async function AdminDashboard() {
             pending={pending ? { revision: pending.revision, chainTxHash: pending.chainTxHash } : null}
             csrfToken={session.csrfToken}
             explorerTxUrl={config.explorerTxUrl}
+            readOnly={!config.adminWritesEnabled}
           />
         </div>
       ) : null}

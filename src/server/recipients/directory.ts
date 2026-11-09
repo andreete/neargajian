@@ -366,3 +366,21 @@ export function describeChanges(changes: Changes): string {
   };
   return Object.entries(changes).map(([k, [a, b]]) => (a === null ? `${label[k] ?? k} ${fmt(k, b)}` : `${label[k] ?? k} ${fmt(k, a)} → ${fmt(k, b)}`)).join('; ');
 }
+
+/**
+ * Public demo (HOSTED_DEMO=true): a run may be submitted only when every row pays an active
+ * directory recipient that is "Ready to receive tUSDC" on testnet, within its maximum. So the
+ * hosted copy can only ever pay the team's live recipients. Returns the refusal, or null.
+ */
+export function hostedSubmitProblem(db: Queryable, rows: { accountId: string; amount: bigint }[]): string | null {
+  const byAccount = new Map(db.select().from(recipients).all().map((r) => [r.nearAccountId, r]));
+  const bad = rows.filter((r) => {
+    const e = byAccount.get(r.accountId);
+    return !e || !e.active || e.readiness !== 'ready' || r.amount > e.maxAmount;
+  });
+  if (!bad.length) return null;
+  const ready = [...byAccount.values()].filter((r) => r.active && r.readiness === 'ready').map((r) => r.name);
+  const samples = bad.some((r) => byAccount.get(r.accountId)?.sample);
+  const who = ready.length ? ` (here: ${ready.slice(0, 5).join(', ')}${ready.length > 5 ? ', …' : ''})` : '';
+  return `Public demo: a run can only pay recipients that are in the directory and "Ready to receive tUSDC" on testnet${who}. ${bad.length.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} rows are not${samples ? ' (the sample employees’ accounts do not exist on testnet)' : ''}, so this run cannot be submitted here. Nothing was sent. Upload and review still work; run GAJIAN locally to submit other recipients.`;
+}

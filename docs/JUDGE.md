@@ -22,6 +22,7 @@ export SESSION_SECRET=$(openssl rand -hex 32)
 npm run build
 npm run test:e2e                       # 29 passed
 npm run test:judge-mode                # 1 passed: fresh demo database, no signer keys (read-only copy)
+npm run test:hosted                    # 3 passed, then 1 passed: hosted demo mode and the kill switch
 ```
 
 `test:e2e` starts the build on 127.0.0.1:8092 with an isolated database under `.tmp/e2e`. The test-only fixture (`scripts/e2e-fixture.ts`) adds runs in every state against a stand-in vault, so no testnet transactions are needed (adding a recipient makes one read-only RPC call; offline it shows "Could not reach NEAR testnet"). The payroll assistant uses a labelled test stub there ("Test stub model (browser tests only)"), never the Claude API.

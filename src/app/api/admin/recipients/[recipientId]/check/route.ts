@@ -2,7 +2,7 @@ import { getDb } from '@/server/db/client';
 import { checkReadiness, getRecipient } from '@/server/recipients/directory';
 import { getReadinessChecker } from '@/server/recipients/readiness';
 import { recipientJson } from '@/server/web/serialize';
-import { domainErrorResponse, json, requireMutation } from '@/server/web/api';
+import { domainErrorResponse, json, refuseInHostedDemo, requireMutation } from '@/server/web/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +10,8 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: Request, ctx: { params: Promise<{ recipientId: string }> }): Promise<Response> {
   const guarded = requireMutation(request, ['admin']);
   if (!guarded.ok) return guarded.response;
+  const hosted = refuseInHostedDemo();
+  if (hosted) return hosted;
   const db = getDb();
   try {
     const id = getRecipient(db, (await ctx.params).recipientId).id;

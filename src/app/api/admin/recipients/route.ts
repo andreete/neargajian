@@ -3,7 +3,7 @@ import { activeLimits } from '@/server/runs/draft-service';
 import { checkReadiness, createRecipient, getRecipient, listRecipients, type RecipientInput } from '@/server/recipients/directory';
 import { getReadinessChecker } from '@/server/recipients/readiness';
 import { recipientJson } from '@/server/web/serialize';
-import { domainErrorResponse, json, readJson, requireApiSession, requireMutation } from '@/server/web/api';
+import { domainErrorResponse, json, readJson, requireApiSession, refuseInHostedDemo, requireMutation } from '@/server/web/api';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,8 @@ export function GET(request: Request): Response {
 export async function POST(request: Request): Promise<Response> {
   const guarded = requireMutation(request, ['admin']);
   if (!guarded.ok) return guarded.response;
+  const hosted = refuseInHostedDemo();
+  if (hosted) return hosted;
   const body = await readJson<Partial<RecipientInput>>(request, 4096);
   if (body instanceof Response) return body;
   const db = getDb();

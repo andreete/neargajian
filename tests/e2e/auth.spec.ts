@@ -162,5 +162,7 @@ test('admin workflow editor: live preview, distinct reviewers, nothing saved wit
   await expect(editor.getByText('Choose two different reviewers.')).toBeVisible();
   await expect(save).toBeDisabled();
   await page.locator('#approver2').selectOption('usr_app2');
-  await expect(save).toBeEnabled();
+  // Without an admin key (CI with blank keys, the public demo) the page says it is read-only.
+  if (await page.getByTestId('workflow-read-only').isVisible()) await expect(save).toBeDisabled();
+  else await expect(save).toBeEnabled();
 });

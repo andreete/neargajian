@@ -12,6 +12,9 @@
 //       the worker's key and the row's real proof (from the app database). Must be refused.
 //   node scripts/testnet/phase16.ts fund <amount-tusdc>
 //       The admin mints test tUSDC (mock token) and funds the final vault (ft_transfer_call).
+//   node scripts/testnet/phase16.ts top-up <target-tusdc>
+//       Funds the final vault UP TO the target (at most 2 tUSDC: the hosted demo keeps the vault
+//       small). Reads the vault's available balance first; does nothing if it is already there.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { buildPayoutTree, newReviewSalt, proofFor, reviewDigest, toHex, type PayoutLeaf } from '../../src/server/commitments.ts';
@@ -115,4 +118,18 @@ else if (cmd === 'fund' && a) {
   adminTokenCall(`admin funds ${VAULT} with ${a} tUSDC (ft_transfer_call)`, 'ft_transfer_call', { receiver_id: VAULT, amount, msg: '' }, '1 yoctoNEAR');
   console.log(JSON.stringify({ final: await view(VAULT, 'get_balances', {}) }));
 }
-else { console.error('usage: phase16.ts migrate | duplicate <chain-run-id> <index> | fund <amount>'); process.exitCode = 2; }
+else if (cmd === 'top-up' && a) {
+  const MAX = 2_000_000n; // 2 tUSDC: the most the vault should hold while the demo is public
+  const target = tusdc(a);
+  if (target > MAX) throw new Error('refused: keep the vault at or below 2 tUSDC while the demo is public');
+  const bal = await view<{ available: string; reserved: string }>(VAULT, 'get_balances', {});
+  const missing = target - BigInt(bal.available);
+  console.log(`vault available ${formatAmount(BigInt(bal.available))}, reserved ${formatAmount(BigInt(bal.reserved))}, target ${formatAmount(target)}`);
+  if (missing <= 0n) console.log('nothing to do');
+  else {
+    adminTokenCall(`admin mints ${formatAmount(missing)} test tUSDC to itself (mock token)`, 'mint', { account_id: ROLES.admin, amount: missing.toString() }, '0 NEAR', '30 Tgas');
+    adminTokenCall(`admin funds ${VAULT} with ${formatAmount(missing)} tUSDC (ft_transfer_call)`, 'ft_transfer_call', { receiver_id: VAULT, amount: missing.toString(), msg: '' }, '1 yoctoNEAR');
+    console.log(JSON.stringify({ final: await view(VAULT, 'get_balances', {}) }));
+  }
+}
+else { console.error('usage: phase16.ts migrate | duplicate <chain-run-id> <index> | fund <amount> | top-up <target ≤ 2>'); process.exitCode = 2; }

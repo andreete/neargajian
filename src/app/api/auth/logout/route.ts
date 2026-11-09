@@ -7,7 +7,7 @@ import { requireMutation } from '@/server/web/api';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request): Promise<Response> {
-  const guarded = requireMutation(request);
+  const guarded = requireMutation(request, undefined, { allowWhenReadOnly: true });
   if (!guarded.ok) return guarded.response;
   const db = getDb();
   destroySession(db, parseCookies(request.headers.get('cookie'))[SESSION_COOKIE]);

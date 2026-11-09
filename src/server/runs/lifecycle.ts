@@ -14,7 +14,8 @@ import {
   approvalEvents, auditEvents, payoutActions, payrollRuns, runVersions, users, versionRows, type VersionStatus,
 } from '../db/schema.ts';
 import { NOT_IN_DIRECTORY } from '../payroll/validate.ts';
-import { directoryCheckFor, registeredOnly } from '../recipients/directory.ts';
+import { directoryCheckFor, hostedSubmitProblem, registeredOnly } from '../recipients/directory.ts';
+import { hostedMode } from '../hosted.ts';
 import { activeSnapshot } from '../workflow/service.ts';
 import { toRaw, validateDraft } from './draft-service.ts';
 import { confirmedPayouts, settleActions } from '../payouts/settle.ts';
@@ -115,10 +116,14 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
     }
     throw new DomainError('invalid', 'Every row must be valid before submission. Fix or remove the invalid rows first.');
   }
+  const rows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
+  if (hostedMode().demo) {
+    const problem = hostedSubmitProblem(db, rows);
+    if (problem) throw new DomainError('invalid', problem);
+  }
   const snapshot = activeSnapshot(db);
   if (!snapshot) throw new DomainError('invalid', 'No active approval workflow. Ask the admin to set one.');
   if (!client.canSign('maker')) throw new DomainError('conflict', NO_SIGNER_MESSAGE);
-  const rows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
   const version = createVersion(db, {
     runId, makerUserId: principal.id, rows, workflow: snapshot, postingMode: run.postingMode, now, vaultContractId: client.vaultId,
     directoryCheck: directoryCheckFor(db, rows),

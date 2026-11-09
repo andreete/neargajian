@@ -7,6 +7,7 @@ import { getConfig } from '../config.ts';
 import { getDb } from '../db/client.ts';
 import type { Role } from '../db/schema.ts';
 import { SESSION_COOKIE, csrfMatches, parseCookies, readSession, type ActiveSession } from '../auth/session.ts';
+import { HOSTED_DIRECTORY_MESSAGE, hostedMode, READ_ONLY_MESSAGE } from '../hosted.ts';
 
 export const NO_STORE = { 'Cache-Control': 'no-store' } as const;
 
@@ -50,9 +51,14 @@ export function requireApiSession(request: Request, roles?: readonly Role[]): Gu
   return { ok: true, session };
 }
 
-/** For state-changing requests: same origin plus the session's CSRF token in a header. */
-export function requireMutation(request: Request, roles?: readonly Role[]): Guarded {
+/**
+ * For state-changing requests: same origin plus the session's CSRF token in a header.
+ * Kill switch: with HOSTED_READONLY=true every mutation is refused (503) except those that pass
+ * `allowWhenReadOnly` (sign-out).
+ */
+export function requireMutation(request: Request, roles?: readonly Role[], opts: { allowWhenReadOnly?: boolean } = {}): Guarded {
   if (!isSameOrigin(request)) return { ok: false, response: problem(403, 'bad_origin', 'Cross-site request refused.') };
+  if (hostedMode().readOnly && !opts.allowWhenReadOnly) return { ok: false, response: problem(503, 'read_only', READ_ONLY_MESSAGE) };
   const guarded = requireApiSession(request, roles);
   if (!guarded.ok) return guarded;
   if (!csrfMatches(guarded.session.csrfToken, request.headers.get('x-csrf-token'))) {
@@ -85,4 +91,9 @@ export async function readJson<T>(request: Request, maxBytes = 1_000_000): Promi
   } catch {
     return problem(400, 'bad_json', 'Malformed JSON.');
   }
+}
+
+/** Directory and settings changes are refused in the public demo (visitors cannot add payees). */
+export function refuseInHostedDemo(): Response | null {
+  return hostedMode().demo ? problem(403, 'hosted_read_only', HOSTED_DIRECTORY_MESSAGE) : null;
 }

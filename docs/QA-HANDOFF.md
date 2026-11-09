@@ -57,6 +57,7 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm run judge:verify` | about 130 `PASS` lines and `All testnet evidence checks passed.` |
 | `npm audit --audit-level=high` | exit 0 (14 moderate advisories known; none high or critical) |
 | `npx playwright install chromium && npm run build && npm run test:e2e` | `29 passed` (isolated DB, test-only fixture, stand-in vault, labelled assistant test stub; no testnet writes, no API key) |
+| `npm run test:hosted` (after the build) | `3 passed`, then `1 passed` (hosted demo mode, then the kill switch; fresh database like the hosted service; no admin key; no transactions) |
 | `npm run test:judge-mode` | `1 passed` (fresh demo DB, no keys: read-only note, upload, review, submit refused, run stays a draft) |
 | `npm run contracts:build` then `sha256sum contracts/target/near/gajian_vault/gajian_vault.wasm` | `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0` (Linux x86-64, pinned toolchain) |
 | `npm run judge:deployment` (after the build) | `PASS deployed code_hash equals the locally built Wasm`, `PASS no full-access key on vault2.gajian-payroll.testnet (0 keys in total)` |
@@ -141,6 +142,15 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 - Limits: 20 requests per maker per hour; approvers and the admin get 403 on the assistant routes; one maker cannot create a draft from another maker's preview (404).
 - Approver view of an assistant run: "Drafted by the payroll assistant from: …" plus the directory check.
 - Reference: `assistant.test.ts` (stub model + the real SDK adapter against a fake fetch), `boundaries.test.ts`, `assistant.spec.ts`, `tests/judge/read-only.spec.ts`. Live (when the key is in place): `npm run live:phase19 -- --grep p19-live-run` (real transactions; with Andre's approval only).
+
+**A11: hosted demo (on the hosted site once live; locally with `npm run test:hosted`)**
+- Every page, including the landing page: "Public demo on NEAR testnet. tUSDC is a zero-value test token. The demo data is shared …".
+- Maker and approvers work as above; the maker dashboard shows the imported testnet runs with explorer links.
+- A run with only Emma Clark, Daniel Hall and Grace Lewis (all "Ready") submits and pays. The 1,000-row sample uploads and previews; the review page warns and Submit is refused: "Public demo: a run can only pay recipients that are in the directory and "Ready to receive tUSDC" … Nothing was sent."
+- Admin: workflow page "Read-only on this copy: it has no admin signer key", Save disabled. Recipients: read-only note, switch disabled, no Add/Edit/import.
+- Failing the password 5 times from one browser locks only that browser for 15 minutes; others can still sign in with the same demo account.
+- Kill switch (`HOSTED_READONLY=true`): a "Read-only: the GAJIAN team has paused this demo" banner; sign-in and browsing work; creating a run answers "The hosted demo is read-only right now"; the worker logs `paused`.
+- `/api/health`: `"db":"ok","hostedDemo":true`.
 
 **Also check:**
 - Layout at 1280x720 and 1440x900, desktop first: no horizontal page scroll; references, accounts and amounts on one line; run page actions top right in every state. Covered by `tests/e2e/pages.spec.ts`.

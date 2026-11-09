@@ -2,6 +2,9 @@
  * Login with rate limiting. Attempts are keyed by an HMAC of the email and of the client
  * address (never stored raw). Limits: 5 failures per email and 20 failures per client in
  * 15 minutes. Unknown emails take the same time as wrong passwords.
+ * Public demo (HOSTED_DEMO=true): the demo accounts are shared and their passwords public, so the
+ * per-email limit counts failures per email AND client. One visitor cannot lock a demo account
+ * for everyone; the per-client limit still applies.
  */
 import { createHmac } from 'node:crypto';
 import { and, count, eq, gt } from 'drizzle-orm';
@@ -9,6 +12,7 @@ import type { Db } from '../db/client.ts';
 import { auditEvents, loginAttempts, users } from '../db/schema.ts';
 import { dummyHash, verifyPassword } from './password.ts';
 import { createSession, type SessionUser } from './session.ts';
+import { hostedMode } from '../hosted.ts';
 
 export const WINDOW_MS = 15 * 60 * 1000;
 export const MAX_FAILURES_PER_EMAIL = 5;
@@ -23,9 +27,9 @@ export function keyed(secret: string, kind: string, value: string): string {
   return createHmac('sha256', secret).update(`${kind}:${value}`).digest('hex');
 }
 
-function recentFailures(db: Db, column: typeof loginAttempts.emailHash | typeof loginAttempts.clientHash, hash: string, since: Date): number {
+function recentFailures(db: Db, column: typeof loginAttempts.emailHash | typeof loginAttempts.clientHash, hash: string, since: Date, alsoClient?: string): number {
   const row = db.select({ n: count() }).from(loginAttempts)
-    .where(and(eq(column, hash), eq(loginAttempts.succeeded, false), gt(loginAttempts.attemptedAt, since))).get();
+    .where(and(eq(column, hash), eq(loginAttempts.succeeded, false), gt(loginAttempts.attemptedAt, since), ...(alsoClient ? [eq(loginAttempts.clientHash, alsoClient)] : []))).get();
   return row?.n ?? 0;
 }
 
@@ -36,7 +40,8 @@ export async function login(db: Db, input: {
   const emailHash = keyed(input.secret, 'email', email);
   const clientHash = keyed(input.secret, 'client', input.clientKey);
   const since = new Date(input.now.getTime() - WINDOW_MS);
-  if (recentFailures(db, loginAttempts.emailHash, emailHash, since) >= MAX_FAILURES_PER_EMAIL
+  const perEmailScope = hostedMode().demo ? clientHash : undefined;
+  if (recentFailures(db, loginAttempts.emailHash, emailHash, since, perEmailScope) >= MAX_FAILURES_PER_EMAIL
     || recentFailures(db, loginAttempts.clientHash, clientHash, since) >= MAX_FAILURES_PER_CLIENT) {
     return { ok: false, reason: 'rate_limited', retryAfterSeconds: Math.ceil(WINDOW_MS / 1000) };
   }

@@ -7,6 +7,8 @@ import { activeLimits } from '@/server/runs/draft-service';
 import { describeChanges, directoryStats, divisions, listRecipients, recentDirectoryEvents, registeredOnly } from '@/server/recipients/directory';
 import { READINESS_LABEL } from '@/server/recipients/readiness';
 import { requireRole } from '@/server/web/page-auth';
+import { hostedMode, HOSTED_DIRECTORY_MESSAGE } from '@/server/hosted';
+import { InfoIcon } from '@/components/icons';
 import { displayAmount, formatDateTime } from '@/lib/format';
 
 export const metadata: Metadata = { title: 'Recipients' };
@@ -28,6 +30,7 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
   const events = recentDirectoryEvents(db, 12);
   const cap = activeLimits(db).maxRowAmount;
   const on = registeredOnly(db);
+  const readOnly = hostedMode().demo;
   const href = (page: number) => `/admin/recipients?${new URLSearchParams({ ...(q ? { q } : {}), ...(division ? { division } : {}), ...(status !== 'all' ? { status } : {}), page: String(page) })}`;
 
   return (
@@ -39,7 +42,8 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
         </div>
       </div>
 
-      <RegisteredOnlySwitch on={on} csrfToken={session.csrfToken} />
+      {readOnly ? <div className="callout" role="note" data-testid="hosted-directory-note"><InfoIcon size={18} /><span>{HOSTED_DIRECTORY_MESSAGE} In the public demo a run can only be submitted when every recipient is &ldquo;Ready to receive tUSDC&rdquo;.</span></div> : null}
+      <RegisteredOnlySwitch on={on} csrfToken={session.csrfToken} readOnly={readOnly} />
       <div className="section-gap sm" />
 
       <div className="stats">
@@ -62,7 +66,7 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
         <span className="hint push-right">{list.total.toLocaleString('en-US')} recipient{list.total === 1 ? '' : 's'}</span>
       </form>
 
-      <RecipientDirectory csrfToken={session.csrfToken} divisions={divs.map((d) => d.name)} cap={displayAmount(cap)}
+      <RecipientDirectory csrfToken={session.csrfToken} divisions={divs.map((d) => d.name)} cap={displayAmount(cap)} readOnly={readOnly}
         rows={list.rows.map((r) => ({
           id: r.id, nearAccountId: r.nearAccountId, name: r.name, division: r.division, email: r.email, mobilePhone: r.mobilePhone,
           maxAmount: formatAmount(r.maxAmount), maxDisplay: displayAmount(r.maxAmount), active: r.active, sample: r.sample,
@@ -77,7 +81,7 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
       ) : null}
 
       <div className="grid-even">
-        <RecipientImport csrfToken={session.csrfToken} />
+        {readOnly ? <section className="card card-pad" aria-label="Bulk import"><h2 className="panel-h">Bulk import</h2><p className="hint">Not available in the public demo.</p></section> : <RecipientImport csrfToken={session.csrfToken} />}
         <section className="card" aria-labelledby="changes-title">
           <div className="panel-title"><h2 id="changes-title">Change log</h2><span className="hint">latest {events.length}</span></div>
           {events.length === 0 ? <div className="empty"><h3>No changes yet</h3></div> : (

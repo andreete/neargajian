@@ -1,7 +1,7 @@
 // Locates each role's restricted function-call key file in ~/.near-credentials/testnet.
 // Returns PATHS and public keys only. Never reads or prints private key material, except
 // readSecret(), which is used by write-env.mjs to copy the key into .env and nowhere else.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -32,14 +32,20 @@ export async function rpc(method, params) {
   return body.result;
 }
 
-/** The account's function-call key for a vault (default: the final vault): { publicKey, methods, allowance, path }. */
+/**
+ * The account's function-call key for a vault (default: the final vault) that THIS machine holds:
+ * { publicKey, methods, allowance, path }. An account may also carry the hosted demo's own key
+ * (scripts/testnet/hosting-keys.sh), whose private part never lives in ~/.near-credentials, so the
+ * local key is the one with a key file here.
+ */
 export async function vaultKey(accountId, vault = VAULT) {
   const { keys } = await rpc('query', { request_type: 'view_access_key_list', finality: 'final', account_id: accountId });
+  const fileOf = (pk) => join(homedir(), '.near-credentials', 'testnet', accountId, `${pk.replace(':', '_')}.json`);
   const fc = keys.filter((k) => k.access_key.permission?.FunctionCall?.receiver_id === vault);
-  if (fc.length !== 1) throw new Error(`${accountId}: expected exactly one vault function-call key, found ${fc.length}`);
-  const { public_key: publicKey, access_key: { permission: { FunctionCall: p } } } = fc[0];
-  const path = join(homedir(), '.near-credentials', 'testnet', accountId, `${publicKey.replace(':', '_')}.json`);
-  return { publicKey, methods: p.method_names, allowance: p.allowance, path };
+  const local = fc.filter((k) => existsSync(fileOf(k.public_key)));
+  if (local.length !== 1) throw new Error(`${accountId}: expected exactly one local vault function-call key, found ${local.length} (of ${fc.length} on-chain)`);
+  const { public_key: publicKey, access_key: { permission: { FunctionCall: p } } } = local[0];
+  return { publicKey, methods: p.method_names, allowance: p.allowance, path: fileOf(publicKey) };
 }
 
 export function readSecret(path, expectedPublicKey) {
