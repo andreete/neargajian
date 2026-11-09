@@ -155,3 +155,32 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 ### D-043 · No testnet redeploy for Phase 03
 
 - The vault API changes again in Phase 04 (policies, cancel/reject, admin config). To save testnet NEAR, the commitment-based vault is proven in sandbox now and deployed to testnet once, at the end of Phase 04. The Phase 02 deployment stays live until then.
+
+## Phase 04 decisions (9 Nov 2026, by the agent)
+
+### D-044 · Contract-enforced workflow with per-run snapshot
+
+- One active workflow with a revision number. Admin, maker, worker and approvers must be distinct accounts (maker/reviewer separation; the admin cannot approve). Runs copy the whole workflow at creation, and `create_run` requires the revision the maker reviewed (PRD §5.1).
+- Sequential: the approver's position must equal the number of approvals so far, which also stops approver 2 from rejecting first. Parallel: any order. Each approver counts once.
+- New versions use `supersedes` to cancel the previous version in the same transaction (PRD J05: a corrected run is a new version with fresh approvals).
+
+### D-045 · Release roles
+
+- Automatic mode: only the snapshotted worker can `start_release`. Maker mode: only the maker. `pay_row` is allowed for the worker in both modes (it executes bounded steps after release) and for the maker in maker mode.
+
+### D-046 · Recovery and the in-flight rule
+
+- An `InFlight` row is never retried automatically. Only a receipt failure is a proven failure. A stuck `InFlight` row (its callback failed) is resolved by the admin with on-chain evidence, and only after 120 blocks so it cannot race a pending callback. `close_partial` ends a release that cannot complete. Details: `docs/RECOVERY.md`.
+
+### D-047 · Server code runnable by Node directly
+
+- `src/server` uses relative imports with `.ts` extensions (`allowImportingTsExtensions`, `noEmit`). Node 26 strips types natively, so scripts and the Phase 12 worker can import server modules without a bundler. Constraint: server code must use only erasable TypeScript syntax (no enums, namespaces or parameter properties) and relative imports (no `@/` alias) where Node runs it.
+
+### D-048 · Restricted function-call keys for app signers
+
+- Each role signs vault calls with a function-call-only key scoped to `vault.gajian-payroll.testnet` and specific methods: maker `create_run, cancel_run, close_partial, start_release, pay_row`; approvers `approve, reject`; worker `start_release, pay_row`; admin `update_workflow, resolve_in_flight`. Allowances 0.25 NEAR (worker 0.5). The keys are in `~/.near-credentials` and `.env` (written by `scripts/testnet/write-env.mjs`, mode 600). Full-access keys stay out of `.env` and are used only for operator actions (deploy, mint, storage deposits).
+- Prepaid gas for vault calls: 50 Tgas (measured: `pay_row` chain ≈ 7 Tgas), so allowances last longer.
+
+### D-049 · Demo default workflow on testnet
+
+- The live vault ends Phase 04 at revision 3: two approvers in sequence (approver1 → approver2), automatic release, caps 1 tUSDC per row and 100 tUSDC per run. Vault balance 0.82 tUSDC.

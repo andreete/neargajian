@@ -4,14 +4,14 @@
 
 GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 03 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 04 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
 - **NEAR testnet only.** No mainnet configuration exists in this repository.
 - **Token:** `tUSDC`, our own mock NEP-141 token with 6 decimals and zero value, deployed by us on testnet at `tusdc.gajian-payroll.testnet`. Vault: `vault.gajian-payroll.testnet`.
 - **Data:** synthetic only. Sample files use reserved phone ranges and `example.com` emails.
-- **Trust model (prototype):** the server will hold restricted, function-call-only testnet signer keys for the maker, approvers, release worker and admin, and relay authenticated actions. The contract checks which account signed each action. This is acceptable for a testnet demo but is **not** production custody. A mainnet version would use user-held wallets or a multisig/MPC signer.
+- **Trust model (prototype):** the server holds restricted, function-call-only testnet signer keys (scoped to the vault and to each role's methods) for the maker, approvers, release worker and admin, and relays authenticated actions. The contract checks which account signed each action. This is acceptable for a testnet demo but is **not** production custody. A mainnet version would use user-held wallets or a multisig/MPC signer.
 
 ## What works today
 
@@ -24,7 +24,8 @@ GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manu
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
 | Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
 | Money math and payout commitments | `npm test` | Exact 6-decimal parsing; Merkle commitments with shared Rust/TypeScript vectors (`docs/COMMITMENTS.md`); 1,000-row sample proofs generated and verified in ~40 ms |
-| Contracts (live testnet) | `scripts/testnet/phase02-single-payout.sh` | First contract-controlled payout of 0.05 tUSDC, see `docs/TESTNET.md` |
+| Contracts (live testnet) | `scripts/testnet/phase02-single-payout.sh`, `node scripts/testnet/phase04-live.ts` | First contract-controlled payout (0.05 tUSDC); then runs with two approvers in sequence (automatic release) and in parallel (maker release), and a rejection, all signed with restricted function-call keys. See `docs/TESTNET.md` |
+| Approval policies and recovery (sandbox) | `npm run contracts:test` | 1 / 2-sequential / 2-parallel approvals, reject, cancel, supersede, workflow snapshot, release modes, reservations, stuck-row recovery (`docs/RECOVERY.md`) |
 
 ## Requirements
 

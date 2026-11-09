@@ -8,7 +8,53 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 01 Repository and toolchain | Done, approved by Andre 9 Nov (`e4cae2d`, follow-ups `phase-01: review follow-ups`) | none |
 | 02 Single-payout walking skeleton | Done | **Yes**: first contract-controlled payout `p02-run-1`, see docs/TESTNET.md |
 | 03 Commitments and money math | Done | none (sandbox + local only by design; live use of proofs comes with the Phase 04 redeploy) |
-| 04 Contract policy and payout recovery | Not started | — |
+| 04 Contract policy and payout recovery | **Done, awaiting Andre's review** | **Yes**: 3 policy runs signed with restricted keys, see docs/TESTNET.md |
+| 05 Persistent application model | Not started | — |
+
+---
+
+## Phase 04 · Contract policy and payout recovery (9 Nov 2026)
+
+### Built
+
+- **Vault** (`contracts/vault/src/lib.rs`, Wasm 214,632 B `306c7f15…`):
+  - Workflow `{revision, kind: One | TwoSequential | TwoParallel, approvers, release_mode: Automatic | Maker, maker, worker, max_row_amount, max_run_total}`. Admin-only `update_workflow` bumps the revision; validation requires admin, maker, worker and approvers to be distinct accounts and the approver count to match.
+  - `create_run(run_id, workflow_revision, row_count, total, payout_root, review_digest, supersedes)`: the maker must pass the revision it reviewed ("Workflow changed since review" otherwise). The run snapshots the whole workflow. Run cap enforced. `supersedes` cancels an older pending or approved version atomically.
+  - `approve` / `reject`: only the assigned approvers; sequential order enforced (approver 2 can neither approve nor reject first); parallel in either order; an approver counts once; rejection is terminal.
+  - `cancel_run` (maker, before release only), `close_partial` (maker, releasing, nothing in flight → `PartiallyPaid`, unused reservation released).
+  - `start_release`: worker in automatic mode, maker in maker-release mode (from the snapshot); reserves the full total or fails "awaiting funding".
+  - `pay_row`: worker, or maker in maker-release mode; row cap from the snapshot; proof check; `InFlight` before transfer; private `on_payout` books `Paid`/`Failed`.
+  - `resolve_in_flight` (admin, only after 120 blocks, with evidence) for a row whose callback never ran.
+  - NEP-297-style `EVENT_JSON` logs (`gajian_vault` 1.0.0): run_created, run_approval, run_rejected, run_cancelled, release_started, row_requested, row_paid, row_failed, row_resolved, run_paid, run_closed_partial, workflow_updated, vault_funded.
+- **`docs/RECOVERY.md`**: row/run states and procedures for proven failures, unpayable recipients, uncertain outcomes (RPC timeouts) and stuck `InFlight` rows.
+- **Restricted signer keys**: function-call-only keys per role scoped to the vault methods; `scripts/testnet/write-env.mjs` writes them into the git-ignored `.env` (mode 600) without printing; `scripts/testnet/signer-keys.mjs` locates key files by public key via RPC.
+- `src/server` imports now use `.ts` extensions (`allowImportingTsExtensions`), so Node 26 runs server code directly (D-047). Live driver `scripts/testnet/phase04-live.ts` uses `src/server/commitments.ts`.
+
+### Sandbox / local evidence
+
+| Command | Result |
+| --- | --- |
+| `cargo test --lib` | tusdc 3/3, **vault 49/49** (45 contract + 4 commitment). New in Phase 04: sequential order (approve and reject), parallel either order and both required, repeated approval adds no credit, unassigned approver / maker cannot approve, rejection terminal, cancel only before release and only by the maker, supersede cancels and the stale version cannot release, workflow update leaves existing runs on their snapshot, stale revision rejected, only admin updates, maker-release vs automatic (release and pay_row roles), run and row caps, **concurrent runs cannot over-reserve** (second release waits for funding, succeeds after top-up), stale/duplicate callback rejected, `close_partial` (and refused while in flight), `resolve_in_flight` (only admin, not before 120 blocks, books outcome with evidence), distinct-role validation |
+| `cargo test --test sandbox` | **1/1** in 70 s, peak RSS 1.10 GB. Phase 02/03 flow plus, on real Wasm: non-admin update fails; create at stale revision fails; approver 2 first fails (sequential); release before final approval fails; rejection blocks release; a run created before a workflow change keeps its sequential/automatic snapshot; parallel either order, duplicate approval fails, worker cannot release a maker-release run, maker releases and pays; supersede cancels v1; over-reserve waits for funding; books = ledger |
+| `npm run contracts:lint` | fmt + clippy `-D warnings` clean |
+| `npm run lint`, `typecheck`, `npm test` | clean, 26/26 |
+
+### Live testnet evidence (separate from sandbox; details and every tx link in docs/TESTNET.md)
+
+- Phase 02 vault retired cleanly: its 0.95 tUSDC went back to the admin through its own approved 10-row run (0.095 per row), then the account was deleted and recreated with the Phase 04 contract.
+- 5 restricted function-call keys added; the worker key calling `approve` was refused before reaching the chain ("method name <approve> isn't allowed by the access key").
+- Live driver, every action signed with a restricted key (25 steps, all as expected):
+  - `p04-seq-202611091047`: 2 in sequence, automatic. Approver 2 first **rejected on-chain**; release before final approval rejected; maker release rejected (automatic mode); worker reserved and paid 0.03 / 0.07 / 0.05 tUSDC to recipient1/2/3; duplicate payout rejected. **Paid.**
+  - Admin switched to 2 in parallel + maker release (revision 2). `p04-par-…`: create at stale revision 1 rejected; approver 2 then approver 1; worker release rejected; maker released; tampered amount rejected; maker and worker each paid one row. **Paid.**
+  - `p04-rej-…`: approver 1 rejected; release rejected. **Rejected.**
+  - Admin restored 2 in sequence + automatic (revision 3).
+- Books (0.82 total, 0 reserved) match the token ledger. Phase 04 gas: 0.0253 NEAR. Total burned since the faucet: 0.1017 NEAR.
+
+### Not done / limits
+
+- Not exercised live (sandbox and unit only, to save NEAR and because they need special conditions): wrong-token funding, unregistered-recipient failure and retry, `close_partial`, `resolve_in_flight` (needs a callback that runs out of gas), over-reservation.
+- `resolve_in_flight` is an admin attestation (trust noted in docs/RECOVERY.md).
+- Contract upgrades with state migration are not implemented; incompatible changes recreate the vault (D-041).
 
 ---
 

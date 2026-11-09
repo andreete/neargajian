@@ -13,7 +13,7 @@ const config = [
   },
   {
     // Standalone Node scripts report to stdout; tests may print measured timings.
-    files: ['scripts/**/*.mjs', 'tests/**/*.ts'],
+    files: ['scripts/**/*.mjs', 'scripts/**/*.ts', 'tests/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
   {

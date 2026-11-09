@@ -190,10 +190,15 @@ impl Committed {
     }
 
     pub fn create_args(&self, run_id: &str) -> Value {
+        self.create_args_at(run_id, 1, None)
+    }
+
+    pub fn create_args_at(&self, run_id: &str, revision: u32, supersedes: Option<&str>) -> Value {
         let total: u128 = self.rows.iter().map(|r| r.1).sum();
         json!({
-            "run_id": run_id, "row_count": self.rows.len(), "total": total.to_string(),
-            "payout_root": self.root, "review_digest": "ab".repeat(32),
+            "run_id": run_id, "workflow_revision": revision, "row_count": self.rows.len(),
+            "total": total.to_string(), "payout_root": self.root,
+            "review_digest": "ab".repeat(32), "supersedes": supersedes,
         })
     }
 
@@ -228,7 +233,11 @@ async fn committed_payouts_end_to_end() -> R<()> {
     env.deploy(
         &vault,
         &vault_wasm,
-        json!({ "admin": admin, "token": tusdc, "maker": maker, "approver": approver, "worker": worker }),
+        json!({
+            "admin": admin, "token": tusdc, "maker": maker, "worker": worker,
+            "kind": "One", "approvers": [approver], "release_mode": "Automatic",
+            "max_row_amount": "1000000", "max_run_total": "100000000",
+        }),
     )
     .await?;
 
@@ -444,5 +453,230 @@ async fn committed_payouts_end_to_end() -> R<()> {
     assert_eq!(env.ft_balance(&tusdc, &vault).await?, expected);
     assert_eq!(env.ft_balance(&tusdc, &recipient).await?, 90_000);
     assert_eq!(env.ft_balance(&tusdc, &late).await?, 10_000);
+
+    // ------------------------------------------------------------ Phase 04 policies
+    let approver2 = env.account("approver2").await?;
+    let recipient3 = env.account("recipient3").await?;
+    env.register(&admin, &tusdc, &recipient3).await?;
+    let workflow = |kind: &str, mode: &str| {
+        json!({
+            "kind": kind, "approvers": [approver, approver2], "release_mode": mode,
+            "maker": maker, "worker": worker,
+            "max_row_amount": "1000000", "max_run_total": "100000000",
+        })
+    };
+    // Only the admin can change the workflow.
+    let seq = workflow("TwoSequential", "Automatic");
+    env.fails(
+        &maker,
+        &vault,
+        "update_workflow",
+        seq.clone(),
+        "Only the admin",
+    )
+    .await?;
+    let w = env.ok(&admin, &vault, "update_workflow", seq).await?;
+    assert_eq!(w["revision"], json!(2));
+
+    // Two in sequence: approver 2 cannot act first; both are required.
+    let run3 = Committed::new(&[(&recipient3, 30_000)]);
+    let id3 = json!({ "run_id": "run-3" });
+    env.fails(
+        &maker,
+        &vault,
+        "create_run",
+        run3.create_args_at("run-3", 1, None),
+        "Workflow changed",
+    )
+    .await?;
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        run3.create_args_at("run-3", 2, None),
+    )
+    .await?;
+    env.fails(
+        &approver2,
+        &vault,
+        "approve",
+        id3.clone(),
+        "only after approver 1",
+    )
+    .await?;
+    let s1 = env.ok(&approver, &vault, "approve", id3.clone()).await?;
+    assert_eq!(s1, json!("PendingApproval"));
+    env.fails(
+        &worker,
+        &vault,
+        "start_release",
+        id3.clone(),
+        "not approved",
+    )
+    .await?;
+    let s2 = env.ok(&approver2, &vault, "approve", id3.clone()).await?;
+    assert_eq!(s2, json!("Approved"));
+    env.ok(&worker, &vault, "start_release", id3.clone())
+        .await?;
+    env.ok(&worker, &vault, "pay_row", run3.pay_args("run-3", 0))
+        .await?;
+    assert_eq!(env.ft_balance(&tusdc, &recipient3).await?, 30_000);
+
+    // Rejection is terminal and blocks release.
+    let run4 = Committed::new(&[(&recipient3, 10_000)]);
+    let id4 = json!({ "run_id": "run-4" });
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        run4.create_args_at("run-4", 2, None),
+    )
+    .await?;
+    env.ok(&approver, &vault, "approve", id4.clone()).await?;
+    assert_eq!(
+        env.ok(&approver2, &vault, "reject", id4.clone()).await?,
+        json!("Rejected")
+    );
+    env.fails(
+        &worker,
+        &vault,
+        "start_release",
+        id4.clone(),
+        "not approved",
+    )
+    .await?;
+
+    // A run created before a workflow change keeps its snapshot (sequential, automatic).
+    let run5 = Committed::new(&[(&recipient3, 10_000)]);
+    let id5 = json!({ "run_id": "run-5" });
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        run5.create_args_at("run-5", 2, None),
+    )
+    .await?;
+    let par = workflow("TwoParallel", "Maker");
+    assert_eq!(
+        env.ok(&admin, &vault, "update_workflow", par).await?["revision"],
+        json!(3)
+    );
+    env.fails(
+        &approver2,
+        &vault,
+        "approve",
+        id5.clone(),
+        "only after approver 1",
+    )
+    .await?;
+    let snapshot = env.view(&vault, "get_run", id5.clone()).await?;
+    assert_eq!(snapshot["policy"]["kind"], json!("TwoSequential"));
+    assert_eq!(snapshot["policy"]["release_mode"], json!("Automatic"));
+
+    // Two in parallel + maker release: either order, then only the maker releases.
+    let run6 = Committed::new(&[(&recipient3, 20_000), (&recipient, 10_000)]);
+    let id6 = json!({ "run_id": "run-6" });
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        run6.create_args_at("run-6", 3, None),
+    )
+    .await?;
+    assert_eq!(
+        env.ok(&approver2, &vault, "approve", id6.clone()).await?,
+        json!("PendingApproval")
+    );
+    env.fails(
+        &approver2,
+        &vault,
+        "approve",
+        id6.clone(),
+        "already approved",
+    )
+    .await?;
+    assert_eq!(
+        env.ok(&approver, &vault, "approve", id6.clone()).await?,
+        json!("Approved")
+    );
+    env.fails(
+        &worker,
+        &vault,
+        "start_release",
+        id6.clone(),
+        "Only the maker can release",
+    )
+    .await?;
+    env.ok(&maker, &vault, "start_release", id6.clone()).await?;
+    env.ok(&maker, &vault, "pay_row", run6.pay_args("run-6", 0))
+        .await?;
+    env.ok(&worker, &vault, "pay_row", run6.pay_args("run-6", 1))
+        .await?;
+    assert_eq!(
+        env.view(&vault, "get_run", id6).await?["status"],
+        json!("Paid")
+    );
+
+    // A new version supersedes the old one, which can then never be approved or released.
+    let run7 = Committed::new(&[(&recipient3, 10_000)]);
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        run7.create_args_at("run-7-v1", 3, None),
+    )
+    .await?;
+    let run7b = Committed::new(&[(&recipient3, 12_000)]);
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        run7b.create_args_at("run-7-v2", 3, Some("run-7-v1")),
+    )
+    .await?;
+    let old = env
+        .view(&vault, "get_run", json!({ "run_id": "run-7-v1" }))
+        .await?;
+    assert_eq!(old["status"], json!("Cancelled"));
+    assert_eq!(old["superseded_by"], json!("run-7-v2"));
+    env.fails(
+        &approver,
+        &vault,
+        "approve",
+        json!({ "run_id": "run-7-v1" }),
+        "not waiting",
+    )
+    .await?;
+
+    // Cannot over-reserve: a run larger than the available balance waits for funding.
+    let available = u128_of(&env.view(&vault, "get_balances", json!({})).await?["available"]);
+    let big = Committed::new(&[(&recipient3, available + 1)]);
+    let id8 = json!({ "run_id": "run-8" });
+    env.ok(
+        &maker,
+        &vault,
+        "create_run",
+        big.create_args_at("run-8", 3, None),
+    )
+    .await?;
+    env.ok(&approver, &vault, "approve", id8.clone()).await?;
+    env.ok(&approver2, &vault, "approve", id8.clone()).await?;
+    env.fails(
+        &maker,
+        &vault,
+        "start_release",
+        id8.clone(),
+        "awaiting funding",
+    )
+    .await?;
+    env.ok(&maker, &vault, "cancel_run", id8).await?;
+
+    // Books still reconcile with the token ledger.
+    let balances = env.view(&vault, "get_balances", json!({})).await?;
+    assert_eq!(u128_of(&balances["reserved"]), 0);
+    assert_eq!(
+        u128_of(&balances["total"]),
+        env.ft_balance(&tusdc, &vault).await?
+    );
     Ok(())
 }

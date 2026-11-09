@@ -10,8 +10,8 @@
  * - Review digest = salted SHA-256 over the private review snapshot (never on-chain data).
  */
 import { createHash, randomBytes } from 'node:crypto';
-import { MAX_ROWS, U128_MAX } from './money';
-import { isValidAccountId } from './near-account';
+import { MAX_ROWS, U128_MAX } from './money.ts';
+import { isValidAccountId } from './near-account.ts';
 
 export const LEAF_TAG = 'GAJIAN:payout-leaf:v1';
 export const NODE_TAG = 'GAJIAN:payout-node:v1';

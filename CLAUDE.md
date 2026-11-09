@@ -48,7 +48,9 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 | near-cli-rs (`near`) | 0.31.1 | `~/.cargo/bin` |
 | near-sdk / near-contract-standards / near-sandbox | 5.30.1 / 5.30.1 / 0.4.0 (nearcore 2.14.0) | `contracts/Cargo.toml` |
 
-Testnet: accounts and contracts in `docs/TESTNET.md`. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`.
+Testnet: accounts and contracts in `docs/TESTNET.md`. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`. App signers use the restricted function-call keys in `.env` (`node scripts/testnet/write-env.mjs` rewrites it; never print it). Recovery rules: `docs/RECOVERY.md`. Commitment format: `docs/COMMITMENTS.md`.
+
+Server code (`src/server`) must stay runnable by Node directly: relative imports with `.ts` extensions, erasable TypeScript only (D-047).
 
 If `cargo` is not on PATH in a non-login shell: `. ~/.cargo/env`.
 
