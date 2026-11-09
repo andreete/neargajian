@@ -21,7 +21,11 @@
     "contracts:build": "./scripts/with-tmp.sh -C contracts sh ../scripts/build-contracts.sh",
     "contracts:test": "./scripts/with-tmp.sh -C contracts cargo test --workspace --locked",
     "contracts:lint": "./scripts/with-tmp.sh -C contracts sh -c 'cargo fmt --all --check && cargo clippy --workspace --all-targets --locked -- -D warnings'",
-    "clean:tmp": "rm -rf .tmp && mkdir .tmp"
+    "clean:tmp": "rm -rf .tmp && mkdir .tmp",
+    "db:migrate": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts migrate",
+    "db:seed": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts seed",
+    "db:status": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts status",
+    "db:generate": "./scripts/with-tmp.sh drizzle-kit generate"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

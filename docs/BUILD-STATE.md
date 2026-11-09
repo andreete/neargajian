@@ -8,8 +8,31 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 01 Repository and toolchain | Done, approved by Andre 9 Nov (`e4cae2d`, follow-ups `phase-01: review follow-ups`) | none |
 | 02 Single-payout walking skeleton | Done | **Yes**: first contract-controlled payout `p02-run-1`, see docs/TESTNET.md |
 | 03 Commitments and money math | Done | none (sandbox + local only by design; live use of proofs comes with the Phase 04 redeploy) |
-| 04 Contract policy and payout recovery | **Done, awaiting Andre's review** | **Yes**: 3 policy runs signed with restricted keys, see docs/TESTNET.md |
-| 05 Persistent application model | Not started | — |
+| 04 Contract policy and payout recovery | Done, approved by Andre 9 Nov | **Yes**: 3 policy runs signed with restricted keys, see docs/TESTNET.md |
+| 05 Persistent application model | Done | none (local DB only) |
+| 06 Landing, login and role boundaries | Not started | — |
+
+---
+
+## Phase 05 · Persistent application model and demo fixtures (9 Nov 2026)
+
+### Built
+
+- `src/server/db/schema.ts` (Drizzle, SQLite): `users`, `sessions` (hashed tokens), `login_attempts` (hashed email/client), `audit_events`, `workflow_configs` (revisions mirroring the vault), `payroll_runs` (draft owner + optimistic `draft_revision`), `draft_rows`, `run_versions` (immutable snapshot: chain run ID, workflow snapshot, row count, total, payout root, review digest, server-only salt, source file digest), `version_rows`, `approval_events`, `payout_actions`, `report_entries`. Money = base units as canonical TEXT (custom `units` type ↔ bigint).
+- Migrations `db/migrations/0000_init.sql` (generated, 20 CHECK constraints) and `0001_integrity.sql` (hand-written): versions and their rows immutable and never deleted; rows insertable only while `submitting`; terminal statuses frozen; one live approval per approver/version; one live payout action per version/kind/row (partial unique index); a succeeded action is final; one active workflow.
+- `src/server/db/client.ts`: WAL, `busy_timeout` 5 s, foreign keys, migrations on open. `scripts/db.ts` + `npm run db:migrate | db:seed | db:status`.
+- Transaction boundaries: `replaceDraft` (IMMEDIATE transaction, owner + revision check, all-or-nothing), `createVersion` (commitments + rows in one transaction, caps, deterministic `chain_run_id`), `claimPayoutAction` / `updatePayoutAction` (claim before any chain call; repeat returns the live action; new attempt only after `failed`; `unknown` is never re-claimed).
+- `src/server/auth/password.ts`: argon2id via Node's built-in `crypto.argon2` (m=19456 KiB, t=2, p=1, PHC string), constant-time compare, dummy hash for unknown users.
+- `src/server/db/seed.ts`: refuses unless `DEMO_MODE=true`; 4 demo users mapped to the testnet signer accounts, workflow revision 3 (two in sequence, automatic; tx of the live revision 3), one 3-row demo draft. Idempotent.
+- `src/server/fixtures/payroll.ts`: deterministic valid rows (any size up to 1,000) and 10 invalid variants; CSV/TXT/semicolon serializer with BOM/CRLF options.
+
+### Evidence (local only)
+
+| Command | Result |
+| --- | --- |
+| `npm run db:seed` | migrations applied to `data/gajian.sqlite`; 4 users, 1 active workflow, 1 run with 3 draft rows; a second run reports nothing to do |
+| `npm test` | **43/43** (17 new in `tests/integration/db.test.ts`): WAL + foreign keys; idempotent seed; argon2id hashes; demo-mode guard; email/chain-account uniqueness and lowercase CHECK; workflow shape + single active revision; rejection reason required; one live decision per approver; atomic draft replacement with stale-revision conflict, half-way failure keeps the previous draft, owner-only; numbered versions, deterministic chain IDs, fresh salt per version; immutable version data/rows, no deletes, no late rows, frozen terminal status; caps; payout claims (repeat, unknown never re-claimed, retry after failure, succeeded final); **two connections cannot both hold a live claim**, raw insert refused by the partial index; **restart persistence**; deterministic 1,000-row fixtures |
+| `npm run lint`, `npm run typecheck` | clean (`erasableSyntaxOnly` now enforced) |
 
 ---
 

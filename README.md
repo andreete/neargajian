@@ -4,7 +4,7 @@
 
 GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 04 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 05 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
@@ -59,6 +59,18 @@ npm run contracts:lint    # cargo fmt --check + clippy -D warnings
 ```
 
 On a shared or small machine, prefix heavy commands with `nice -n 19` and set `CARGO_BUILD_JOBS=2`.
+
+## Database
+
+SQLite file (`DATABASE_URL`, default `file:./data/gajian.sqlite`, git-ignored) via Drizzle. Migrations in `db/migrations/` are applied automatically when the app or a script opens the database.
+
+```sh
+npm run db:migrate   # apply migrations, print row counts
+npm run db:seed      # demo users + active workflow + a demo draft (requires DEMO_MODE=true in .env)
+npm run db:status    # row counts per table
+```
+
+Schema: `src/server/db/schema.ts`; integrity triggers: `db/migrations/0001_integrity.sql` (submitted versions and their rows can never change, one live payout action per row). To start over locally, stop the app and delete `data/gajian.sqlite*`.
 
 ## Sample data
 

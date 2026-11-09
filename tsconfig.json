@@ -23,6 +23,7 @@
     "allowJs": false,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
     "incremental": true,
     "plugins": [
       {

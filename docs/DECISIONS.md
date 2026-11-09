@@ -184,3 +184,35 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 ### D-049 · Demo default workflow on testnet
 
 - The live vault ends Phase 04 at revision 3: two approvers in sequence (approver1 → approver2), automatic release, caps 1 tUSDC per row and 100 tUSDC per run. Vault balance 0.82 tUSDC.
+
+## Phases 02–04 review (9 Nov 2026, Andre)
+
+### D-050 · Phases 02–04 approved; follow-ups scheduled for Phase 16 (not done yet)
+
+Andre verified the key transactions and balances independently on testnet.
+1. **Immutable final vault.** For the final demo, deploy a fresh vault built from the release commit with a reproducible Wasm hash, then delete its full-access key so the code can never change. Add README commands that let a judge verify the code hash (`view_code` / `view_account` `code_hash`) and that no full-access key exists (`view_access_key_list`). Apply the same to `tusdc` if it does not break the demo (minting needs the owner `admin`, not the token account's own key, so it should not).
+2. **Live row-level duplicate proof.** In the Phase 16 rehearsal, in a multi-row run that is still `Releasing`, call `pay_row` again on an already-paid row and record the on-chain rejection (`Row is already paid`).
+3. **Label sandbox-only recovery paths** clearly in README and BUILD-STATE: wrong-token funding, unregistered-recipient failure + retry, `close_partial`, `resolve_in_flight`, over-reservation.
+
+### D-051 · Contract freeze during the app phases (05–15)
+
+- No contract changes while building the app. If one is unavoidable: batch the changes into one release, use the scripted retire-and-recreate procedure (`scripts/testnet/phase04-retire-p02-vault.sh` pattern adapted to the current API), return the vault's funds through an approved run (rows 0.01–0.10 tUSDC), and log the NEAR spent in `docs/TESTNET.md`.
+
+## Phase 05 decisions (9 Nov 2026, by the agent)
+
+### D-052 · Integrity in the database, not only in code
+
+- Immutability of submitted versions and rows, terminal statuses, single live approval/payout action, and one active workflow are enforced with SQLite triggers and partial unique indexes (`db/migrations/0001_integrity.sql`), so a bug or a second process cannot break them. PostgreSQL has equivalents (triggers, partial indexes) for a later move.
+- Money is stored as canonical decimal TEXT of base units, so no int64 limit and no float rounding.
+
+### D-053 · argon2id from Node's standard library
+
+- Node 26 ships `crypto.argon2`, so no native password-hashing dependency is needed. Parameters follow the OWASP minimum (19 MiB, 2 passes, 1 lane); about 40 ms per hash on this server.
+
+### D-054 · `erasableSyntaxOnly`
+
+- TypeScript now rejects syntax that Node's type stripping cannot run (parameter properties, enums, namespaces), enforcing D-047 at compile time.
+
+### D-055 · Demo identities
+
+- `maker@gajian.my.id` → `maker.gajian-payroll.testnet`, `app1@` → `approver1.…`, `app2@` → `approver2.…`, `admin@` → `admin.…` (read from `.env`, defaults to these). The seed mirrors the live vault workflow revision 3 (D-049); Phase 07 adds the chain sync for admin changes.

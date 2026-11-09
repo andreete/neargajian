@@ -4,14 +4,15 @@ Updated: Mon 9 Nov 2026, end of Phase 01. Schedule: on track (kickoff section 8:
 
 ## Single next action
 
-**Andre reviews Phases 02–04** (stop requested after Phase 04). Evidence: `docs/BUILD-STATE.md`, `docs/TESTNET.md`, `docs/COMMITMENTS.md`, `docs/RECOVERY.md`; decisions D-034 … D-049. After approval, continue with **Phase 05** (persistent application model and demo fixtures) and run phase after phase.
+**Phase 06** (landing, login modal, role boundaries), then Playwright screenshots, leave the production build running on 127.0.0.1:8092 and stop for Andre's design review. Do not start Phase 07.
 
-## Phase 05 plan
+## Phase 16 follow-ups (from Andre's Phases 02–04 review, D-050)
 
-1. Drizzle schema + SQL migrations: users, org/workflow config (mirrors the vault workflow revision), drafts, immutable versions (with review salt, root, digest), indexed rows, approval events, payout actions (deterministic action IDs, tx hashes), reporting references.
-2. SQLite with WAL + busy_timeout; transaction boundaries for draft replacement and payout-action claims.
-3. Deterministic seed (four demo users, D-016) and synthetic fixture generators (small runs, 1,000 rows, invalid variants).
-4. Tests: uniqueness, version integrity, restart persistence.
+1. Fresh vault from the release commit with a reproducible Wasm hash; delete its full-access key; README commands to verify `code_hash` and the absence of full-access keys. Same for `tusdc` if the demo still works.
+2. Rehearsal: in a multi-row run still `Releasing`, repeat `pay_row` on an already-paid row and record the on-chain rejection.
+3. Label every sandbox-only recovery path in README and BUILD-STATE.
+
+Contract freeze until then (D-051).
 
 ## Open items
 

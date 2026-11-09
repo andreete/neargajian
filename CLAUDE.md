@@ -37,6 +37,7 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 - Release worker survives restarts, never double-pays, keeps unknown outcomes unknown until reconciled.
 - No fake paths in the main flow; any mock or sandbox-only path is labelled in code, UI and README.
 - Honest evidence: never claim a test ran if it did not. Separate sandbox results from live-testnet results.
+- **Contract freeze** during the app phases (D-051): no contract changes; if unavoidable, batch them, retire-and-recreate by script, return funds through an approved run, log NEAR spent.
 
 ## Toolchain (pinned; see docs/DECISIONS.md D-019..D-026)
 
