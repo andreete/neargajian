@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { desc, eq } from 'drizzle-orm';
-import { EditIcon, ExternalIcon } from '@/components/icons';
+import { ExternalIcon } from '@/components/icons';
+import { WorkflowEditor } from '@/components/workflow-editor';
+import { approverOptions, pendingWorkflow } from '@/server/workflow/service';
 import { StatusChip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
 import { getDb } from '@/server/db/client';
@@ -22,6 +24,7 @@ export default async function AdminDashboard() {
   const db = getDb();
   const config = getConfig();
   const workflow = activeWorkflow(db);
+  const pending = pendingWorkflow(db);
   const totals = testnetTotals(db);
   const runs = allTestnetRuns(db);
   const events = db.select({ at: auditEvents.at, action: auditEvents.action, actor: users.displayName })
@@ -34,11 +37,20 @@ export default async function AdminDashboard() {
           <h1>Workflow settings</h1>
           <p>The approval path and release mode for new payroll runs. Submitted runs keep the settings they were created with.</p>
         </div>
-        <div className="page-head-actions">
-          <button type="button" className="btn btn-primary" disabled aria-describedby="edit-hint"><EditIcon size={18} />Edit workflow</button>
-          <span id="edit-hint" className="hint">Editing: coming soon (Phase 07).</span>
-        </div>
       </div>
+
+      {workflow ? (
+        <div className="stack">
+          <WorkflowEditor
+            active={{ revision: workflow.revision, kind: workflow.kind, releaseMode: workflow.releaseMode, approverUserIds: workflow.approvers.map((a) => a.userId) }}
+            options={approverOptions(db)}
+            pending={pending ? { revision: pending.revision, chainTxHash: pending.chainTxHash } : null}
+            csrfToken={session.csrfToken}
+            explorerTxUrl={config.explorerTxUrl}
+          />
+        </div>
+      ) : null}
+      <div className="section-gap" />
 
       <div className="stats">
         <div className="card stat"><div className="label">Active policy</div><div className="value sm">{workflow ? `${KIND_LABEL[workflow.kind]}, ${RELEASE_LABEL[workflow.releaseMode].toLowerCase()}` : '—'}</div></div>

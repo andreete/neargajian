@@ -29,6 +29,10 @@ export function demoUsers(env: SeedEnv = process.env): DemoUser[] {
 
 export const DEMO_DRAFT_RUN_ID = 'run_demo_november';
 
+/** Mirrors the live vault's active workflow (docs/TESTNET.md): revision 5, set through the
+ *  app's admin workflow editor on 9 Nov 2026 (two approvers in sequence, automatic release). */
+export const SEED_WORKFLOW = { revision: 5, txHash: '2sQjKbtVha9g5oSdrPycsyNp829TxZbc6yiCFyWRsvAv' } as const;
+
 export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = {}) {
   const env = options.env ?? process.env;
   if (env.DEMO_MODE !== 'true') throw new Error('Refusing to seed demo users: DEMO_MODE is not "true".');
@@ -45,14 +49,14 @@ export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = 
   const active = db.select({ id: workflowConfigs.id }).from(workflowConfigs).where(eq(workflowConfigs.chainStatus, 'active')).get();
   if (!active) {
     db.insert(workflowConfigs).values({
-      id: 'wf_rev_3', revision: 3, kind: 'two_sequential', approver1UserId: 'usr_app1', approver2UserId: 'usr_app2',
+      id: `wf_rev_${SEED_WORKFLOW.revision}`, revision: SEED_WORKFLOW.revision, kind: 'two_sequential', approver1UserId: 'usr_app1', approver2UserId: 'usr_app2',
       releaseMode: 'automatic',
       maxRowAmount: BigInt(env.DEMO_CAP_PER_ROW_BASE_UNITS ?? '1000000'),
       maxRunTotal: BigInt(env.DEMO_CAP_PER_RUN_BASE_UNITS ?? '100000000'),
-      chainStatus: 'active', chainTxHash: '5cK2gf4zTy9R7itMZ7YZrGnXg96mGfW9L5H893n6fh8S',
+      chainStatus: 'active', chainTxHash: SEED_WORKFLOW.txHash,
       createdByUserId: 'usr_admin', createdAt: now, activatedAt: now,
     }).run();
-    created.push('workflow revision 3');
+    created.push(`workflow revision ${SEED_WORKFLOW.revision}`);
   }
 
   const draft = db.select({ id: payrollRuns.id }).from(payrollRuns).where(eq(payrollRuns.id, DEMO_DRAFT_RUN_ID)).get();

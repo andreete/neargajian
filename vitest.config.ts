@@ -6,7 +6,7 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   test: {
-    include: ['tests/unit/**/*.test.ts', 'tests/integration/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.{ts,tsx}', 'tests/integration/**/*.test.{ts,tsx}'],
     environment: 'node',
     // Memory is tight on the shared server: keep test workers low.
     maxWorkers: 2,

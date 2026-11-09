@@ -82,7 +82,10 @@ describe('uniqueness and constraints', () => {
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w1', revision: 4, kind: 'two_sequential', approver1UserId: 'usr_app1', approver2UserId: 'usr_app1', chainStatus: 'pending' }).run(), /CHECK/);
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w2', revision: 5, kind: 'one', approver1UserId: 'usr_app1', approver2UserId: 'usr_app2', chainStatus: 'pending' }).run(), /CHECK/);
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w3', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'active' }).run(), /UNIQUE/);
-    expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w4', revision: 3, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run(), /UNIQUE/);
+    expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w4', revision: 5, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run(), /UNIQUE/);
+    // A failed attempt does not block a retry of the same revision.
+    h.db.insert(workflowConfigs).values({ ...base, id: 'w5', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'failed' }).run();
+    h.db.insert(workflowConfigs).values({ ...base, id: 'w6', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run();
   });
 
   it('requires a reason for rejections and allows one live decision per approver', () => {

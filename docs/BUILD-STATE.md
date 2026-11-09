@@ -12,7 +12,28 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 05 Persistent application model | Done | none (local DB only) |
 | 06 Landing, login and role boundaries | Done; design review by Andre → 06b | none |
 | 06b Design review fixes | Done | read-only: history export from testnet RPC |
-| 07 Admin setup and approval map | Not started (stop requested) | — |
+| 07 Admin setup and approval map | Done | **Yes**: 2 workflow updates through the app, see docs/TESTNET.md |
+| 08 Manual payroll builder | Not started | — |
+| 09 Template and upload | Not started | — |
+
+---
+
+## Phase 07 · Admin setup and approval map (9 Nov 2026)
+
+### Built
+
+- `src/server/chain/vault-client.ts`: NEAR testnet client (near-api-js 7.4.0, FastNEAR RPC). Signs with the role's restricted function-call key from `.env`, computes the tx hash locally and reports it **before** sending, classifies outcomes as success / proven failure / unknown, and looks up unknown outcomes. Testnet-only guard. A test-only stand-in can be installed (`setVaultClientForTests`, refuses outside `NODE_ENV=test`).
+- `src/server/workflow/service.ts`: validation (template, distinct enabled approvers with signer accounts), optimistic concurrency against the revision the admin saw, refusal when the app and the vault disagree, `pending` row with the tx hash stored at signing, activation only after the vault's `get_workflow` matches, `failed` keeps the previous workflow active (retry allowed: migration `0003_workflow_retry.sql` makes revisions unique only among non-failed rows), `reconcilePendingWorkflow` for unknown outcomes, `activeSnapshot` for new versions. Audit events for requested / updated / failed.
+- API `GET|POST /api/admin/workflow`, `POST /api/admin/workflow/reconcile` (admin only, same-origin + CSRF).
+- `src/components/workflow-editor.tsx` on `/admin`: three template cards, reviewer selects (distinct, inline error), release-mode cards, live approval map + ordered text summary, consequence notice, pending/active/failed result with explorer link, "Refresh status" for pending changes.
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npm test` | **87/87**: new `tests/integration/workflow.test.tsx` (9): activation only after confirmation + previous superseded; invalid inputs (same reviewer twice, maker as approver, missing reviewer, no-op) send nothing; vault rejection keeps the previous workflow and a retry works; unknown outcome stays pending, blocks further changes, reconciles to active; lost transaction reconciles to failed; stale page and app/vault drift refused; **a submitted version keeps its snapshot** after a change; maker and approver get 403 on GET/POST, bad CSRF 403, duplicate reviewers 422, admin 200; **a sequential snapshot can never render as parallel** (server-rendered approval map). DB test: a failed revision does not block a retry |
+| `npm run test:e2e` | **12/12**: + editor test (live preview switches to "approve in any order" with the AND gate, same reviewer → inline error and Save disabled, unchanged → Save disabled) |
+| **Live testnet** (production build, real admin key) | revision 4 (parallel, maker release) `9uFmgbRC…` and revision 5 (back to sequence, automatic) `2sQjKbtV…`, both confirmed by re-reading the vault; duplicate reviewers refused before signing |
 
 ---
 

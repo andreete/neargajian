@@ -130,6 +130,18 @@ Driver: `node scripts/testnet/phase04-live.ts` (commitments and proofs from `src
 
 Final state (RPC, `final`): vault books `total 0.820000, reserved 0`; token ledger: vault 0.820000, recipient1 0.080000, recipient2 0.090000, recipient3 0.060000 tUSDC (Phase 02 + Phase 04 payouts). Books and ledger match. Active workflow: revision 3 (two in sequence, automatic release).
 
+## Phase 07: workflow changes through the app (9 Nov 2026)
+
+Sent by the production app (`POST /api/admin/workflow` as `admin@gajian.my.id`), signed with the admin's restricted function-call key; the app activated each revision only after re-reading `get_workflow` from the vault.
+
+| Step | Tx | Result |
+| --- | --- | --- |
+| Revision 4: two approvers in parallel, maker release | [`9uFmgbRC…`](https://testnet.nearblocks.io/txns/9uFmgbRC3npJuxhpuxUv4zUqMjL9pvatfG9JhpsWKhZh) | ok, app shows revision 4 active |
+| Revision 5: back to two in sequence, automatic release (demo default) | [`2sQjKbtV…`](https://testnet.nearblocks.io/txns/2sQjKbtVha9g5oSdrPycsyNp829TxZbc6yiCFyWRsvAv) | ok, app shows revision 5 active |
+| Same reviewer twice | — | refused by the app before any transaction ("Choose two different reviewers.") |
+
+Active vault workflow now: **revision 5**, two in sequence (approver1 → approver2), automatic release, caps 1 / 100 tUSDC. The seed mirrors it (`SEED_WORKFLOW` in `src/server/db/seed.ts`).
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -138,4 +150,6 @@ Final state (RPC, `final`): vault books `total 0.820000, reserved 0`; token ledg
 | 9 Nov 2026 | Phase 02 deploy + register + fund + `p02-run-1` | 1 | 0.050000 | 0.0053 (plus 0.0025 NEAR storage deposits and ~3.1 NEAR locked for contract storage, both still held by our accounts) | Phase 02 table |
 | 9 Nov 2026 | Phase 04: retire old vault (drain 10 × 0.095 to admin, delete), recreate + deploy, 3 registrations, fund, 5 function-call keys, 3 live runs (25 steps) | 5 | 0.180000 to recipients (+0.950000 returned to admin) | 0.0253 | Phase 04 tables |
 
-**Total testnet NEAR burned so far: 0.1017 NEAR** (10.00000 → 9.89830 across all our accounts; storage deposits and contract storage stay inside our accounts).
+| 9 Nov 2026 | Phase 07: 2 workflow updates via the app | — | — | ≈ 0.0005 | Phase 07 table |
+
+**Total testnet NEAR burned so far: ≈ 0.102 NEAR** (10.00000 → 9.89830 across all our accounts; storage deposits and contract storage stay inside our accounts).

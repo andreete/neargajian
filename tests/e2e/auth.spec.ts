@@ -147,3 +147,20 @@ test('first screen shows headline, text, both buttons and the full hero card at 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${width} no horizontal scroll`).toBe(true);
   }
 });
+
+test('admin workflow editor: live preview, distinct reviewers, nothing saved without a change', async ({ page }) => {
+  await signInAs(page, 'Admin');
+  await page.waitForURL('**/admin');
+  const editor = page.getByRole('region', { name: 'Approval workflow for new runs' }).or(page.locator('section[aria-labelledby="editor-title"]'));
+  const save = editor.getByRole('button', { name: 'Save workflow' });
+  await expect(save).toBeDisabled(); // unchanged
+  await expect(page.getByTestId('workflow-summary')).toContainText('approves first');
+  await editor.getByText('Two in parallel', { exact: true }).click();
+  await expect(page.getByTestId('workflow-summary')).toContainText('approve in any order');
+  await expect(editor.locator('.am-gate')).toBeVisible();
+  await page.locator('#approver2').selectOption('usr_app1');
+  await expect(editor.getByText('Choose two different reviewers.')).toBeVisible();
+  await expect(save).toBeDisabled();
+  await page.locator('#approver2').selectOption('usr_app2');
+  await expect(save).toBeEnabled();
+});

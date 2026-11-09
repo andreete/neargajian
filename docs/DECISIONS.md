@@ -264,3 +264,14 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-066 · Amount display
 
 - UI: exact amount, trailing zeros removed down to 2 decimals, thousands separators, tabular figures, right-aligned (`displayAmount`). CSV exports and base-unit/on-chain views: 6 fixed decimals (`fixedAmount`). Never rounded (property test).
+
+## Phase 07 decisions (9 Nov 2026, by the agent)
+
+### D-067 · App-side NEAR client: near-api-js 7.4.0, local signing
+
+- near-api-js 7 is the maintained, consolidated SDK (the `@near-js/*` packages stopped at 2.5.x in Nov 2025). The client signs locally so the transaction hash is known and persisted before sending (needed by Phase 10–12 reconciliation). Only restricted function-call keys are used by the app.
+
+### D-068 · Workflow changes are chain-first
+
+- The vault is the source of truth for the active workflow. The app writes a `pending` revision, signs `update_workflow`, and activates only after `get_workflow` matches. If the app and the vault disagree, changes are refused until an operator reconciles. Failed attempts stay in the table for audit and do not block a retry.
+- Release-mode and approver changes apply to new runs only; each run version copies the active snapshot (`activeSnapshot`).

@@ -111,7 +111,8 @@ export const workflowConfigs = sqliteTable('workflow_configs', {
   createdAt: ms('created_at').notNull(),
   activatedAt: ms('activated_at'),
 }, (t) => [
-  uniqueIndex('workflow_configs_revision_uq').on(t.revision),
+  // Failed attempts keep their row (audit) and do not block a retry of the same revision.
+  uniqueIndex('workflow_configs_revision_uq').on(t.revision).where(sql`chain_status <> 'failed'`),
   check('workflow_configs_kind_ck', inList('kind', WORKFLOW_KINDS)),
   check('workflow_configs_release_ck', inList('release_mode', RELEASE_MODES)),
   check('workflow_configs_status_ck', inList('chain_status', ['pending', 'active', 'failed', 'superseded'])),
