@@ -29,11 +29,19 @@ export interface ChainWorkflow {
   max_run_total: string;
 }
 
+export interface CallOptions {
+  gasTgas?: number;
+  /** Called with the locally computed tx hash BEFORE the transaction is sent. */
+  onSigned?: (txHash: string) => void;
+  /** FINAL waits for the final outcome; INCLUDED returns once the tx is in a block (outcome then 'unknown' until reconciled). */
+  waitUntil?: 'FINAL' | 'INCLUDED';
+}
+
 export interface VaultClient {
   vaultId: string;
   accountFor(role: ChainRole): string;
   view<T>(method: string, args: Record<string, unknown>): Promise<T>;
-  call(role: ChainRole, method: string, args: Record<string, unknown>, opts?: { gasTgas?: number; onSigned?: (txHash: string) => void }): Promise<TxOutcome>;
+  call(role: ChainRole, method: string, args: Record<string, unknown>, opts?: CallOptions): Promise<TxOutcome>;
   txOutcome(txHash: string, role: ChainRole): Promise<TxOutcome>;
 }
 
@@ -99,7 +107,7 @@ export class NearVaultClient implements VaultClient {
     return (await this.provider.callFunction({ contractId: this.vaultId, method, args })) as T;
   }
 
-  async call(role: ChainRole, method: string, args: Record<string, unknown>, opts: { gasTgas?: number; onSigned?: (txHash: string) => void } = {}): Promise<TxOutcome> {
+  async call(role: ChainRole, method: string, args: Record<string, unknown>, opts: CallOptions = {}): Promise<TxOutcome> {
     const accountId = this.accountFor(role);
     const keyPair = this.keyFor(role);
     const publicKey = keyPair.getPublicKey();
@@ -112,8 +120,10 @@ export class NearVaultClient implements VaultClient {
     const hash = baseEncode(txHash);
     opts.onSigned?.(hash); // persist before sending
     try {
-      const res = await this.provider.sendTransactionUntil(signedTransaction, 'FINAL');
-      return classify(hash, res.status as RpcStatus);
+      const res = await this.provider.sendTransactionUntil(signedTransaction, opts.waitUntil ?? 'FINAL');
+      const outcome = classify(hash, res.status as RpcStatus);
+      // With INCLUDED, a failure may already be visible; success is only trusted at FINAL.
+      return opts.waitUntil === 'INCLUDED' && outcome.status === 'success' ? { txHash: hash, status: 'unknown' } : outcome;
     } catch (error) {
       // The node may have rejected the transaction outright (invalid nonce, key not allowed)
       // or we may simply not know. Look it up once; if not found, the outcome is unknown.
@@ -143,6 +153,18 @@ export function getVaultClient(): VaultClient {
   if (override) return override;
   instance ??= new NearVaultClient();
   return instance;
+}
+
+/** Maps a chain account to the role whose restricted key signs for it. */
+export function roleForAccount(client: VaultClient, account: string): ChainRole {
+  for (const role of ['maker', 'approver1', 'approver2', 'worker', 'admin'] as const) {
+    try {
+      if (client.accountFor(role) === account) return role;
+    } catch {
+      // role not configured
+    }
+  }
+  throw new Error(`No signer is configured for ${account}`);
 }
 
 export function setVaultClientForTests(client: VaultClient | undefined): void {

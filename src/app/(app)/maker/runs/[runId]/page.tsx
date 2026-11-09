@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { ManualBuilder } from '@/components/manual-builder';
 import { StatusChip } from '@/components/status-chip';
 import { getDb } from '@/server/db/client';
-import { activeLimits, draftView } from '@/server/runs/draft-service';
+import { activeLimits, draftLock, draftView } from '@/server/runs/draft-service';
+import { latestVersion } from '@/server/runs/lifecycle';
+import { AlertIcon } from '@/components/icons';
 import { DomainError } from '@/server/runs/repository';
 import { requireRole } from '@/server/web/page-auth';
 import { UploadPanel } from '@/components/upload-panel';
@@ -22,6 +24,8 @@ export default async function RunBuilderPage({ params }: { params: Promise<{ run
     if (error instanceof DomainError && error.code === 'not_found') notFound();
     throw error;
   }
+  if (draftLock(db, runId)) redirect(`/runs/${runId}`);
+  const latest = latestVersion(db, runId);
   const limits = activeLimits(db);
   return (
     <>
@@ -31,6 +35,9 @@ export default async function RunBuilderPage({ params }: { params: Promise<{ run
         <StatusChip status="draft" />
         <span className="chip chip-neutral">{view.run.source === 'upload' ? 'File upload' : 'Manual entry'}</span>
       </div>
+      {latest ? (
+        <div className="callout" role="note"><AlertIcon size={18} /><span>Version {latest.versionNo} was {latest.status === 'rejected' ? 'rejected' : latest.status === 'cancelled' ? 'cancelled' : 'not registered by the vault'}{latest.statusDetail ? ` (${latest.statusDetail})` : ''}. Edit the draft and submit version {latest.versionNo + 1}; it needs fresh approvals. <a href={`/runs/${runId}`}>See version {latest.versionNo}</a></span></div>
+      ) : null}
       {view.run.source === 'manual' ? (
         <ManualBuilder runId={view.run.id} title={view.run.title} postingMode={view.run.postingMode} revision={view.run.draftRevision}
           rows={view.rows.map(({ sourceLine: _s, ...r }) => r)} csrfToken={session.csrfToken}

@@ -145,6 +145,12 @@ export function UploadPanel(props: {
         </div>
       </section>
 
+      {props.rows.length ? (
+        <div className="continue-bar card card-pad">
+          <span><strong>{props.rows.length.toLocaleString('en-US')}</strong> rows accepted · exact total <strong className="num">{displayAmount(total)} tUSDC</strong></span>
+          <a className="btn btn-primary" href={`/maker/runs/${props.runId}/review`}>Continue to review</a>
+        </div>
+      ) : null}
       {props.rows.length ? <ReviewTable rows={props.rows} total={total} /> : null}
 
       {props.rows.length ? (

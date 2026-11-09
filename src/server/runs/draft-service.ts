@@ -3,10 +3,10 @@
  * Authorization: only the run's maker (policy `run.edit_draft`), checked here as well as in
  * the route. Validation always runs on the server with the active workflow's caps.
  */
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { can, type Principal } from '../auth/policy.ts';
 import type { Db } from '../db/client.ts';
-import { payrollRuns, workflowConfigs, type PostingMode } from '../db/schema.ts';
+import { payrollRuns, runVersions, workflowConfigs, type PostingMode } from '../db/schema.ts';
 import { validateRows, type Limits, type RawRow, type ValidationSummary } from '../payroll/validate.ts';
 import { DomainError, getDraftRows, replaceDraft, type DraftRowInput } from './repository.ts';
 import { importPayrollFile } from '../payroll/import.ts';
@@ -26,12 +26,29 @@ export function fromRaw(r: Partial<RawRow>, sourceLine: number | null = null): D
 }
 
 /** Loads a run the principal may edit, or throws not_found (no existence leak). */
-export function editableRun(db: Db, principal: Principal, runId: string) {
+export function editableRun(db: Db, principal: Principal, runId: string, opts: { allowLocked?: boolean } = {}) {
   const run = db.select().from(payrollRuns).where(eq(payrollRuns.id, runId)).get();
   if (!run || !can(principal, 'run.edit_draft', { makerUserId: run.makerUserId, assignedApproverIds: [] })) {
     throw new DomainError('not_found', 'Payroll run not found.');
   }
+  if (!opts.allowLocked && draftLock(db, runId)) throw new DomainError('conflict', draftLock(db, runId) ?? '');
   return run;
+}
+
+/**
+ * The draft is locked while a submitted version is live (submitting, waiting for approval,
+ * approved, releasing) or once the run was paid. It opens again after rejection,
+ * cancellation or a failed submission, for a new version.
+ */
+export function draftLock(db: Db, runId: string): string | null {
+  const latest = db.select({ status: runVersions.status, versionNo: runVersions.versionNo }).from(runVersions)
+    .where(eq(runVersions.runId, runId)).orderBy(desc(runVersions.versionNo)).get();
+  if (!latest) return null;
+  if (['submitting', 'pending_approval', 'approved', 'releasing'].includes(latest.status)) {
+    return `Version ${latest.versionNo} is submitted. Cancel it before editing, or wait for the approvers.`;
+  }
+  if (latest.status === 'paid' || latest.status === 'partially_paid') return 'This run has been paid. Create a new run for further payments.';
+  return null;
 }
 
 export interface DraftView {
@@ -41,7 +58,7 @@ export interface DraftView {
 }
 
 export function draftView(db: Db, principal: Principal, runId: string): DraftView {
-  const run = editableRun(db, principal, runId);
+  const run = editableRun(db, principal, runId, { allowLocked: true });
   const rows = getDraftRows(db, runId).map((r) => ({ ...toRaw(r), sourceLine: r.sourceLine }));
   return {
     run: { id: run.id, title: run.title, postingMode: run.postingMode, source: run.source, draftRevision: run.draftRevision, draftFilename: run.draftFilename, draftFileSha256: run.draftFileSha256 },

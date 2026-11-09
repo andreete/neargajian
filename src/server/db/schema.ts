@@ -177,6 +177,8 @@ export const runVersions = sqliteTable('run_versions', {
   statusUpdatedAt: ms('status_updated_at').notNull(),
   submitTxHash: text('submit_tx_hash'),
   supersededByVersionId: text('superseded_by_version_id'),
+  /** Human-readable reason for submit_failed / cancellation problems (no PII). */
+  statusDetail: text('status_detail'),
 }, (t) => [
   uniqueIndex('run_versions_run_no_uq').on(t.runId, t.versionNo),
   uniqueIndex('run_versions_chain_run_uq').on(t.chainRunId),
@@ -213,6 +215,8 @@ export const approvalEvents = sqliteTable('approval_events', {
   reason: text('reason'),
   status: text('status', { enum: ['pending', 'confirmed', 'failed'] }).notNull(),
   chainTxHash: text('chain_tx_hash'),
+  /** Contract or network error when status = failed. */
+  error: text('error'),
   createdAt: ms('created_at').notNull(),
   confirmedAt: ms('confirmed_at'),
 }, (t) => [

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { InboxIcon, InfoIcon } from '@/components/icons';
 import { Chip, StatusChip } from '@/components/status-chip';
 import { CheckIcon, XIcon } from '@/components/icons';
@@ -60,7 +61,7 @@ export default async function ApproverDashboard() {
                 <table className="data">
                   <thead><tr><th scope="col">Run</th><th scope="col">Status</th><th scope="col" className="amount">Rows</th><th scope="col" className="amount">Total (tUSDC)</th><th scope="col">Submitted (UTC)</th></tr></thead>
                   <tbody>{queue.pending.map((i) => (
-                    <tr key={i.versionId}><td><div className="title">{i.title}</div><div className="sub">Version {i.versionNo} · your step {i.myStep}{i.actionable ? ' · ready for you' : ''}</div></td>
+                    <tr key={i.versionId}><td><div className="title"><Link href={`/runs/${i.runId}`}>{i.title}</Link></div><div className="sub">Version {i.versionNo} · your step {i.myStep}{i.actionable ? ' · ready for you' : ''}</div></td>
                       <td><StatusChip status={i.status} /></td><td className="amount">{i.rowCount.toLocaleString('en-US')}</td><td className="amount">{displayAmount(i.total)}</td><td className="sub when">{formatDateTime(i.submittedAt)}</td></tr>
                   ))}</tbody>
                 </table>

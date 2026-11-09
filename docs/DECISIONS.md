@@ -313,3 +313,13 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-076 · Manual builder currency
 
 - The manual builder fixes the currency to tUSDC (the only allowed value) and shows it in the amount header; the stored row still carries `tUSDC` and the shared validation still checks it (files can contain other values and are rejected).
+
+## Phase 10 decisions (10 Nov 2026, by the agent)
+
+### D-077 · Submit returns at inclusion; the page reconciles
+
+- Chain actions from the web app are sent with `wait_until: INCLUDED`, so the UI can show an honest "waiting for NEAR" state with the tx link. The run page then reconciles from `get_run` and tx status every 3 s until settled. Success is never assumed from inclusion.
+
+### D-078 · One live version per run
+
+- A run has at most one live version. Editing reopens only after rejection, cancellation or a failed submission; replacing a pending version uses `supersedes` (atomic on-chain cancel). Paid runs are closed; further payments need a new run.

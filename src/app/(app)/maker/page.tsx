@@ -34,7 +34,7 @@ export default async function MakerDashboard() {
   const rows = [
     ...runs.map((r) => ({ key: r.id, at: r.updatedAt, node: (
       <tr key={r.id}>
-        <td><div className="title">{r.status === 'draft' ? <Link href={`/maker/runs/${r.id}`}>{r.title}</Link> : r.title}</div><div className="sub">{r.source === 'upload' ? 'Upload' : 'Manual'} · {r.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'}{r.versionNo ? ` · Version ${r.versionNo}` : ''}</div></td>
+        <td><div className="title"><Link href={r.status === 'draft' || ['rejected', 'cancelled', 'submit_failed'].includes(r.status) ? `/maker/runs/${r.id}` : `/runs/${r.id}`}>{r.title}</Link></div><div className="sub">{r.source === 'upload' ? 'Upload' : 'Manual'} · {r.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'}{r.versionNo ? ` · Version ${r.versionNo}` : ''}</div></td>
         <td><StatusChip status={r.status} /></td>
         <td className="amount">{r.rowCount.toLocaleString('en-US')}{r.invalidRows ? <div className="sub">{r.invalidRows} invalid</div> : null}</td>
         <td className="amount">{displayAmount(r.total)}</td>

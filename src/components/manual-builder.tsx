@@ -190,9 +190,11 @@ export function ManualBuilder(props: Props) {
                 Continue with {summary.validCount} valid row{summary.validCount === 1 ? '' : 's'}
               </button>
             ) : (
-              <button type="button" className="btn btn-primary btn-sm" disabled aria-describedby="review-hint">Continue to review</button>
+              summary.validCount > 0 && summary.invalidCount === 0 && summary.runErrors.length === 0 && !dirty
+                ? <a className="btn btn-primary btn-sm" href={`/maker/runs/${props.runId}/review`}>Continue to review</a>
+                : <button type="button" className="btn btn-primary btn-sm" disabled aria-describedby="review-hint">Continue to review</button>
             )}
-            <span id="review-hint" className="sr-only">Review and submission arrive in Phase 10.</span>
+            <span id="review-hint" className="sr-only">Save the draft with only valid rows to continue.</span>
           </div>
         </div>
       </section>

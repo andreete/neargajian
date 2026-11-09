@@ -36,6 +36,13 @@
       "when": 1794229201227,
       "tag": "0004_testnet_category",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794229394019,
+      "tag": "0005_status_details",
+      "breakpoints": true
     }
   ]
 }

@@ -16,7 +16,19 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 08 Manual payroll builder | Done | none (local) |
 | 09 Template and upload | Done, approved by Andre | none (local) |
 | 09b Review fixes | Done | none |
-| 10 Read-only preview and immutable submission | Not started (stop requested) | — |
+| 10 Read-only preview and immutable submission | Done | proven live at the end of Phase 13 |
+| 11 Approver queues and review | Not started | — |
+| 12 Release worker and maker release | Not started | — |
+| 13 History and accounting CSVs | Not started | — |
+
+---
+
+## Phase 10 · Read-only preview and immutable submission (10 Nov 2026)
+
+- `src/server/runs/lifecycle.ts`: `submitRun` validates the whole draft, freezes it with `activeSnapshot` + `createVersion` (status `submitting`, deterministic chain run ID, salted review digest), then signs `create_run` with the maker's restricted key, **storing the tx hash before sending** and returning as soon as the tx is included. `reconcileVersion` advances only from what the vault reports (`get_run` must match root, total, row count and workflow revision; tx status for refusals), confirms approval events from the vault's approval list, links superseded versions. `cancelVersion` (maker, `cancel_run`). A retried submit while `submitting` reconciles instead of sending again; "Run already exists" is treated as a landed earlier attempt.
+- Draft lock (`draftLock`): no edits or uploads while a version is submitting / waiting / approved / releasing or after payment; reopened after rejection, cancellation or a failed submission, for a new version that needs fresh approvals (`supersede` cancels a pending version atomically on-chain).
+- UI: `/maker/runs/[id]/review` (exact totals, both posting previews with the selected one marked, approval path that will be snapshotted, 50-row paged read-only table) with the **submit confirmation dialog** (count, exact total, token, version, approval path, consequence; disabled while pending; uncertain outcome → open the run, never resubmit blindly). `/runs/[id]` run detail for the maker and assigned approvers: status, approval map with node states, proof timeline with explorer links, recipients with payout state, posting preview, earlier versions; auto-reconciles every 3 s while anything waits for NEAR. Migration `0005_status_details.sql` (reason for failed submissions, error for refused decisions).
+- Tests: `tests/integration/submission.test.ts` (8) with a contract-faithful stand-in vault (`tests/helpers/fake-vault.ts`): create_run once with the frozen commitment; retry cannot create a second run; unknown-but-landed reconciles; never-landed becomes `submit_failed` only when proven; vault refusal recorded with reason; draft locked while live; cancel → new version with fresh approvals; supersede on-chain; maker-only. `npm test` 122/122.
 
 ---
 
