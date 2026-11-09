@@ -12,10 +12,11 @@
  */
 import { and, eq, inArray } from 'drizzle-orm';
 import { buildPayoutTree, proofFor, toHex } from '../commitments.ts';
-import type { ChainRole, VaultClient } from '../chain/vault-client.ts';
+import type { VaultClient } from '../chain/vault-client.ts';
 import type { Db } from '../db/client.ts';
 import { auditEvents, payoutActions, runVersions, versionRows } from '../db/schema.ts';
 import { claimPayoutAction, updatePayoutAction, type PayoutAction } from './actions.ts';
+import { settleActions } from './settle.ts';
 import { reconcileVersion, snapshotOf, type Version } from '../runs/lifecycle.ts';
 import { createReportEntries } from '../reports/entries.ts';
 
@@ -23,8 +24,6 @@ export const MAX_ROW_ATTEMPTS = 3;
 export const RETRY_BACKOFF_MS = 30_000;
 export const RELEASE_RETRY_MS = 60_000;
 export const LEASE_MS = 120_000;
-
-interface ChainRow { status: 'InFlight' | 'Paid' | 'Failed'; receiver_id: string; amount: string; attempts: number }
 
 function log(db: Db, action: string, versionId: string, detail: Record<string, unknown>, now: Date) {
   db.insert(auditEvents).values({ at: now, action, entityType: 'run_version', entityId: versionId, detail: JSON.stringify(detail) }).run();
@@ -65,30 +64,7 @@ export async function requestRelease(db: Db, client: VaultClient, v: Version, op
 // ------------------------------------------------------------------- reconcile
 
 /** Settles claimed / submitted / unknown actions from the vault before anything is retried. */
-export async function reconcileActions(db: Db, client: VaultClient, v: Version, now = new Date()) {
-  const open = db.select().from(payoutActions)
-    .where(and(eq(payoutActions.versionId, v.id), inArray(payoutActions.status, ['claimed', 'submitted', 'unknown']))).all();
-  for (const a of open) {
-    if (!a.txHash) {
-      // Claimed but never signed: if the lease expired, nothing was sent.
-      if (a.leaseExpiresAt.getTime() < now.getTime()) updatePayoutAction(db, a.id, { status: 'failed', now, error: 'Not sent (worker stopped before signing).' });
-      continue;
-    }
-    if (a.kind === 'release') {
-      const run = await client.view<{ status: string } | null>('get_run', { run_id: v.chainRunId });
-      if (run && ['Releasing', 'Paid', 'PartiallyPaid'].includes(run.status)) { updatePayoutAction(db, a.id, { status: 'succeeded', now }); continue; }
-      const out = await client.txOutcome(a.txHash, (snapshotOf(v).releaseMode === 'maker' ? 'maker' : 'worker') as ChainRole);
-      if (out.status === 'failure') updatePayoutAction(db, a.id, { status: 'failed', now, error: out.error ?? 'Refused by the vault.' });
-      continue;
-    }
-    const row = await client.view<ChainRow | null>('get_row', { run_id: v.chainRunId, index: a.rowIndex });
-    if (row?.status === 'Paid' && row.attempts >= a.attempt) { updatePayoutAction(db, a.id, { status: 'succeeded', now }); continue; }
-    if (row?.status === 'Failed' && row.attempts >= a.attempt) { updatePayoutAction(db, a.id, { status: 'failed', now, error: 'The token transfer failed (proven on-chain).' }); continue; }
-    if (row?.status === 'InFlight') continue; // the callback has not run yet
-    const out = await client.txOutcome(a.txHash, 'worker');
-    if (out.status === 'failure') updatePayoutAction(db, a.id, { status: 'failed', now, error: out.error ?? 'Refused by the vault.' });
-  }
-}
+export const reconcileActions = settleActions;
 
 // ---------------------------------------------------------------------- payouts
 
@@ -129,7 +105,6 @@ export async function payRows(db: Db, client: VaultClient, v: Version, opts: { r
   }
   await reconcileActions(db, client, v, now);
   const r = await reconcileVersion(db, client, v.id, now);
-  if (r.status === 'paid') createReportEntries(db, v.id, now);
   return { paid, status: r.status };
 }
 

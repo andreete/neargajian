@@ -181,7 +181,9 @@ describe('payout action claims', () => {
     expect(retry).toMatchObject({ claimed: true, action: { attempt: 2 } });
     if (!retry.claimed) return;
     updatePayoutAction(h.db, retry.action.id, { status: 'succeeded', now: NOW, txHash: 'TX2' });
-    expectSqlError(() => updatePayoutAction(h.db, retry.action.id, { status: 'failed', now: NOW }), /final/);
+    updatePayoutAction(h.db, retry.action.id, { status: 'failed', now: NOW }); // a late answer leaves a confirmed record untouched
+    expect(h.sqlite.prepare('select status from payout_actions where id = ?').get(retry.action.id)).toEqual({ status: 'succeeded' });
+    expectSqlError(() => h.sqlite.prepare("update payout_actions set status = 'failed' where id = ?").run(retry.action.id), /final/); // and the trigger enforces it
     expect(claim(h.db, v.id).claimed).toBe(false);
   });
 

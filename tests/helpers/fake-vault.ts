@@ -31,6 +31,21 @@ export class FakeVault implements VaultClient {
   /** Receivers whose ft_transfer fails (e.g. not registered with the token). */
   unregistered = new Set<string>();
   private n = 0;
+  private held = new Map<string, { signed: () => void; gate: Promise<void> }>();
+
+  /**
+   * The next call of `method` lands on-chain immediately, but its caller only gets the
+   * outcome after `release()` (like a worker waiting for finality). `signed` resolves once
+   * the transaction is signed and applied.
+   */
+  hold(method: string) {
+    let release!: () => void;
+    let signed!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const signedP = new Promise<void>((r) => { signed = r; });
+    this.held.set(method, { signed, gate });
+    return { signed: signedP, release };
+  }
 
   accountFor(role: ChainRole) { return `${role}.gajian-payroll.testnet`; }
 
@@ -65,6 +80,12 @@ export class FakeVault implements VaultClient {
       result = { txHash, status: 'failure', error: (e as Error).message };
     }
     this.outcomes.set(txHash, result);
+    const held = this.held.get(method);
+    if (held) {
+      this.held.delete(method);
+      held.signed();
+      await held.gate;
+    }
     if (mode === 'unknown-landed') return { txHash, status: 'unknown' };
     return opts.waitUntil === 'INCLUDED' && result.status === 'success' ? { txHash, status: 'unknown' } : result;
   }

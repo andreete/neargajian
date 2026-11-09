@@ -4,7 +4,7 @@
  * (non-failed) action per version/kind/row, so two workers, a restart or a double click can
  * never start the same payout twice. A new attempt is possible only after a proven failure.
  */
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne } from 'drizzle-orm';
 import type { Db } from '../db/client.ts';
 import { payoutActions, runVersions, type PayoutActionStatus } from '../db/schema.ts';
 
@@ -51,5 +51,7 @@ export function updatePayoutAction(db: Db, id: string, update: {
     status: update.status, updatedAt: update.now,
     ...(update.txHash !== undefined ? { txHash: update.txHash } : {}),
     ...(update.error !== undefined ? { error: update.error } : {}),
-  }).where(eq(payoutActions.id, id)).run();
+  }).where(update.status === 'succeeded' ? eq(payoutActions.id, id) : and(eq(payoutActions.id, id), ne(payoutActions.status, 'succeeded'))).run();
+  // A succeeded record is final: a late "unknown" or "already paid" answer for an action that
+  // reconciliation has already confirmed from the vault leaves it untouched.
 }

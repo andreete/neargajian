@@ -5,12 +5,10 @@
  * Screenshots: docs/screenshots/phase-13/. Downloads: .tmp/live-exports/.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, test, type Browser } from '@playwright/test';
+import { paidScreens, shot } from './helpers';
 
-const OUT = 'docs/screenshots/phase-13';
-mkdirSync(OUT, { recursive: true });
 mkdirSync('.tmp/live-exports', { recursive: true });
-const shot = async (page: Page, name: string) => { await page.mouse.move(0, 0); await page.screenshot({ path: `${OUT}/${name}.png` }); };
 
 async function session(browser: Browser, email: string) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
@@ -76,11 +74,7 @@ test('live testnet payroll through the app', async ({ browser }) => {
   await expect(maker.locator('.run-head .chip').first()).toHaveText(/Releasing/, { timeout: 180_000 });
   await shot(maker, '04-run-releasing');
   await expect(maker.locator('.run-head .chip').first()).toHaveText(/^Paid$/, { timeout: 300_000 });
-  await maker.locator('#rows-h').scrollIntoViewIfNeeded();
-  await maker.evaluate(() => window.scrollTo(0, 0));
-  await shot(maker, '05-paid-run-with-explorer-links');
-  await maker.locator('#rows-h').scrollIntoViewIfNeeded();
-  await shot(maker, '05b-paid-run-recipients-and-payout-links');
+  await paidScreens(maker);
   }
 
   // 5. History in both views, exports.

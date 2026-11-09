@@ -16,6 +16,8 @@ import {
 import { validateRows } from '../payroll/validate.ts';
 import { activeSnapshot } from '../workflow/service.ts';
 import { activeLimits, toRaw } from './draft-service.ts';
+import { confirmedPayouts, settleActions } from '../payouts/settle.ts';
+import { createReportEntries } from '../reports/entries.ts';
 import { createVersion, DomainError, getDraftRows, setVersionStatus, type WorkflowSnapshot } from './repository.ts';
 
 export type Version = typeof runVersions.$inferSelect;
@@ -176,12 +178,22 @@ export async function reconcileVersion(db: Db, client: VaultClient, versionId: s
 
   let status = db.select().from(runVersions).where(eq(runVersions.id, versionId)).get()!.status;
   if (chain) {
-    const target = CHAIN_TO_STATUS[chain.status];
+    let target = CHAIN_TO_STATUS[chain.status];
+    if (target === 'paid' || target === 'partially_paid') {
+      // The vault can report Paid before this app has recorded the last payout (the worker
+      // waits for finality). Settle every open payout record from `get_row` first; the version
+      // becomes Paid only when every row is confirmed locally and count and total match the
+      // approved version exactly (PRD A06). Otherwise it stays Releasing until they do.
+      await settleActions(db, client, v, now);
+      const done = confirmedPayouts(db, versionId);
+      if (target === 'paid' && (done.count !== v.rowCount || done.total !== v.total)) target = 'releasing';
+    }
     if (target !== status && ORDER[target] > ORDER[status] && !TERMINAL_STATUSES.includes(status)) {
       setVersionStatus(db, versionId, target, now);
       status = target;
       audit(db, null, 'run.status_from_chain', versionId, { status: target }, now);
     }
+    if (status === 'paid') createReportEntries(db, versionId, now);
     if (chain.superseded_by) {
       const newer = db.select({ id: runVersions.id }).from(runVersions).where(eq(runVersions.chainRunId, chain.superseded_by)).get();
       if (newer) db.update(runVersions).set({ supersededByVersionId: newer.id }).where(eq(runVersions.id, versionId)).run();

@@ -348,3 +348,9 @@ Andre verified the key transactions and balances independently on testnet.
 
 - The live testnet proof is a Playwright spec under `tests/live/` with its own config (`playwright.live.config.ts`), run only on purpose against the running production server and worker with the real demo database. It is never part of `npm run test:e2e` (isolated seeded DB, no chain transactions).
 
+## Phase 13b decisions (9 Nov 2026, Andre's review)
+
+### D-084 · Paid only from confirmed payout records
+
+- A version moves to Paid only when the vault reports Paid AND every row's payout record is confirmed AND the confirmed count and total equal the approved version. Reconciliation settles open payout records from `get_row` before deciding. The run page derives badge, counters, banner and timeline from one `paymentState`. A confirmed payout record is never changed by a later answer.
+

@@ -19,7 +19,21 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 10 Read-only preview and immutable submission | Done | **Yes** (Phase 13 live run: `create_run` through the app) |
 | 11 Approver queues and review | Done | **Yes** (Phase 13 live run: both approvals in the browser) |
 | 12 Release worker and maker release | Done | **Yes** (Phase 13 live run: worker release + 3 payouts); maker release proven in sandbox/integration only |
-| 13 History and accounting CSVs | Done; awaiting Andre's review | **Yes**: complete flow through the app, see docs/TESTNET.md |
+| 13 History and accounting CSVs | Done, approved by Andre (live run independently verified) | **Yes**: complete flow through the app, see docs/TESTNET.md |
+| 13b Review fixes (paid-state consistency, screenshot 05b) | Done | none (read-only recapture of the Phase 13 run) |
+
+---
+
+## Phase 13b · Review fixes (9 Nov 2026)
+
+1. **Paid-state inconsistency (PRD A06).** Root cause: the run page's reconcile (`reconcileVersion`, polled every 3 s) copied the vault's run status. The vault reports the run Paid as soon as the last `pay_row` lands, while the release worker is still waiting for finality before it records that payout. So the version became Paid while the last payout record was still `submitted`: badge "Paid" (from the version) next to "Paid 2 of 3, 0.10 tUSDC" and "Payouts: 2 of 3" (from payout records). Fix:
+   - `src/server/payouts/settle.ts` (`settleActions`, `confirmedPayouts`), shared by the worker and reconciliation. When the vault says Paid, reconciliation first settles every open payout record from `get_row`; the version becomes Paid only when every row is confirmed and the confirmed count and total equal the approved version, otherwise it stays Releasing. Report entries are created at that single transition.
+   - `paymentState()` in `src/server/runs/view.ts`: one derived state that the run page's badge, Paid counter (now "x of y tUSDC confirmed"), banner and timeline all read; "Paid" is shown only when complete, even for data written by the old code.
+   - `updatePayoutAction` never changes a confirmed (`succeeded`) record, so a worker's late answer after reconciliation confirmed the row is harmless (the DB trigger still enforces it).
+   - Regression test `tests/integration/run-page-states.test.tsx` renders the real run page (server component) in every intermediate state: approved, releasing 0/3, 1/3, failed row (Needs attention), retried 2/3, last payout landed but unrecorded (vault Paid → page Releasing 2/3), reconciled Paid 3/3, record not provable yet (stays Releasing), stale Paid version (shows Releasing). Each state asserts badge, counter, banner and timeline agree. Verified to fail on the previous code (2/2 failing) and pass after the fix.
+2. **Screenshot 05b** recaptured (read-only, `tests/live/phase13-paid-screens.spec.ts`, no transactions): now shows the recipients table with payout status and the three payout tx links. Screenshot 05 recaptured too, since the original was taken at the moment of the bug; it now shows Paid with 3 of 3 and 0.12 of 0.12 tUSDC. The live spec now waits for "3 of 3" before capturing.
+
+Evidence: `npm run lint`, `npm run typecheck` pass; `npm test` **142/142**; `npm run build` pass; `npm run test:e2e` **15/15**.
 
 ---
 

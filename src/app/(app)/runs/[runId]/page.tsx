@@ -5,14 +5,13 @@ import { ApprovalMap } from '@/components/approval-map';
 import { PostingPreview } from '@/components/posting-preview';
 import { StatusChip, type RunStatus } from '@/components/status-chip';
 import { CancelVersion, ChainAutoRefresh, EditDraftLink, PendingTx, VersionRows } from '@/components/run-live';
-import type { RowView } from '@/server/runs/view';
 import { DecisionPanel } from '@/components/decision-panel';
 import { ReleasePanel } from '@/components/release-panel';
 import { getConfig } from '@/server/config';
 import { getDb } from '@/server/db/client';
 import { DomainError } from '@/server/runs/repository';
 import { runDetail, type RunDetail } from '@/server/runs/lifecycle';
-import { actionableStep, displayStatus, rowStates } from '@/server/runs/view';
+import { actionableStep, paymentState, type PaymentState } from '@/server/runs/view';
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime, shortHash } from '@/lib/format';
 import { KIND_LABEL, RELEASE_LABEL } from '../../workflow-panel';
@@ -24,11 +23,10 @@ function Tx({ hash }: { hash: string | null }) {
   return <a className="tx" href={`${getConfig().explorerTxUrl}${hash}`} target="_blank" rel="noreferrer">{shortHash(hash)}<span className="sr-only"> (opens NearBlocks)</span></a>;
 }
 
-function Timeline({ d, rows }: { d: RunDetail; rows: RowView[] }) {
+function Timeline({ d, pay }: { d: RunDetail; pay: PaymentState }) {
   const v = d.version!;
   const name = (id: string) => d.approvers.find((a) => a.userId === id)?.displayName ?? 'Approver';
   const release = d.actions.filter((a) => a.kind === 'release').at(-1);
-  const paid = rows.filter((r) => r.status === 'paid');
   const items: { tone: 'ok' | 'wait' | 'bad' | ''; title: string; detail: string; at: Date | null; tx: string | null }[] = [];
   items.push({ tone: v.status === 'submitting' ? 'wait' : v.status === 'submit_failed' ? 'bad' : 'ok', title: `Version ${v.versionNo} submitted by the maker`,
     detail: v.status === 'submitting' ? 'Waiting for confirmation on NEAR' : v.status === 'submit_failed' ? `Not registered: ${v.statusDetail ?? 'rejected by the vault'}` : `Registered in the vault as ${v.chainRunId}`, at: v.createdAt, tx: v.submitTxHash });
@@ -39,7 +37,7 @@ function Timeline({ d, rows }: { d: RunDetail; rows: RowView[] }) {
       at: e.confirmedAt ?? e.createdAt, tx: e.chainTxHash });
   }
   if (release) items.push({ tone: release.status === 'succeeded' ? 'ok' : release.status === 'failed' ? 'bad' : 'wait', title: 'Release requested', detail: release.status === 'failed' ? release.error ?? 'Refused by the vault' : release.status === 'succeeded' ? `Vault reserved ${displayAmount(v.total)} tUSDC` : 'Waiting for confirmation on NEAR', at: release.updatedAt, tx: release.txHash });
-  if (paid.length) items.push({ tone: paid.length === rows.length ? 'ok' : 'wait', title: `Payouts: ${paid.length} of ${rows.length} paid`, detail: paid.length === rows.length ? 'All recipients paid by the vault (ft_transfer)' : 'Paying one recipient per transaction', at: null, tx: null });
+  if (pay.paidCount) items.push({ tone: pay.complete ? 'ok' : 'wait', title: `Payouts: ${pay.paidCount} of ${pay.rowCount} paid`, detail: pay.complete ? `All recipients paid by the vault (ft_transfer), ${displayAmount(pay.paidTotal)} tUSDC confirmed` : `Paying one recipient per transaction, ${displayAmount(pay.paidTotal)} of ${displayAmount(pay.total)} tUSDC confirmed`, at: null, tx: null });
   if (v.status === 'cancelled') items.push({ tone: 'bad', title: 'Cancelled', detail: v.supersededByVersionId ? 'Replaced by a newer version' : 'Cancelled by the maker before release', at: v.statusUpdatedAt, tx: null });
   return (
     <ol className="timeline-list">
@@ -72,13 +70,14 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
       <div className="callout" role="note"><span>This run has no submitted version yet. {session.user.role === 'maker' ? <Link href={`/maker/runs/${runId}`}>Open the draft</Link> : null}</span></div>
     );
   }
-  const rows = rowStates(d);
-  const status: RunStatus = displayStatus(d);
+  const pay = paymentState(d);
+  const rows = pay.rows;
+  const status: RunStatus = pay.status;
   const isMaker = session.user.id === d.run.makerUserId;
   const myStep = actionableStep(d, session.user.id);
-  const pendingChain = v.status === 'submitting' || v.status === 'releasing' || d.events.some((e) => e.status === 'pending')
+  const pendingChain = v.status === 'submitting' || v.status === 'releasing' || (v.status === 'paid' && !pay.complete) || d.events.some((e) => e.status === 'pending')
     || (v.status === 'approved' && d.snapshot?.releaseMode === 'automatic');
-  const paidCount = rows.filter((r) => r.status === 'paid').length;
+  const paidCount = pay.paidCount;
   const approvedCount = d.events.filter((e) => e.decision === 'approve' && e.status === 'confirmed').length;
   const amounts = d.rows.map((r) => r.amount);
   const nodeStatus = (userId: string, step: number) => {
@@ -104,7 +103,7 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
       <p className="run-sub">Vault run <span className="mono">{v.chainRunId}</span> · {v.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'} · {v.sourceFilename ? <>file <span className="mono">{v.sourceFilename}</span></> : 'manual entry'} · submitted {formatDateTime(v.createdAt)}</p>
 
       <ChainAutoRefresh runId={runId} active={pendingChain} csrfToken={session.csrfToken}
-        label={v.status === 'submitting' ? 'Submitted: waiting for the vault to confirm on NEAR' : v.status === 'releasing' ? `Releasing: ${paidCount} of ${rows.length} recipients paid` : v.status === 'approved' ? 'Approved: the release worker will release this run' : 'Waiting for NEAR to confirm a decision'} />
+        label={v.status === 'submitting' ? 'Submitted: waiting for the vault to confirm on NEAR' : v.status === 'releasing' || v.status === 'paid' ? `Releasing: ${paidCount} of ${pay.rowCount} recipients paid` : v.status === 'approved' ? 'Approved: the release worker will release this run' : 'Waiting for NEAR to confirm a decision'} />
 
       {myStep ? <DecisionPanel runId={runId} versionId={v.id} versionNo={v.versionNo} step={myStep} rowCount={v.rowCount} totalDisplay={displayAmount(v.total)} csrfToken={session.csrfToken} /> : null}
       {isMaker && v.status === 'approved' && d.snapshot?.releaseMode === 'maker' ? <ReleasePanel runId={runId} rowCount={v.rowCount} totalDisplay={displayAmount(v.total)} versionNo={v.versionNo} csrfToken={session.csrfToken} /> : null}
@@ -113,13 +112,13 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
         <div className="card stat"><div className="label">Recipients</div><div className="value">{v.rowCount.toLocaleString('en-US')}</div></div>
         <div className="card stat"><div className="label">Exact total</div><div className="value amount">{displayAmount(v.total)}<small>tUSDC</small></div></div>
         <div className="card stat"><div className="label">Approvals</div><div className="value">{approvedCount} of {d.approvers.length}</div><div className="foot">{d.snapshot ? `${KIND_LABEL[d.snapshot.kind]}, ${RELEASE_LABEL[d.snapshot.releaseMode].toLowerCase()}` : ''}</div></div>
-        <div className="card stat"><div className="label">Paid</div><div className="value">{paidCount} of {rows.length}</div><div className="foot">{displayAmount(rows.filter((r) => r.status === 'paid').reduce((s, r) => s + BigInt(r.amount), 0n))} tUSDC confirmed</div></div>
+        <div className="card stat"><div className="label">Paid</div><div className="value">{paidCount} of {pay.rowCount}</div><div className="foot">{displayAmount(pay.paidTotal)} of {displayAmount(pay.total)} tUSDC confirmed</div></div>
       </div>
 
       <div className="grid-2">
         <section className="card" aria-labelledby="proof-h">
           <div className="panel-title"><h2 id="proof-h">Proof timeline</h2>{v.status === 'submitting' ? <PendingTx hash={v.submitTxHash} explorerTxUrl={config.explorerTxUrl} text="Waiting for NEAR" /> : null}</div>
-          <div className="panel-body"><Timeline d={d} rows={rows} /></div>
+          <div className="panel-body"><Timeline d={d} pay={pay} /></div>
         </section>
         <section className="card" aria-labelledby="map-h">
           <div className="panel-title"><h2 id="map-h">Approval map (snapshot)</h2><span className="chip chip-info">Revision {d.snapshot?.revision}</span></div>
