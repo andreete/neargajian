@@ -26,6 +26,16 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 16 Live testnet rehearsal | Done, approved by Andre (independently verified on testnet) | **Yes**: final locked vault, fund migration, demo, maker release, duplicate refusal, Awaiting funding (docs/TESTNET.md) |
 | 16b Paid time from the chain; run page actions | Done | read-only backfill of 16 block times from the chain; `judge:verify` 115/115 |
 | 17 README, video runbook and release candidate | Done | none (docs; judge-mode check reads the vault's workflow read-only) |
+| 18 Independent QA (first half: handoff) | Handoff ready; QA not started | — |
+
+---
+
+## Phase 18 (first half) · QA handoff (9 Nov 2026)
+
+- **Release candidate: `7483f51d616be71202a59c4ea04b9de560e26cff`** (`phase-17: …`). The following commit only adds `docs/QA-HANDOFF.md` and these notes.
+- `docs/QA-HANDOFF.md` is self-contained for Codex in another account: role and rules (review only, no testnet transactions without Andre, no publishing), product summary, setup from a fresh clone with the expected output of every command, A01–A08 with steps and expected results, the live evidence and how to re-check it read-only, 10 known issues and limitations, out of scope, and the report format (`docs/QA-REPORT.md`).
+- Not verified from this machine: the GitHub Actions run for the release candidate (no GitHub CLI here). Local runs of the same steps pass.
+- Second half (fixing QA findings) waits for Andre and the QA report.
 
 ---
 
