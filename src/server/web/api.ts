@@ -1,0 +1,67 @@
+/**
+ * Route-handler helpers: JSON responses, same-origin and CSRF checks, and session/role
+ * guards. Route handlers read the cookie from the Request itself, which keeps them
+ * testable outside a Next.js request scope.
+ */
+import { getConfig } from '../config.ts';
+import { getDb } from '../db/client.ts';
+import type { Role } from '../db/schema.ts';
+import { SESSION_COOKIE, csrfMatches, parseCookies, readSession, type ActiveSession } from '../auth/session.ts';
+
+export const NO_STORE = { 'Cache-Control': 'no-store' } as const;
+
+export function json(body: unknown, status = 200, headers: HeadersInit = {}): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', ...NO_STORE, ...headers },
+  });
+}
+
+export function problem(status: number, code: string, message: string, headers: HeadersInit = {}): Response {
+  return json({ error: { code, message } }, status, headers);
+}
+
+/** Browser mutations must come from our own origin (defence in depth next to SameSite + CSRF token). */
+export function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  if (origin) {
+    const allowed = new Set([getConfig().baseUrl.origin, new URL(request.url).origin]);
+    const host = request.headers.get('host');
+    if (host) allowed.add(`${new URL(request.url).protocol}//${host}`);
+    return allowed.has(origin);
+  }
+  return request.headers.get('sec-fetch-site') === 'same-origin';
+}
+
+export function sessionFrom(request: Request, now = new Date()): ActiveSession | null {
+  const token = parseCookies(request.headers.get('cookie'))[SESSION_COOKIE];
+  return readSession(getDb(), token, now);
+}
+
+export type Guarded = { ok: true; session: ActiveSession } | { ok: false; response: Response };
+
+/** 401 without a session, 403 for a role that may never call this endpoint. */
+export function requireApiSession(request: Request, roles?: readonly Role[]): Guarded {
+  const session = sessionFrom(request);
+  if (!session) return { ok: false, response: problem(401, 'unauthenticated', 'Sign in to continue.') };
+  if (roles && !roles.includes(session.user.role)) {
+    return { ok: false, response: problem(403, 'forbidden', 'Your role cannot use this endpoint.') };
+  }
+  return { ok: true, session };
+}
+
+/** For state-changing requests: same origin plus the session's CSRF token in a header. */
+export function requireMutation(request: Request, roles?: readonly Role[]): Guarded {
+  if (!isSameOrigin(request)) return { ok: false, response: problem(403, 'bad_origin', 'Cross-site request refused.') };
+  const guarded = requireApiSession(request, roles);
+  if (!guarded.ok) return guarded;
+  if (!csrfMatches(guarded.session.csrfToken, request.headers.get('x-csrf-token'))) {
+    return { ok: false, response: problem(403, 'bad_csrf', 'Missing or invalid CSRF token. Reload the page.') };
+  }
+  return guarded;
+}
+
+/** Hashable client key for rate limiting (raw value is never stored). */
+export function clientKey(request: Request): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'local';
+}

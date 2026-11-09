@@ -21,7 +21,8 @@ export function databaseFileFromUrl(url: string | undefined): string {
   if (value === ':memory:') return value;
   if (!value.startsWith('file:')) throw new Error('DATABASE_URL must be file:<path> (SQLite)');
   const path = value.slice('file:'.length);
-  return isAbsolute(path) ? path : resolve(process.cwd(), path);
+  // Runtime path from the environment: not a build-time dependency (keeps tracing scoped).
+  return isAbsolute(path) ? path : resolve(/* turbopackIgnore: true */ process.cwd(), path);
 }
 
 export function openDatabase(file: string, options: { migrationsFolder?: string } = {}): DatabaseHandle {

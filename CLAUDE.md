@@ -36,6 +36,7 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 - Server-side validation and authorization on every read, write and export. Idempotent mutations, DB transactions around state changes.
 - Release worker survives restarts, never double-pays, keeps unknown outcomes unknown until reconciled.
 - No fake paths in the main flow; any mock or sandbox-only path is labelled in code, UI and README.
+- Strict CSP (D-058): no inline `style=` attributes, no `next/image`; e2e fails on CSP violations.
 - Honest evidence: never claim a test ran if it did not. Separate sandbox results from live-testnet results.
 - **Contract freeze** during the app phases (D-051): no contract changes; if unavoidable, batch them, retire-and-recreate by script, return funds through an approved run, log NEAR spent.
 
@@ -64,6 +65,9 @@ npm run lint && npm run typecheck && nice -n 19 npm test
 npm run samples:check            # regenerates sample files; must produce no git diff
 nice -n 19 npm run build
 npm run dev                      # http://127.0.0.1:8092 ; health: /api/health
+npm run db:seed                  # demo users/workflow/draft (DEMO_MODE=true)
+nice -n 19 npm run test:e2e      # Playwright vs the production build (port 8092 must be free)
+nice -n 19 npm run screenshots   # docs/screenshots/phase-06
 
 # Contracts (one at a time, never alongside Node work)
 nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm (tusdc, vault)

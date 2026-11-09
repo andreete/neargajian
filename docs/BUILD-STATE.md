@@ -10,7 +10,39 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 03 Commitments and money math | Done | none (sandbox + local only by design; live use of proofs comes with the Phase 04 redeploy) |
 | 04 Contract policy and payout recovery | Done, approved by Andre 9 Nov | **Yes**: 3 policy runs signed with restricted keys, see docs/TESTNET.md |
 | 05 Persistent application model | Done | none (local DB only) |
-| 06 Landing, login and role boundaries | Not started | — |
+| 06 Landing, login and role boundaries | **Done, awaiting Andre's design review** | none |
+| 07 Admin setup and approval map | Not started (stop requested) | — |
+
+---
+
+## Phase 06 · Landing, login modal and role boundaries (9 Nov 2026)
+
+### Built
+
+- **Landing** (`src/app/page.tsx`), Rise-style product-led hero with a sample payroll run card (labelled "Sample data"), how it works, the three approval paths (approval maps), consolidated vs detailed posting comparison, live on-chain proof links (vault, token, first payout), prototype trust model, CTA band. Logo palette: navy `#0A3C90`, bright blue `#2577FE`, sky `#57B5FD`; Plus Jakarta Sans (self-hosted by `next/font`). Persistent **NEAR testnet** badge.
+- **Login dialog** (`src/components/login-dialog.tsx`): native modal `<dialog>` + explicit Tab trap, Escape, focus restored to the opener, demo role picker (demo mode only), labelled fields with inline errors, live-region form errors, pending state.
+- **Auth** (`src/server/auth/*`, `src/server/web/*`, `src/app/api/auth/*`): argon2id, DB sessions (hashed tokens, 8 h / 2 h idle), per-session CSRF token, origin checks, login rate limiting, audit events. Details: **`docs/SECURITY.md`**.
+- **Authorization matrix** `src/server/auth/policy.ts` with maker ownership and assigned-approver checks; API routes `/api/me`, `/api/runs`, `/api/runs/[runId]`, `/api/admin/audit`, `/api/auth/login`, `/api/auth/logout`.
+- **Role dashboards** (`src/app/(app)/…`): maker (runs table from the DB with exact totals, stats, active approval path, signer identity), approver (pending/reviewed queues from version snapshots, your step, highlighted node on the map), admin (active workflow, assigned reviewers with signer accounts, contracts, recent security events). 403 and 404 pages. Run builder (Phase 08) and workflow editing (Phase 07) are shown as disabled buttons with a note.
+- **Headers**: nonce CSP via `src/proxy.ts`, locked-down API CSP, COOP/CORP. `next/image` replaced by a plain `<img>` for the logo because it injects an inline style the CSP blocks. Transparent trimmed logo `public/brand/gajian-logo-trim.png` generated from the original JPEG by `scripts/make-logo-png.py`.
+- Build hygiene: `turbopackIgnore` on the runtime DB path (Turbopack had started tracing the whole project including `contracts/target`), `outputFileTracingExcludes`, one build worker.
+- **Playwright** 1.64.1 (Chromium headless shell, user-level in `~/.cache/ms-playwright`, no sudo): `playwright.config.ts` runs the production build via `scripts/e2e-server.sh` with an isolated, freshly seeded DB in `.tmp/e2e` and stops it afterwards.
+
+### Evidence (local only)
+
+| Command | Result |
+| --- | --- |
+| `npm test` | **76/76**: + `tests/unit/policy.test.ts` (5), `tests/unit/contrast.test.ts` (16: every text/background token pair ≥ 4.5:1, focus ring and control border ≥ 3:1, sky never used as text), `tests/integration/auth-api.test.ts` (12: four roles land on their dashboard with HttpOnly/SameSite cookie; mixed-case email; same error for wrong password and unknown user; lockout after 5 failures with 429 + Retry-After even for the right password; cross-site and non-JSON login refused; 401 without session or with a forged token; admin 403 on `/api/runs`; recipient details only for the owner, 404 for unassigned approver and admin, assigned approvers after submission; admin-only audit endpoint, no PII in it; logout needs origin + CSRF and destroys the session) |
+| `npm run test:e2e` (production build, Chromium) | **10/10**: strict nonce CSP header and **no CSP violations or page errors** on any page; dialog focus/Tab trap/Escape/focus restore; field and credential errors; maker, approver 1, approver 2, admin each sign in, land on the right dashboard and sign out; unauthenticated `/maker`, `/approver`, `/admin` redirect to sign-in with the dialog open; maker gets **403** on `/admin` and `/approver` and on `/api/admin/audit`; `/admin?role=admin` stays 403 for an approver |
+| `npm run screenshots` | 9 PNGs in `docs/screenshots/phase-06/` (1440x900 landing + full page, login modal, maker, approver 1, approver 2, admin; 768x1024 landing + full page) |
+| `npm run build` | pass; sampled peak memory of the build's node processes ≈ 675 MB, available memory never below 4.2 GB (GNU `time` reports 4.7 GB "max RSS" for the npm tree, which does not match the sampled resident memory) |
+| `npm run lint`, `typecheck`, `samples:check` | clean |
+| `npm audit --audit-level=high` | pass: 0 high/critical; 12 moderate dev-only (unchanged); production deps 0 |
+
+### Not done / notes
+
+- CI does not run Playwright yet (needs a browser download step); planned for Phase 15.
+- Approver queues and maker runs show real DB data; there are no submitted versions until Phase 10, so queues are empty and the maker sees the seeded draft.
 
 ---
 

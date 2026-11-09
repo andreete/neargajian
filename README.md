@@ -4,7 +4,7 @@
 
 GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
-> **Status: Phase 05 of 18.** Contracts and a first live testnet payout exist; there is no web application yet. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
+> **Status: Phase 06 of 18.** Contracts with live testnet payouts, the database model, the landing page, sign-in and role dashboards exist. Building, approving and releasing runs in the app come in Phases 07–12. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
 ## Network, token and trust model
 
@@ -19,7 +19,8 @@ GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manu
 | --- | --- | --- |
 | Sample files reproduce byte-for-byte | `npm run samples:check` | 4/4 SHA-256 checksums match `docs/SAMPLE-DATA.md`, no git diff |
 | Lint, typecheck | `npm run lint`, `npm run typecheck` | pass |
-| Unit tests | `npm test` | 9/9 pass |
+| Unit + integration tests | `npm test` | 76/76 pass |
+| Browser tests (Chromium, production build) | `npm run test:e2e` | 10/10 pass |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
 | Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
@@ -47,6 +48,7 @@ cp .env.example .env            # placeholders only; nothing to fill in for Phas
 npm ci
 npm run check                   # lint + typecheck + unit tests
 npm run samples:check           # regenerate sample data and confirm no diff
+npm run db:seed                 # demo users (DEMO_MODE=true in .env)
 npm run build && npm run start  # http://127.0.0.1:8092
 ```
 
@@ -59,6 +61,26 @@ npm run contracts:lint    # cargo fmt --check + clippy -D warnings
 ```
 
 On a shared or small machine, prefix heavy commands with `nice -n 19` and set `CARGO_BUILD_JOBS=2`.
+
+## Demo sign-in (demo mode only)
+
+| Role | Email | Password | Lands on |
+| --- | --- | --- | --- |
+| Maker | `maker@gajian.my.id` | `12345678` | `/maker` My payroll runs |
+| Approver 1 | `app1@gajian.my.id` | `12345678` | `/approver` Review queue |
+| Approver 2 | `app2@gajian.my.id` | `12345678` | `/approver` Review queue |
+| Admin | `admin@gajian.my.id` | `12345678` | `/admin` Workflow settings |
+
+Security model (sessions, CSRF, CSP, rate limiting, authorization matrix): `docs/SECURITY.md`.
+
+## Browser tests and screenshots
+
+```sh
+npx playwright install chromium   # once, user-level
+npm run build
+npm run test:e2e                  # starts the build on 127.0.0.1:8092 with an isolated seeded DB, then stops it
+npm run screenshots               # writes docs/screenshots/phase-06/*.png
+```
 
 ## Database
 

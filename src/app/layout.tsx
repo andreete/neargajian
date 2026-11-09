@@ -1,15 +1,25 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
+import './globals.css';
+
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'GAJIAN',
-  description: 'Payroll batches with a clear approval trail, paid on NEAR testnet.',
+  title: { default: 'GAJIAN · Payroll with a clear approval trail', template: '%s · GAJIAN' },
+  description: 'Prepare a payroll batch, route it to the right reviewers, and verify wallet payouts on NEAR testnet.',
+  robots: { index: false, follow: false },
 };
+
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0a3c90' };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={jakarta.variable}>
+      <body>
+        <a className="skip-link" href="#main">Skip to content</a>
+        {children}
+      </body>
     </html>
   );
 }

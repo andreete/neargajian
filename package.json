@@ -25,16 +25,20 @@
     "db:migrate": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts migrate",
     "db:seed": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts seed",
     "db:status": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts status",
-    "db:generate": "./scripts/with-tmp.sh drizzle-kit generate"
+    "db:generate": "./scripts/with-tmp.sh drizzle-kit generate",
+    "test:e2e": "./scripts/with-tmp.sh playwright test",
+    "screenshots": "./scripts/with-tmp.sh playwright test tests/e2e/screenshots.spec.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.4",
     "next": "16.4.3",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",

@@ -4,7 +4,9 @@ Updated: Mon 9 Nov 2026, end of Phase 01. Schedule: on track (kickoff section 8:
 
 ## Single next action
 
-**Phase 06** (landing, login modal, role boundaries), then Playwright screenshots, leave the production build running on 127.0.0.1:8092 and stop for Andre's design review. Do not start Phase 07.
+**Andre's design review of Phase 06** (stop requested; do not start Phase 07 until approved). Screenshots: `docs/screenshots/phase-06/`. The production build runs on http://127.0.0.1:8092 for the review (database `data/gajian.sqlite`, demo logins `maker@`, `app1@`, `app2@`, `admin@gajian.my.id`, password `12345678`).
+
+After approval: **Phase 07** (admin setup and approval map: editable workflow, distinct reviewers, release modes, chain sync via the admin's restricted key, snapshot proof), then continue phase by phase.
 
 ## Phase 16 follow-ups (from Andre's Phases 02–04 review, D-050)
 
@@ -21,4 +23,4 @@ Contract freeze until then (D-051).
 
 ## Resume prompt
 
-> Read CLAUDE.md, docs/NEXT-STEPS.md and docs/BUILD-STATE.md. Andre has reviewed Phases 02–04. Execute Phase 05 from docs/build/04-BUILD-PHASES.md as adjusted by docs/build/00-KICKOFF.md, then continue phase by phase.
+> Read CLAUDE.md, docs/NEXT-STEPS.md and docs/BUILD-STATE.md. Andre has approved the Phase 06 design. Execute Phase 07 from docs/build/04-BUILD-PHASES.md as adjusted by docs/build/00-KICKOFF.md, then continue phase by phase.

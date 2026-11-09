@@ -216,3 +216,25 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-055 · Demo identities
 
 - `maker@gajian.my.id` → `maker.gajian-payroll.testnet`, `app1@` → `approver1.…`, `app2@` → `approver2.…`, `admin@` → `admin.…` (read from `.env`, defaults to these). The seed mirrors the live vault workflow revision 3 (D-049); Phase 07 adds the chain sync for admin changes.
+
+## Phase 06 decisions (9 Nov 2026, by the agent)
+
+### D-056 · Sessions in the database, not JWTs
+
+- Opaque random token in an HttpOnly cookie, SHA-256 stored server-side, so logout and expiry are immediate and a stolen database row is useless. Per-session CSRF token plus origin checks for mutations.
+
+### D-057 · 404 for runs you may not see, 403 for role-forbidden areas
+
+- Resource reads that fail authorization return 404 (no existence leak). Whole areas or endpoints a role can never use return 403 (`forbidden()` with `experimental.authInterrupts`).
+
+### D-058 · Strict nonce CSP; no inline styles
+
+- `src/proxy.ts` issues a per-request nonce; style-src has no `'unsafe-inline'`. Consequences: no `style=` attributes in our markup and no `next/image` (it adds `style="color:transparent"`); the logo is a plain `<img>` of a trimmed transparent PNG. The Playwright suite fails on any CSP violation.
+
+### D-059 · Visual system
+
+- Rise-inspired light surfaces with the logo palette; Plus Jakarta Sans (an Indonesian-designed typeface, self-hosted at build time by `next/font`); status chips use text + icon; approval maps switch to a vertical layout in narrow containers (CSS container queries). Contrast is enforced by `tests/unit/contrast.test.ts`.
+
+### D-060 · Playwright 1.64.1
+
+- Newest release at least two weeks old (1.65.0 is from 5 Nov). Chromium headless shell only; screenshots and e2e run against the production build with an isolated database.
