@@ -57,6 +57,13 @@
       "when": 1794237523882,
       "tag": "0007_chain_block_time",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794260040761,
+      "tag": "0008_phase19_directory_assistant",
+      "breakpoints": true
     }
   ]
 }

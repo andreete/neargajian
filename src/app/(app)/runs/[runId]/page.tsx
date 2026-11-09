@@ -15,6 +15,9 @@ import { actionableStep, paymentState, type PaymentState } from '@/server/runs/v
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime, shortHash } from '@/lib/format';
 import { KIND_LABEL, RELEASE_LABEL } from '../../workflow-panel';
+import { AssistantNote } from '@/components/assistant-note';
+import { DirectoryCheckNote } from '@/components/directory-check-note';
+import { directoryDrift } from '@/server/recipients/directory';
 
 export const metadata: Metadata = { title: 'Payroll run' };
 
@@ -105,6 +108,10 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
         </div>
       </div>
       <p className="run-sub">Vault run <span className="mono">{v.chainRunId}</span>{v.vaultContractId !== config.vaultContractId ? <> in the earlier vault <span className="mono">{v.vaultContractId}</span></> : null} · {v.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'} · {v.sourceFilename ? <>file <span className="mono">{v.sourceFilename}</span></> : 'manual entry'} · submitted {formatDateTime(v.createdAt)}</p>
+
+      {d.run.assistantRequestText ? <AssistantNote text={d.run.assistantRequestText} /> : null}
+      <DirectoryCheckNote check={v.directoryCheck ? JSON.parse(v.directoryCheck) as { enforced: boolean; matched: number; rows: number } : null}
+        driftNow={['pending_approval', 'approved', 'submitting'].includes(v.status) ? directoryDrift(db, d.rows.map((r) => ({ accountId: r.nearAccountId, amount: r.amount }))) : 0} />
 
       <ChainAutoRefresh runId={runId} active={pendingChain} csrfToken={session.csrfToken}
         label={v.status === 'submitting' ? 'Submitted: waiting for the vault to confirm on NEAR' : v.status === 'releasing' || v.status === 'paid' ? `Releasing: ${paidCount} of ${pay.rowCount} recipients paid` : status === 'awaiting_funding' ? (d.snapshot?.releaseMode === 'maker' ? 'Awaiting funding: release again once the vault holds enough tUSDC' : 'Awaiting funding: the release worker retries once the vault holds enough tUSDC') : v.status === 'approved' ? 'Approved: the release worker will release this run' : 'Waiting for NEAR to confirm a decision'} />

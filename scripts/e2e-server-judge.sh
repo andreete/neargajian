@@ -10,5 +10,7 @@ mkdir -p .tmp/e2e-judge
 export DATABASE_URL="file:./.tmp/e2e-judge/gajian.sqlite"
 export DEMO_MODE=true
 export MAKER_SIGNER_PRIVATE_KEY= APPROVER1_SIGNER_PRIVATE_KEY= APPROVER2_SIGNER_PRIVATE_KEY= WORKER_SIGNER_PRIVATE_KEY= ADMIN_SIGNER_PRIVATE_KEY=
+# No Anthropic key either: the payroll assistant shows "off on this copy (no API key)".
+export ANTHROPIC_API_KEY= ASSISTANT_MODEL= ASSISTANT_STUB=
 node --env-file-if-exists=.env scripts/demo-reset.ts >/dev/null
 exec ./scripts/with-tmp.sh node_modules/.bin/next start -H 127.0.0.1 -p 8092

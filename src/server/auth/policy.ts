@@ -32,7 +32,10 @@ export type Action =
   | 'workflow.view'
   | 'workflow.update'
   | 'report.company'
-  | 'report.recipients';
+  | 'report.recipients'
+  | 'recipients.manage'
+  | 'settings.update'
+  | 'assistant.use';
 
 const isOwner = (p: Principal, run?: RunContext) => run !== undefined && p.role === 'maker' && run.makerUserId === p.id;
 const isAssigned = (p: Principal, run?: RunContext) => run !== undefined && p.role === 'approver' && run.assignedApproverIds.includes(p.id);
@@ -45,6 +48,10 @@ const ROLE_RULES: Partial<Record<Action, readonly Role[]>> = {
   'workflow.view': ['admin', 'maker', 'approver'],
   'workflow.update': ['admin'],
   'report.company': ['admin', 'maker', 'approver'],
+  'recipients.manage': ['admin'],
+  'settings.update': ['admin'],
+  // The payroll assistant drafts runs for the signed-in maker only (never submit/approve/release).
+  'assistant.use': ['maker'],
 };
 
 /** Resource rules: maker ownership or assignment to the run's snapshotted workflow. */

@@ -26,7 +26,52 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 16 Live testnet rehearsal | Done, approved by Andre (independently verified on testnet) | **Yes**: final locked vault, fund migration, demo, maker release, duplicate refusal, Awaiting funding (docs/TESTNET.md) |
 | 16b Paid time from the chain; run page actions | Done | read-only backfill of 16 block times from the chain; `judge:verify` 115/115 |
 | 17 README, video runbook and release candidate | Done | none (docs; judge-mode check reads the vault's workflow read-only) |
-| 18 Independent QA (first half: handoff) | Handoff ready; QA not started | — |
+| 18 Independent QA (first half: handoff) | Handoff ready; Codex QA not scheduled (D-099); human QA by Andre after Phase 19 | — |
+| 19 Recipient directory and payroll assistant | Done (live assistant run **pending Andre's API key**) | **Yes**: vault2 top-up to 2.00 tUSDC; read-only check of the 3 live recipients. Assistant run: pending |
+
+---
+
+## Phase 19 · Recipient directory and payroll assistant (10 Nov 2026)
+
+### 0. Operations
+
+- Review server and worker stopped (PIDs from `.tmp/*.pid`).
+- **Vault2 top-up (live testnet):** admin minted 1.76 test tUSDC (`BnoNtc6B…`) and funded vault2 with `ft_transfer_call` (`BW1zAEpm…`): `get_balances` total 2.000000, reserved 0, available 2.000000. NEAR spent 0.00077. Recorded in `docs/TESTNET.md` and added to `docs/evidence/testnet-runs.json` (checked by `judge:verify`). Fix found on the way: `phase16.ts fund` refused amounts above 1 tUSDC because it reused the per-row cap; it now allows up to 10 tUSDC per top-up (D-108).
+
+### 1. Recipient directory (admin), the transfer guardrail
+
+- Migration `0008_phase19_directory_assistant.sql`: `recipients` (no delete, fixed account: triggers), `recipient_events` (append-only), `app_settings`, `assistant_requests`, `payroll_runs.assistant_request_*` (fixed once set), `run_versions.directory_check` (fixed).
+- `src/server/recipients/directory.ts` (rule, setting, CRUD with change log, import upsert, queries), `readiness.ts` (read-only `view_account` + tUSDC `storage_balance_of`), `import.ts` (payroll format + `division`, `amount` = maximum). The payroll importer was refactored into a shared `readTable` (separator, UTF-8, quotes, row numbers, header) used by both; all earlier importer tests unchanged and passing.
+- Rule in `validate.ts` (`RecipientRule`): not in the directory / inactive → column `near_account_id`; above the recipient's maximum → column `amount`. Applied by the upload, the manual builder (browser map of active accounts, server summary), the draft view, valid-subset confirmation and **submit (server re-check, specific message, nothing sent)**. The frozen `directory_check` and the current drift are shown on the run page to approvers; the review page shows "Every row matches …".
+- Admin page `/admin/recipients` (nav "Recipients"): switch, stats, search/division/status filter (GET), 50 per page, add/edit dialog (check on testnet, deactivate/reactivate inside it), bulk import with error table, change log. API: `GET|POST /api/admin/recipients`, `PATCH /api/admin/recipients/[id]`, `POST …/[id]/status`, `POST …/[id]/check`, `POST /api/admin/recipients/import`, `GET|POST /api/admin/settings` (admin only, same-origin + CSRF).
+- Seed (`db:seed`, `demo:reset`): Emma Clark, Daniel Hall (Sales), Grace Lewis (Operations) on the live recipient accounts, max 0.10; the 1,000 sample employees over Engineering / Customer Support / Logistics (D-102); setting on. `demo:reset` checks the three live accounts read-only: **all three "Ready to receive tUSDC"** (10 Nov).
+
+### 2. Payroll assistant (maker only)
+
+- `src/server/assistant/model.ts` (Claude API through `@anthropic-ai/sdk` 1.3.0, one strict tool, `tool_choice: auto`, effort low, refusal fallback, 20 s / 1 retry; default `claude-opus-5-5`, D-104), `service.ts` (pre-model refusals, directory resolution, literal-amount rule, caps, preview, rate limit 20/h, draft creation once per preview with re-resolution), `factory.ts` (key → model, no key → off, labelled stub only for browser tests under `.tmp/`), `stub-model.ts` (test-only).
+- API `POST /api/assistant` (preview | question | refused; 429 / 503 off / 502), `POST /api/assistant/drafts` (201). UI `src/components/payroll-assistant.tsx` on New run: conversation, preview with rows and "not ready" warning, **Create draft** / **Change**, Start over, microphone via the browser's speech recognition (en-US, hidden where unsupported, fills the box only). "Drafted by the payroll assistant from: …" on the draft, review and run pages (`assistant-note.tsx`).
+- Found while testing: three sample employees are called Grace Lewis and one Daniel Hall, so a bare name was ambiguous. Refusing would have broken name requests; the app now asks which division, and the model can return "Daniel Hall in Sales" (`recipients: {name, division}`).
+- `.env.example`: `ANTHROPIC_API_KEY=`, `ASSISTANT_MODEL=` (empty). `write-env.mjs` keeps every value it does not manage (D-107). `Permissions-Policy: microphone=(self)`.
+
+### Evidence (local; no key present)
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | pass |
+| `npm test` | **179/179** (23 files). New: `directory.test.ts` (9), `assistant.test.ts` (10, incl. the real SDK adapter against a fake fetch: request shape, only turns + division names sent, no-tool and refusal handling), `boundaries.test.ts` + 10 routes (63 refusal cases, was 43) and a Phase 19 happy path |
+| `npm run build` | pass |
+| `npm run test:e2e` | **29/29** with the keys in `.env`, and **29/29 with every key blank** (signer keys and `ANTHROPIC_API_KEY`, as in CI). New: `directory.spec.ts` (3), `assistant.spec.ts` (4); `pages.spec.ts` now sweeps `/admin/recipients` (pages 1 and 2) and the assistant fixture run at 1280 and 1440 (it caught the directory table overflowing at 1280; fixed) |
+| `npm run test:judge-mode` | **1/1** (fresh demo DB incl. directory, no keys: sample upload passes, assistant "off on this copy (no API key)") |
+| `npm run judge:verify` | **117/117** PASS (115 + the two top-up transactions) |
+| `npm run samples:check` | no diff |
+| `npm run secret-scan` | clean (working tree + full history) |
+| `npm audit --audit-level=high` | pass: 14 moderate (unchanged dev chains), none high or critical |
+| Screenshots (1440x900, `docs/screenshots/phase-19/`) | 01 directory, 02 refused upload row: taken from a fresh `demo:reset` database under `.tmp/` with the production build (no transactions) |
+
+### Not done / pending
+
+- **Live assistant run (step 3): pending Andre's `ANTHROPIC_API_KEY`.** Checked by presence only (never read or printed): absent on 10 Nov 05:10 WIB. Prepared: `npm run live:phase19 -- --grep p19-assistant` (screenshots 04 follow-up, 05 refusal), `-- --grep p19-live-run` (preview screenshot 03, draft, submit, both approvals in the browser, worker payout, screenshot 06 "Drafted by…", run IDs in `.tmp/live-exports/p19-assistant-run.json`; real transactions, Sales 0.03 × 2 = 0.06 tUSDC), then `node --env-file=.env scripts/testnet/record-run-evidence.ts <runId> 19 "<label>"` adds the run to `judge:verify`.
+- The directory is not enforced by the vault (by design, D-100).
 
 ---
 

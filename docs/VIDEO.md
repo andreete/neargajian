@@ -1,6 +1,6 @@
 # Demo video runbook (2 to 3 minutes)
 
-One complete payroll moment on NEAR testnet: upload → review → submit → two approvals → automatic payout → Paid with an explorer link → history and export. Every step is real (final vault `vault2.gajian-payroll.testnet`, real transactions, real database). Nothing is staged or mocked.
+One complete payroll moment on NEAR testnet: upload → review → submit → two approvals → automatic payout → Paid with an explorer link → history and export, then a short payroll-assistant moment. Total under 3 minutes (about 2:55). Every step is real (final vault `vault2.gajian-payroll.testnet`, real transactions, real database). Nothing is staged or mocked.
 
 Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors.csv`, detailed posting, 3 recipients:
 
@@ -13,13 +13,14 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 
 ## What it costs
 
-- **tUSDC:** 0.20 per take, paid from the vault. On 9 Nov 2026 the vault held 0.24 tUSDC: enough for **one** take. For retakes, top it up first (0.20 per take; for example 0.60 more for three more takes).
+- **tUSDC:** 0.20 per take, paid from the vault. On 10 Nov 2026 the vault holds **2.00 tUSDC** (topped up for QA and retakes): enough for about **ten** takes, less any QA runs. The assistant moment creates a draft only and costs nothing.
 - **NEAR (gas):** about 0.003 NEAR per take (Phase 13 measured 0.00297: create_run, two approvals, start_release, three payouts). The maker, approver and worker accounts each hold more than 0.37 NEAR, and the admin 0.48 NEAR. No faucet is needed.
 
 ## Pre-recording checklist
 
 1. [ ] **Stop** the app and the worker if they run (`kill $(cat .tmp/review-server.pid)`, `kill $(cat .tmp/worker.pid)`).
-2. [ ] **Clean database:** `npm run demo:reset`. The current database is moved to `data/backups/` and never deleted. Expect: `fresh database …: maker@gajian.my.id, app1@gajian.my.id, app2@gajian.my.id, admin@gajian.my.id, workflow revision 3` and `workflow mirrors vault2.gajian-payroll.testnet revision 3: two in sequence …, automatic release`.
+2. [ ] **Clean database:** `npm run demo:reset`. The current database is moved to `data/backups/` and never deleted. Expect: `recipient check on testnet: Ready to receive tUSDC; Ready to receive tUSDC; Ready to receive tUSDC`, `fresh database …: maker@gajian.my.id, app1@gajian.my.id, app2@gajian.my.id, admin@gajian.my.id, workflow revision 3, recipient directory (3 testnet recipients + 1000 sample employees), "Pay registered recipients only" on` and `workflow mirrors vault2.gajian-payroll.testnet revision 3: two in sequence …, automatic release`.
+2b. [ ] **Payroll assistant on:** `ANTHROPIC_API_KEY` is set in `.env` (the New run page shows "Payroll assistant" with "Model: claude-opus-5-5", not "off on this copy"). Without a key, skip the 2:30 segment. For voice, use Chrome or Edge and allow the microphone once; Chrome sends the audio to Google's speech service.
 3. [ ] **Vault balance:** `node scripts/testnet/balances.mjs` → the `vault2.gajian-payroll.testnet` line shows at least **0.200000 tUSDC** per planned take. To top up (the admin mints test tUSDC and funds the vault; needs the operator keys on this machine): `node scripts/testnet/phase16.ts fund 0.60`.
 4. [ ] **App and worker running:** `npm run build && npm run start` (http://127.0.0.1:8092) and, in a second terminal, `npm run worker`. The worker log shows `"event":"started" … "vault":"vault2.gajian-payroll.testnet"`. `curl -s http://127.0.0.1:8092/api/health` returns `"status":"ok"`.
 5. [ ] **Three separate browser sessions** (sign-ins are per browser profile): Chrome profile A for the maker, profile B for approver 1 (`app1@gajian.my.id`), profile C for approver 2 (`app2@gajian.my.id`). Sign in to B and C beforehand and leave them on **Review queue**. Leave A on the landing page, signed out.
@@ -28,7 +29,7 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 8. [ ] The CSV file `docs/video/november-2026-contractors.csv` is ready in the file picker's folder.
 9. [ ] All times on screen are UTC; say so once.
 
-## Script (about 2:30)
+## Script (about 2:55; keep it under 3:00)
 
 | Time | Window | Click / action | What appears on screen | Voice-over (suggested) |
 | --- | --- | --- | --- | --- |
@@ -44,7 +45,9 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 | 1:55 | A | Click Emma Clark's proof link (opens NearBlocks) | NearBlocks: status Success, signer `worker.gajian-payroll.testnet`, receiver `vault2.gajian-payroll.testnet`, method `pay_row`, token transfer 0.08 tUSDC to `recipient1.gajian-payroll.testnet`, and the block time equal to the app's Paid (UTC) | "The paid time in the app is this block's time." |
 | 2:10 | A | Back to the app → **History and reports** → **Consolidated** / **Detailed** | One line for the run vs one line per payout, same total 0.20, "Both views match" | "Accounting gets either one entry per run or one per recipient, and both reconcile." |
 | 2:22 | A | **Exports** → **Company entries (accounting)** | CSV download | "The company export has no personal data. The recipient export is restricted to the maker and the approvers." |
-| 2:30 | A | (optional end card) | Text: repo link, `vault2.gajian-payroll.testnet`, "verify: npm run judge:verify" | "The vault's code can't change: it has no access keys. Everything is verifiable from the repository." |
+| 2:28 | A | **New run** → Payroll assistant box → type (or click **Speak** and say) `Create a disbursement for the Sales division, 0.05 tUSDC each, called November commissions` → **Send** | Preview: "Sales division, 2 recipients, 0.05 tUSDC each, total 0.10 tUSDC", rows Daniel Hall and Emma Clark from the directory | "Or just ask. The assistant only turns my words into a draft request; the app picks the recipients from the admin's directory and checks every amount." |
+| 2:38 | A | **Create draft** | Draft page: "Drafted by the payroll assistant from: …" with the two rows; not submitted | "It never submits or pays. I review and submit it, and the approvers see where it came from." |
+| 2:46 | A | (optional end card) | Text: repo link, `vault2.gajian-payroll.testnet`, "verify: npm run judge:verify" | "The vault's code can't change: it has no access keys. Everything is verifiable from the repository." |
 
 If a step takes longer on testnet (a few seconds per transaction), cut the waiting in editing; do not speed up or alter what the screen shows.
 
@@ -52,4 +55,5 @@ If a step takes longer on testnet (a few seconds per transaction), cut the waiti
 
 - Stop the worker if no more takes are planned (`kill $(cat .tmp/worker.pid)`, or Ctrl+C in its terminal).
 - Record the run's transaction hashes from the run page in `docs/TESTNET.md` (a "Demo video run" section) so the video's run is evidence too, and add the run to `docs/evidence/testnet-runs.json` if it should be re-checked by `npm run judge:verify`.
-- Upload the video (for example YouTube, unlisted or public) and put its link in `docs/X-POST.md` and `docs/SUBMISSION.md`.
+- Upload the video to YouTube (public or unlisted) and put its link in `docs/X-POST.md` and `docs/SUBMISSION.md`. There is no hosted demo (local-only, decided 10 Nov).
+- The assistant draft from a take stays as an unsubmitted draft in "My runs" (drafts are never paid); `npm run demo:reset` before the next take clears it.

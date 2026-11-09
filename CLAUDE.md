@@ -1,6 +1,6 @@
 # GAJIAN: standing rules for Claude sessions
 
-GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows or CSV/TXT up to 1,000 rows), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. Company reporting has consolidated and detailed posting modes.
+GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory**; "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. Hosting is not pursued (local-only + YouTube video).
 
 ## Start every session here
 
@@ -14,7 +14,7 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 1. **No mainnet**: no mainnet config, accounts, keys or transactions.
 2. **No `sudo`, no Docker**, nothing outside `/home/neargajian`. Missing system package → stop, give Andre one exact command (run as user `andre`), record it in `docs/NEXT-STEPS.md`.
 3. Bind only to **127.0.0.1** (app port **8092**). No tunnels (Tailscale Serve/Funnel, ngrok, cloudflared).
-4. **No secrets in git, chat, logs or docs.** Keys live in `~/.near-credentials` and the git-ignored `.env`. Never print private keys or seed phrases.
+4. **No secrets in git, chat, logs or docs.** Keys live in `~/.near-credentials` and the git-ignored `.env`. Never print private keys or seed phrases. Never read, print or log `ANTHROPIC_API_KEY` (Andre adds it to `.env` himself), and never rewrite `.env` in a way that drops lines you did not write (`write-env.mjs` keeps them).
 5. No making the GitHub repo public, no X posts, no hackathon submission, no force-push without Andre's explicit yes.
 6. No PII on-chain or in logs. Synthetic data only.
 7. Do not touch other users' files or processes (a production system runs on this host).
@@ -73,6 +73,8 @@ nice -n 19 npm run screenshots   # docs/screenshots/phase-06
 npm run worker                   # release worker, its own process; run only when payouts are needed, stop with SIGTERM/Ctrl+C
 nice -n 19 npm run live:phase13  # LIVE testnet flow through the app (needs server + worker on 8092); real transactions, on purpose only
 nice -n 19 npm run live:phase16  # LIVE Phase 16 rehearsal (one step at a time with --grep); real transactions, on purpose only
+nice -n 19 npm run live:phase19 -- --grep p19-directory   # Phase 19 screenshots (no key); p19-assistant / p19-live-run need ANTHROPIC_API_KEY (p19-live-run: real transactions)
+node --env-file=.env scripts/testnet/record-run-evidence.ts <runId> <phase> "<label>"   # add a paid app run to judge:verify
 npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
 npm run demo:reset               # move data/gajian.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)
 nice -n 19 npm run test:judge-mode  # Playwright: fresh demo DB and no signer keys (read-only copy)

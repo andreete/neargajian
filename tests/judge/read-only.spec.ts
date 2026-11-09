@@ -17,6 +17,8 @@ test('judge mode: upload and review work; submit is refused clearly and nothing 
   await expect(page.getByTestId('no-signer-note')).toContainText('Read-only copy');
   await expect(page.getByText('November contractors (demo)')).toHaveCount(0); // clean database: no demo draft
   await page.goto('/maker/runs/new');
+  // No Anthropic key on a judge's copy: the payroll assistant says so; everything else works.
+  await expect(page.getByTestId('assistant-off')).toHaveText('The payroll assistant is off on this copy (no API key). Everything else works: create the run below.');
   await page.getByLabel('Run title').fill('Judge check');
   await page.getByText('Upload a file').click();
   await page.getByText('Detailed', { exact: true }).click();

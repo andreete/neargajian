@@ -12,3 +12,15 @@ export function summaryJson(s: ValidationSummary) {
     runErrors: s.runErrors,
   };
 }
+
+import type { Recipient } from '../recipients/directory.ts';
+import { READINESS_LABEL } from '../recipients/readiness.ts';
+
+export function recipientJson(r: Recipient) {
+  return {
+    id: r.id, nearAccountId: r.nearAccountId, name: r.name, division: r.division, email: r.email, mobilePhone: r.mobilePhone,
+    maxAmount: formatAmount(r.maxAmount), active: r.active, sample: r.sample,
+    readiness: r.readiness, readinessLabel: READINESS_LABEL[r.readiness], readinessCheckedAt: r.readinessCheckedAt?.toISOString() ?? null,
+    updatedAt: r.updatedAt.getTime(),
+  };
+}

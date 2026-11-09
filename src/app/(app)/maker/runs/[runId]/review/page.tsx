@@ -6,7 +6,9 @@ import { PostingPreview } from '@/components/posting-preview';
 import { StatusChip } from '@/components/status-chip';
 import { SubmitPanel } from '@/components/submit-panel';
 import { ReviewTable } from '@/components/upload-panel';
-import { AlertIcon } from '@/components/icons';
+import { AlertIcon, CheckIcon } from '@/components/icons';
+import { AssistantNote } from '@/components/assistant-note';
+import { registeredOnly } from '@/server/recipients/directory';
 import { getDb } from '@/server/db/client';
 import { activeWorkflow } from '@/server/dashboard/queries';
 import { draftLock, draftView } from '@/server/runs/draft-service';
@@ -45,6 +47,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
         <h1>Review: {view.run.title}</h1>
         <StatusChip status="draft" />
       </div>
+      {view.run.assistantRequestText ? <AssistantNote text={view.run.assistantRequestText} /> : null}
+      {ready && registeredOnly(db) ? <div className="callout callout-ok" role="note" data-testid="directory-check"><CheckIcon size={18} /><span>Every row matches an active recipient in the directory within that recipient&apos;s maximum. The server checks again when you submit.</span></div> : null}
       {!ready ? (
         <div className="callout" role="note"><AlertIcon size={18} /><span>{lock ?? (s.validCount === 0 ? 'Add at least one row first.' : s.invalidCount ? `${s.invalidCount} row${s.invalidCount === 1 ? ' has' : 's have'} errors. Fix them or keep only the valid rows before submitting.` : 'An admin must activate an approval workflow first.')}</span></div>
       ) : null}

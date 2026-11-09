@@ -421,3 +421,60 @@ Andre verified the key transactions and balances independently on testnet.
 
 - Web and worker share the SQLite volume on one machine. The host gets its own function-call keys (no admin key by default), small allowances, a small vault balance, optional lower caps and a recipient allowlist. Nothing is created until Andre says so.
 
+
+## Phase 19 decisions (10 Nov 2026)
+
+### D-099 · Change of plan (Andre, 10 Nov)
+
+- No Codex QA for now: Andre does a human QA pass after Phase 19 (`docs/QA-HANDOFF.md` updated for it; the Codex handoff stays available).
+- No hosting: local-only with a YouTube video. `docs/HOSTING.md` is marked "not pursued"; D-014 and D-098 are superseded.
+- Tags: there is no pre-hackathon code, so no `pre-hackathon` tag. Only `hackathon-submission`, set by Andre at submission (README, SUBMISSION).
+- Q-015 (a second project) stays open.
+
+### D-100 · The recipient directory is an app and approver guardrail, not a contract rule
+
+- The vault is frozen (D-051) and vault2 has no access keys, so the directory cannot be enforced on-chain. "Pay registered recipients only" is enforced by the app at upload (file row and column), in the manual builder (browser and server, same `validate.ts` rule), and **again on the server at submit**. The result (`{enforced, matched, rows}`) is frozen into the version (`run_versions.directory_check`, trigger-protected) and shown to approvers, with a warning when the directory changed since (deactivated recipient or lower maximum).
+- README and SECURITY say plainly that a maker key used outside the app is not stopped by the directory; the approvers are the control.
+
+### D-101 · Directory data rules
+
+- Recipients are never deleted (trigger) and their NEAR account never changes (trigger); deactivate instead. Every change is in the append-only `recipient_events` (who, when, source, field → [before, after]); audit events stay PII-free (IDs, counts, field names).
+- Maximum per payout ≤ the active workflow's per-row cap, validated with the payroll row rules. Divisions keep their first spelling ("sales" → "Sales").
+- Bulk import: the payroll columns plus `division`; `amount` is the maximum. All-or-nothing with row and column; new accounts are added (active), existing ones updated field by field and keep their active/inactive status; a repeated account in the file is an error. New accounts are checked on testnet only for imports of up to 25 (to stay polite to the public RPC); larger imports say so.
+- "Ready to receive tUSDC": read-only `view_account` + tUSDC `storage_balance_of`, 5 s timeout, advisory (never blocks a payment).
+
+### D-102 · Demo directory seed
+
+- Sales: Emma Clark (`recipient1`), Daniel Hall (`recipient2`); Operations: Grace Lewis (`recipient3`); maximum 0.10 tUSDC each (the showcase range, D-007).
+- The 1,000 sample employees (accounts `gjn-emp-NNNN.testnet`, not on testnet) go to **Engineering, Customer Support and Logistics**, not Sales or Operations. Reason: "the Sales division" must mean the two payable recipients (Andre's example preview "Sales division, 2 recipients"; the live assistant run pays Sales), while the sample upload still passes. They are marked `sample` and shown as "Sample" (never paid).
+- `npm run db:seed` and `npm run demo:reset` seed the directory and turn the setting on; `seedDemo` keeps it opt-in (`recipientDirectory: true`) so older integration tests with fixture accounts are unchanged.
+
+### D-103 · Payroll assistant: the model structures, the app decides
+
+- The model gets only the maker's messages and the division names, and returns one strict tool call (`action` draft/ask/refuse, title, divisions, recipients by name with an optional division, amount as typed, currency, posting mode, question, refusal reason).
+- The app then, deterministically: refuses requests with a NEAR account or a non-tUSDC currency **before** calling the model; resolves recipients only from active directory entries (division, or exact name; an ambiguous name becomes a follow-up question, "Daniel Hall in Sales" resolves it); requires the amount to appear in the maker's own words (otherwise a question, never a guess); checks the per-row cap, every recipient's maximum and the run cap.
+- Previews are stored server-side (`assistant_requests`); **Create draft** sends only the preview ID, works once, for the maker who asked, within 30 minutes, and resolves the directory again. It creates a manual draft (`source = manual`) with the request text fixed on the run (trigger) and shown as "Drafted by the payroll assistant from: …" to maker and approvers. The assistant module cannot submit, approve, release, change the workflow or the directory.
+- Rate limit: 20 requests per maker per rolling hour (every request is a row).
+- Missing posting mode defaults to consolidated (the New run form's default), labelled "(default)" in the preview. Missing title: "<scope> payout, <Month YYYY>".
+
+### D-104 · Model and SDK
+
+- `@anthropic-ai/sdk` **1.3.0** (newest release at least two weeks old, D-026; 1.4.0+ are newer than 27 Oct). Default model **`claude-opus-5-5`**, the default model in Anthropic's model documentation (Nov 2026); `ASSISTANT_MODEL` overrides it (for example `claude-haiku-5-5` for lower cost).
+- Forced `tool_choice` returns 400 on current models, so: one tool with `strict: true`, `tool_choice: auto` with parallel calls off, and the instruction to always call it; a reply without the tool call is an error ("no draft request"), a `refusal` stop is a refusal. `output_config.effort: low` (short extraction). For models that support it, `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`) so a classifier decline falls back server-side.
+- Timeout 20 s, one retry. The key is read from `.env` on the server only.
+
+### D-105 · Test stub, labelled
+
+- Browser tests and unit tests use `stubModel()` (a naive keyword parser that can be "fooled" on purpose). A running server uses it only with `ASSISTANT_STUB=browser-tests` **and** a database under `.tmp/` (refused otherwise); the box then says "Test stub model (browser tests only)". Labelled in code, UI and README. The judge-mode browser test runs with no key and checks the "off" message.
+
+### D-106 · Voice input
+
+- The browser's Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`), `en-US`, interim results; the transcript only fills the text box (never sends). Hidden where unsupported. `Permissions-Policy: microphone=(self)` (was `microphone=()`). README and SECURITY state that browser speech recognition sends audio to the browser vendor's service.
+
+### D-107 · `.env` is never rewritten destructively
+
+- `scripts/testnet/write-env.mjs` now keeps every existing value it does not manage (and carries over variables missing from `.env.example`), so Andre's `ANTHROPIC_API_KEY` survives a rewrite. It was not run in Phase 19.
+
+### D-108 · Vault top-up for QA and video retakes
+
+- Vault2 topped up from 0.24 to 2.00 tUSDC (admin mint + `ft_transfer_call`, `docs/TESTNET.md`). The funding helper's limit is 10 tUSDC per top-up; it had wrongly reused the 1 tUSDC per-row cap.

@@ -10,7 +10,7 @@ const command = process.argv[2] ?? 'status';
 const { db, sqlite, file } = getDatabase(); // opening applies pending migrations
 console.log(`database: ${file}`);
 if (command === 'seed') {
-  const created = await seedDemo(db);
+  const created = await seedDemo(db, { recipientDirectory: true });
   console.log(created.length ? `seeded: ${created.join(', ')}` : 'seed: nothing to do (already seeded)');
 } else if (command !== 'migrate' && command !== 'status') {
   console.error(`unknown command: ${command}`);

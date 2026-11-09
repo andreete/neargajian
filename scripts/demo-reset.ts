@@ -3,8 +3,10 @@
 //   1. refuses while the app (127.0.0.1:8092) or the release worker is running;
 //   2. MOVES the current database file into data/backups/gajian-<UTC time>.sqlite (after a WAL
 //      checkpoint) and checks that the moved copy opens with the same row counts;
-//   3. creates a fresh database: migrations, the four demo users, and the final vault's CURRENT
-//      workflow read from the chain (read-only). No demo draft, no rehearsal runs, no history.
+//   3. creates a fresh database: migrations, the four demo users, the final vault's CURRENT
+//      workflow read from the chain (read-only), and the recipient directory (3 live testnet
+//      recipients checked read-only on testnet + 1,000 sample employees; "Pay registered
+//      recipients only" on). No demo draft, no rehearsal runs, no history.
 // Live evidence stays in docs/TESTNET.md and in the backup. Appends to data/backups/RESET-LOG.jsonl.
 // Usage: npm run demo:reset            (uses DATABASE_URL and VAULT_CONTRACT_ID from .env)
 import { spawnSync } from 'node:child_process';
@@ -14,6 +16,10 @@ import Database from 'better-sqlite3';
 import { closeDatabase, databaseFileFromUrl, getDatabase } from '../src/server/db/client.ts';
 import { seedDemo, SEED_WORKFLOW } from '../src/server/db/seed.ts';
 import { currentVaultId } from '../src/server/workflow/vault.ts';
+import { eq } from 'drizzle-orm';
+import { recipients } from '../src/server/db/schema.ts';
+import { checkReadiness } from '../src/server/recipients/directory.ts';
+import { READINESS_LABEL, rpcReadinessChecker } from '../src/server/recipients/readiness.ts';
 
 const file = databaseFileFromUrl(process.env.DATABASE_URL);
 const vault = currentVaultId();
@@ -60,7 +66,11 @@ if (wf.revision !== SEED_WORKFLOW.revision || wf.kind !== 'TwoSequential' || wf.
   throw new Error(`refused: ${vault} is at revision ${wf.revision} (${wf.kind}, ${wf.release_mode}) but the seed mirrors revision ${SEED_WORKFLOW.revision} (TwoSequential, Automatic). Update SEED_WORKFLOW first.${backup ? ` Your previous database is safe at ${backup}; move it back to ${file} to undo.` : ''}`);
 }
 const { db, sqlite } = getDatabase();
-const created = await seedDemo(db, { demoDraft: false, testnetHistory: false, env: { ...process.env, DEMO_CAP_PER_ROW_BASE_UNITS: wf.max_row_amount, DEMO_CAP_PER_RUN_BASE_UNITS: wf.max_run_total } });
+const created = await seedDemo(db, { demoDraft: false, testnetHistory: false, recipientDirectory: true, env: { ...process.env, DEMO_CAP_PER_ROW_BASE_UNITS: wf.max_row_amount, DEMO_CAP_PER_RUN_BASE_UNITS: wf.max_run_total } });
+// Read-only testnet check of the three live recipients (exists + registered with tUSDC).
+const live = db.select({ id: recipients.id }).from(recipients).where(eq(recipients.sample, false)).all().map((x) => x.id);
+const checked = await checkReadiness(db, rpcReadinessChecker(), 'usr_admin', live);
+console.log(`recipient check on testnet: ${Object.values(checked).map((c) => READINESS_LABEL[c]).join('; ')}`);
 const fresh = counts(sqlite);
 closeDatabase();
 console.log(`fresh database ${file}: ${created.join(', ')}`);

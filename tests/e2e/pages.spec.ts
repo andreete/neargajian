@@ -11,7 +11,7 @@
 import { mkdirSync, readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 
-const fixture = () => JSON.parse(readFileSync('.tmp/e2e/fixture.json', 'utf8')) as Record<'paidDetailed' | 'paidConsolidated' | 'releasing' | 'awaitingFunding' | 'pending' | 'rejected' | 'longTitle', string>;
+const fixture = () => JSON.parse(readFileSync('.tmp/e2e/fixture.json', 'utf8')) as Record<'paidDetailed' | 'paidConsolidated' | 'releasing' | 'awaitingFunding' | 'pending' | 'rejected' | 'longTitle' | 'assistantPending', string>;
 const SIZES = [[1280, 720], [1440, 900]] as const;
 const EMAIL = { maker: 'maker@gajian.my.id', approver: 'app1@gajian.my.id', admin: 'admin@gajian.my.id' } as const;
 
@@ -114,11 +114,14 @@ test('approver and admin pages fit at 1280x720 and 1440x900', async ({ page, bro
   await sweep(page, 'approver-queue', '/approver');
   await sweep(page, 'approver-run-pending', `/runs/${f.pending}`);
   await sweep(page, 'approver-run-paid', `/runs/${f.paidDetailed}`);
+  await sweep(page, 'approver-run-assistant', `/runs/${f.assistantPending}`);
   await sweep(page, 'approver-history-detailed', '/history?view=detailed');
   const admin = await browser.newPage();
   problems.push(...watch(admin));
   await signIn(admin, 'admin');
   await sweep(admin, 'admin-setup', '/admin');
+  await sweep(admin, 'admin-recipients', '/admin/recipients');
+  await sweep(admin, 'admin-recipients-p2', '/admin/recipients?page=2');
   await sweep(admin, 'admin-history-consolidated', '/history?view=consolidated');
   await sweep(admin, 'admin-history-detailed', '/history?view=detailed');
   expect(problems).toEqual([]);
@@ -144,7 +147,7 @@ test('run page actions stay in one place (top right, title row) in every run sta
         expect(Math.abs(b.top - geo.h1Top), `${name} ${width}: action on the title row`).toBeLessThanOrEqual(12);
         expect(geo.h1Right, `${name} ${width}: title never runs under the actions`).toBeLessThanOrEqual(b.right - 40);
       }
-      if (name === 'pending' || name === 'longTitle' || name === 'awaitingFunding') expect(geo.buttons.length, `${name}: cancel available`).toBe(1);
+      if (name === 'pending' || name === 'assistantPending' || name === 'longTitle' || name === 'awaitingFunding') expect(geo.buttons.length, `${name}: cancel available`).toBe(1);
       if (name === 'rejected') expect(geo.buttons.length, 'rejected: edit available').toBe(1);
     }
   }

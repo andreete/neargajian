@@ -6,10 +6,12 @@ import { StatusChip } from '@/components/status-chip';
 import { getDb } from '@/server/db/client';
 import { activeLimits, draftLock, draftView } from '@/server/runs/draft-service';
 import { latestVersion } from '@/server/runs/lifecycle';
-import { AlertIcon } from '@/components/icons';
+import { AlertIcon, InfoIcon } from '@/components/icons';
 import { DomainError } from '@/server/runs/repository';
 import { requireRole } from '@/server/web/page-auth';
 import { UploadPanel } from '@/components/upload-panel';
+import { activeDirectoryMap, registeredOnly } from '@/server/recipients/directory';
+import { AssistantNote } from '@/components/assistant-note';
 
 export const metadata: Metadata = { title: 'Run builder' };
 
@@ -35,13 +37,15 @@ export default async function RunBuilderPage({ params }: { params: Promise<{ run
         <StatusChip status="draft" />
         <span className="chip chip-neutral">{view.run.source === 'upload' ? 'File upload' : 'Manual entry'}</span>
       </div>
+      {view.run.assistantRequestText ? <AssistantNote text={view.run.assistantRequestText} /> : null}
+      {view.run.source === 'upload' && registeredOnly(db) ? <div className="callout" role="note" data-testid="directory-rule"><InfoIcon size={18} /><span>Pay registered recipients only is on: every row of the file must match an active recipient in the directory (same NEAR account) and stay within that recipient&apos;s maximum, or the file is rejected with its row and column.</span></div> : null}
       {latest ? (
         <div className="callout" role="note"><AlertIcon size={18} /><span>Version {latest.versionNo} was {latest.status === 'rejected' ? 'rejected' : latest.status === 'cancelled' ? 'cancelled' : 'not registered by the vault'}{latest.statusDetail ? ` (${latest.statusDetail})` : ''}. Edit the draft and submit version {latest.versionNo + 1}; it needs fresh approvals. <a href={`/runs/${runId}`}>See version {latest.versionNo}</a></span></div>
       ) : null}
       {view.run.source === 'manual' ? (
         <ManualBuilder runId={view.run.id} title={view.run.title} postingMode={view.run.postingMode} revision={view.run.draftRevision}
           rows={view.rows.map(({ sourceLine: _s, ...r }) => r)} csrfToken={session.csrfToken}
-          limits={{ maxRowAmount: limits.maxRowAmount.toString(), maxRunTotal: limits.maxRunTotal.toString() }} />
+          limits={{ maxRowAmount: limits.maxRowAmount.toString(), maxRunTotal: limits.maxRunTotal.toString() }} directory={activeDirectoryMap(db)} />
       ) : (
         <UploadPanel key={view.run.id} runId={view.run.id} title={view.run.title} postingMode={view.run.postingMode} revision={view.run.draftRevision}
           csrfToken={session.csrfToken} rows={view.rows}

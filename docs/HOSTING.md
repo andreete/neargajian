@@ -1,6 +1,6 @@
-# Hosting plan for gajian.my.id (plan only)
+# Hosting plan for gajian.my.id: not pursued
 
-Status: **plan only.** No accounts were created and nothing was deployed. Every step marked **Andre** needs his accounts, payment details or DNS access. Steps marked **agent** are prepared in the repository on request, then reviewed before anything goes live.
+Status: **not pursued (decided 10 Nov): local-only with a YouTube video.** Nothing was created or deployed; the plan below is kept for reference only. (Earlier status: plan only.) No accounts were created and nothing was deployed. Every step marked **Andre** needs his accounts, payment details or DNS access. Steps marked **agent** are prepared in the repository on request, then reviewed before anything goes live.
 
 ## Requirements
 

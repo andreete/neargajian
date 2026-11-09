@@ -17,6 +17,9 @@ export const metadata: Metadata = { title: 'Workflow settings' };
 
 const ACTION_LABEL: Record<string, string> = {
   'auth.login': 'Signed in', 'auth.logout': 'Signed out', 'auth.login_failed': 'Failed sign-in attempt', 'workflow.updated': 'Workflow updated',
+  'recipient.created': 'Recipient added', 'recipient.updated': 'Recipient edited', 'recipient.deactivated': 'Recipient deactivated',
+  'recipient.reactivated': 'Recipient reactivated', 'recipients.imported': 'Recipients imported',
+  'settings.registered_only_on': '"Pay registered recipients only" turned on', 'settings.registered_only_off': '"Pay registered recipients only" turned off',
 };
 
 export default async function AdminDashboard() {

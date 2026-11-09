@@ -7,7 +7,7 @@
  * Rows are never dropped silently.
  */
 import { useMemo, useRef, useState } from 'react';
-import { emptyRow, FIELD_LABEL, validateRows, type Field, type RawRow } from '@/server/payroll/validate';
+import { emptyRow, FIELD_LABEL, ruleFromMap, validateRows, type Field, type RawRow } from '@/server/payroll/validate';
 import { displayAmount } from '@/lib/format';
 import { AlertIcon, CheckIcon, PlusIcon, XIcon } from './icons';
 import { PostingPreview } from './posting-preview';
@@ -20,6 +20,8 @@ interface Props {
   rows: RawRow[];
   limits: { maxRowAmount: string; maxRunTotal: string };
   csrfToken: string;
+  /** Active recipients (account → maximum in base units) when "Pay registered recipients only" is on. */
+  directory?: Record<string, string> | null;
 }
 
 const COLUMNS: { field: Field; className: string; placeholder: string; inputMode?: 'decimal' | 'email' | 'tel' }[] = [
@@ -41,7 +43,8 @@ export function ManualBuilder(props: Props) {
   const [busy, setBusy] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const limits = useMemo(() => ({ maxRowAmount: BigInt(props.limits.maxRowAmount), maxRunTotal: BigInt(props.limits.maxRunTotal) }), [props.limits]);
-  const summary = useMemo(() => validateRows(rows, limits), [rows, limits]);
+  const rule = useMemo(() => (props.directory ? ruleFromMap(props.directory) : undefined), [props.directory]);
+  const summary = useMemo(() => validateRows(rows, limits, 1000, rule), [rows, limits, rule]);
   const invalidIndexes = summary.rows.filter((r) => !r.valid).map((r) => r.index);
   const duplicateOf = (index: number) => {
     for (const [, idx] of summary.duplicateWallets) if (idx.includes(index)) return idx.filter((x) => x !== index).map((x) => x + 1);
@@ -123,6 +126,7 @@ export function ManualBuilder(props: Props) {
             <input id="title-input" value={title} maxLength={120} onChange={(e) => { setTitle(e.target.value); setDirty(true); }} />
           </div>
         </div>
+        {props.directory ? <p className="hint directory-hint" data-testid="directory-rule">Pay registered recipients only is on: each row must match an active recipient in the directory (same NEAR account) and stay within that recipient&apos;s maximum.</p> : null}
         <div className="table-wrap" role="region" aria-labelledby="rows-title" tabIndex={0}>
           <table className="rows-table">
             <thead>

@@ -134,6 +134,10 @@ export const payrollRuns = sqliteTable('payroll_runs', {
   draftFileSha256: text('draft_file_sha256'),
   createdAt: ms('created_at').notNull(),
   updatedAt: ms('updated_at').notNull(),
+  /** Set when the payroll assistant drafted this run: the request it was drafted from (set once, trigger). */
+  assistantRequestId: text('assistant_request_id'),
+  /** The maker's own words (one line per message), shown as "Drafted by the payroll assistant from: …". */
+  assistantRequestText: text('assistant_request_text'),
 }, (t) => [
   index('payroll_runs_maker_ix').on(t.makerUserId),
   check('payroll_runs_posting_ck', inList('posting_mode', POSTING_MODES)),
@@ -183,6 +187,11 @@ export const runVersions = sqliteTable('run_versions', {
   supersededByVersionId: text('superseded_by_version_id'),
   /** Human-readable reason for submit_failed / cancellation problems (no PII). */
   statusDetail: text('status_detail'),
+  /**
+   * Recipient-directory check at submission (JSON {enforced, matched, rows}); set once at insert
+   * (trigger). Shows approvers that every row matched an active recipient within its maximum.
+   */
+  directoryCheck: text('directory_check'),
 }, (t) => [
   uniqueIndex('run_versions_run_no_uq').on(t.runId, t.versionNo),
   uniqueIndex('run_versions_chain_run_uq').on(t.chainRunId),
@@ -333,4 +342,92 @@ export const testnetRunEvents = sqliteTable('testnet_run_events', {
   primaryKey({ columns: [t.runId, t.seq] }),
   uniqueIndex('testnet_run_events_tx_uq').on(t.txHash),
   index('testnet_run_events_signer_ix').on(t.signerAccount),
+]);
+
+/**
+ * Recipient directory (Phase 19): who may be paid when "Pay registered recipients only" is on.
+ * Never deleted (deactivated instead, trigger), so history stays readable. Every change is
+ * logged in recipient_events with who and when.
+ */
+export const RECIPIENT_READINESS = ['unchecked', 'ready', 'no_account', 'not_registered', 'check_failed'] as const;
+export type RecipientReadiness = (typeof RECIPIENT_READINESS)[number];
+
+export const recipients = sqliteTable('recipients', {
+  id: text('id').primaryKey(),
+  nearAccountId: text('near_account_id').notNull(),
+  name: text('name').notNull(),
+  division: text('division').notNull(),
+  email: text('email').notNull(),
+  mobilePhone: text('mobile_phone').notNull(),
+  /** Maximum per payout in base units (never above the workflow's per-row cap). */
+  maxAmount: units('max_amount').notNull(),
+  active: integer('active', { mode: 'boolean' }).notNull(),
+  /** One of the 1,000 synthetic sample employees (import check only, accounts not on testnet). */
+  sample: integer('sample', { mode: 'boolean' }).notNull().default(false),
+  /** Read-only testnet check: account exists and is registered with tUSDC. */
+  readiness: text('readiness', { enum: RECIPIENT_READINESS }).notNull().default('unchecked'),
+  readinessCheckedAt: ms('readiness_checked_at'),
+  createdByUserId: text('created_by_user_id').notNull().references(() => users.id),
+  createdAt: ms('created_at').notNull(),
+  updatedByUserId: text('updated_by_user_id').notNull().references(() => users.id),
+  updatedAt: ms('updated_at').notNull(),
+}, (t) => [
+  uniqueIndex('recipients_account_uq').on(t.nearAccountId),
+  index('recipients_division_ix').on(t.division),
+  check('recipients_account_lower_ck', sql`near_account_id = lower(near_account_id)`),
+  check('recipients_readiness_ck', inList('readiness', RECIPIENT_READINESS)),
+]);
+
+export const RECIPIENT_EVENT_ACTIONS = ['created', 'updated', 'deactivated', 'reactivated', 'readiness_checked'] as const;
+export type RecipientEventAction = (typeof RECIPIENT_EVENT_ACTIONS)[number];
+
+/** Append-only change log of the directory: who, when, what (field → [before, after]). */
+export const recipientEvents = sqliteTable('recipient_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  actorUserId: text('actor_user_id').notNull().references(() => users.id),
+  at: ms('at').notNull(),
+  action: text('action', { enum: RECIPIENT_EVENT_ACTIONS }).notNull(),
+  /** form | import | seed | check */
+  source: text('source').notNull(),
+  /** JSON object: field → [before, after] (amounts as base-unit strings). */
+  changes: text('changes').notNull(),
+}, (t) => [
+  index('recipient_events_recipient_ix').on(t.recipientId, t.at),
+  index('recipient_events_at_ix').on(t.at),
+  check('recipient_events_action_ck', inList('action', RECIPIENT_EVENT_ACTIONS)),
+]);
+
+/** Admin settings (key → value). Changes are audited in audit_events. */
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedByUserId: text('updated_by_user_id').references(() => users.id),
+  updatedAt: ms('updated_at').notNull(),
+});
+
+export const ASSISTANT_OUTCOMES = ['preview', 'question', 'refused', 'error', 'created'] as const;
+export type AssistantOutcome = (typeof ASSISTANT_OUTCOMES)[number];
+
+/**
+ * Payroll assistant requests (Phase 19): one row per model call (also the hourly rate limit).
+ * Holds the maker's text and the model's structured answer, never directory data.
+ */
+export const assistantRequests = sqliteTable('assistant_requests', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  createdAt: ms('created_at').notNull(),
+  /** The maker's messages, one per line (follow-up answers appended). */
+  requestText: text('request_text').notNull(),
+  outcome: text('outcome', { enum: ASSISTANT_OUTCOMES }).notNull(),
+  /** JSON: the model's structured draft request (validated) or null. */
+  structured: text('structured'),
+  message: text('message'),
+  model: text('model'),
+  /** The draft created from this preview (once). */
+  runId: text('run_id').references(() => payrollRuns.id),
+}, (t) => [
+  index('assistant_requests_user_ix').on(t.userId, t.createdAt),
+  uniqueIndex('assistant_requests_run_uq').on(t.runId),
+  check('assistant_requests_outcome_ck', inList('outcome', ASSISTANT_OUTCOMES)),
 ]);

@@ -414,6 +414,18 @@
       "hash": "F2f721YJ4sNvi2P5jt2pcebBym4u3fY4HLvJcNPUEsm1",
       "signer": "admin.gajian-payroll.testnet",
       "receiver": "tusdc.gajian-payroll.testnet"
+    },
+    {
+      "hash": "BnoNtc6B1foUateaR31MjmngbmGub5ECETMvund3aiMa",
+      "receiver": "tusdc.gajian-payroll.testnet",
+      "signer": "admin.gajian-payroll.testnet",
+      "step": "19 admin mints 1.76 test tUSDC (vault2 top-up for QA and video retakes)"
+    },
+    {
+      "hash": "BW1zAEpm627EnfkeJPEZxNTTJ15twdGD6rVVWR8JJrpi",
+      "receiver": "tusdc.gajian-payroll.testnet",
+      "signer": "admin.gajian-payroll.testnet",
+      "step": "19 admin funds vault2 with 1.76 tUSDC (ft_transfer_call): vault2 2.00 tUSDC"
     }
   ]
 }

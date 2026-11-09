@@ -13,9 +13,10 @@ import type { Db } from '../db/client.ts';
 import {
   approvalEvents, auditEvents, payoutActions, payrollRuns, runVersions, users, versionRows, type VersionStatus,
 } from '../db/schema.ts';
-import { validateRows } from '../payroll/validate.ts';
+import { NOT_IN_DIRECTORY } from '../payroll/validate.ts';
+import { directoryCheckFor, registeredOnly } from '../recipients/directory.ts';
 import { activeSnapshot } from '../workflow/service.ts';
-import { activeLimits, toRaw } from './draft-service.ts';
+import { toRaw, validateDraft } from './draft-service.ts';
 import { confirmedPayouts, settleActions } from '../payouts/settle.ts';
 import { createReportEntries } from '../reports/entries.ts';
 import { createVersion, DomainError, getDraftRows, setVersionStatus, type WorkflowSnapshot } from './repository.ts';
@@ -104,8 +105,14 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
   if (live && !input.supersede) throw new DomainError('conflict', `Version ${live.versionNo} is still ${live.status === 'approved' ? 'approved' : 'waiting for approval'}. Submit as a new version to replace it.`);
 
   const draft = getDraftRows(db, runId);
-  const summary = validateRows(draft.map(toRaw), activeLimits(db));
+  // Server re-check at submit time (rules and, when on, the recipient directory as it is NOW).
+  const summary = validateDraft(db, draft.map(toRaw));
   if (summary.invalidCount > 0 || summary.runErrors.length || summary.validCount === 0) {
+    const directoryRows = summary.rows.filter((r) => r.errors.some((e) => e.message === NOT_IN_DIRECTORY || /recipient directory|this recipient's maximum/.test(e.message)));
+    if (registeredOnly(db) && directoryRows.length) {
+      const where = directoryRows.slice(0, 5).map((r) => `row ${draft[r.index]?.sourceLine ?? r.index + 1}`).join(', ');
+      throw new DomainError('invalid', `Pay registered recipients only: ${directoryRows.length} row${directoryRows.length === 1 ? '' : 's'} (${where}${directoryRows.length > 5 ? ', …' : ''}) no longer match an active recipient within its maximum. Nothing was sent.`);
+    }
     throw new DomainError('invalid', 'Every row must be valid before submission. Fix or remove the invalid rows first.');
   }
   const snapshot = activeSnapshot(db);
@@ -114,6 +121,7 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
   const rows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
   const version = createVersion(db, {
     runId, makerUserId: principal.id, rows, workflow: snapshot, postingMode: run.postingMode, now, vaultContractId: client.vaultId,
+    directoryCheck: directoryCheckFor(db, rows),
     source: run.source === 'upload' && run.draftFilename && run.draftFileSha256 ? { filename: run.draftFilename, sha256: run.draftFileSha256 } : null,
   });
   const stored = db.select().from(runVersions).where(eq(runVersions.id, version.id)).get()!;

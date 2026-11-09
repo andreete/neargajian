@@ -18,7 +18,7 @@ process.env.DATABASE_URL = `file:${join(dir, 'bnd.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
 
-type Handler = (req: Request, ctx: { params: Promise<{ runId: string }> }) => Response | Promise<Response>;
+type Handler = (req: Request, ctx: { params: Promise<{ runId: string; recipientId: string }> }) => Response | Promise<Response>;
 type Who = 'anon' | 'maker' | 'maker2' | 'app1' | 'app3' | 'admin';
 const fake = new FakeVault();
 let db: import('@/server/db/client').Db;
@@ -28,6 +28,7 @@ const route = {} as Record<string, Record<string, Handler>>;
 let DRAFT = '';
 let LIVE = '';
 let LIVE_VERSION = '';
+let EMMA = '';
 
 function call(who: Who, method: string, path: string, h: Handler, runId: string, body?: BodyInit | null, opts: { csrf?: boolean; origin?: string } = {}) {
   const headers = new Headers({ origin: opts.origin ?? BASE, 'x-forwarded-for': '198.51.100.9' });
@@ -37,7 +38,7 @@ function call(who: Who, method: string, path: string, h: Handler, runId: string,
   }
   if (typeof body === 'string') headers.set('content-type', 'application/json');
   const req = new Request(`${BASE}${path}`, { method, headers, ...(body ? { body } : {}) });
-  return Promise.resolve(h(req, { params: Promise.resolve({ runId }) }));
+  return Promise.resolve(h(req, { params: Promise.resolve({ runId, recipientId: runId }) }));
 }
 
 /** All API operations with a valid body, so only authorization can refuse them. */
@@ -63,16 +64,29 @@ function operations(): { name: string; method: string; path: (id: string) => str
     { name: 'admin audit', method: 'GET', path: () => '/api/admin/audit', h: () => route.audit!.GET!, body: () => null, run: () => '' },
     { name: 'company CSV', method: 'GET', path: () => '/api/reports/company', h: () => route.company!.GET!, body: () => null, run: () => '' },
     { name: 'recipient CSV', method: 'GET', path: () => '/api/reports/recipients', h: () => route.recipients!.GET!, body: () => null, run: () => '' },
+    // Phase 19: recipient directory and settings (admin only), payroll assistant (maker only).
+    { name: 'admin recipients list', method: 'GET', path: () => '/api/admin/recipients', h: () => route.rcpList!.GET!, body: () => null, run: () => '' },
+    { name: 'admin recipient add', method: 'POST', path: () => '/api/admin/recipients', h: () => route.rcpList!.POST!, body: j({ nearAccountId: 'probe.testnet', name: 'Probe Person', division: 'Sales', email: 'p@example.com', mobilePhone: '+44 7700 900500', maxAmount: '0.05' }), run: () => '' },
+    { name: 'admin recipient edit', method: 'PATCH', path: (id) => `/api/admin/recipients/${id}`, h: () => route.rcpOne!.PATCH!, body: j({ name: 'Changed', division: 'Sales', email: 'c@example.com', mobilePhone: '+44 7700 900501', maxAmount: '0.09' }), run: () => EMMA },
+    { name: 'admin recipient status', method: 'POST', path: (id) => `/api/admin/recipients/${id}/status`, h: () => route.rcpStatus!.POST!, body: j({ active: false }), run: () => EMMA },
+    { name: 'admin recipient check', method: 'POST', path: (id) => `/api/admin/recipients/${id}/check`, h: () => route.rcpCheck!.POST!, body: () => null, run: () => EMMA },
+    { name: 'admin recipients import', method: 'POST', path: () => '/api/admin/recipients/import', h: () => route.rcpImport!.POST!, body: () => { const f = new FormData(); f.set('file', new File(['near_account_id,receiver_name,currency,amount,mobile_phone,email,division\nprobe2.testnet,Probe Two,tUSDC,0.05,+44 7700 900502,p2@example.com,Sales\n'], 'd.csv', { type: 'text/csv' })); return f; }, run: () => '' },
+    { name: 'admin settings read', method: 'GET', path: () => '/api/admin/settings', h: () => route.settings!.GET!, body: () => null, run: () => '' },
+    { name: 'admin settings change', method: 'POST', path: () => '/api/admin/settings', h: () => route.settings!.POST!, body: j({ registeredRecipientsOnly: false }), run: () => '' },
+    { name: 'assistant', method: 'POST', path: () => '/api/assistant', h: () => route.assistant!.POST!, body: j({ messages: [{ role: 'user', text: 'Pay the Sales division 0.05 each' }] }), run: () => '' },
+    { name: 'assistant draft', method: 'POST', path: () => '/api/assistant/drafts', h: () => route.assistantDraft!.POST!, body: j({ requestId: 'none' }), run: () => '' },
   ];
 }
+
+const ADMIN_DIRECTORY = ['admin recipients list', 'admin recipient add', 'admin recipient edit', 'admin recipient status', 'admin recipient check', 'admin recipients import', 'admin settings read', 'admin settings change'];
 
 /** Who must be refused where, and with which status. */
 const DENIED: [Who, string[], number][] = [
   ['maker2', ['run detail', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'reconcile', 'cancel', 'release'], 404],
   ['app3', ['run detail', 'reconcile', 'decision'], 404],
-  ['app1', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'cancel', 'release', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit'], 403],
-  ['admin', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'reconcile', 'cancel', 'release', 'decision', 'recipient CSV'], 403],
-  ['maker', ['decision', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit'], 403],
+  ['app1', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'cancel', 'release', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit', ...ADMIN_DIRECTORY, 'assistant', 'assistant draft'], 403],
+  ['admin', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'reconcile', 'cancel', 'release', 'decision', 'recipient CSV', 'assistant', 'assistant draft'], 403],
+  ['maker', ['decision', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit', ...ADMIN_DIRECTORY], 403],
 ];
 
 function state() {
@@ -84,6 +98,10 @@ function state() {
     events: q('select id, status from approval_events order by id'),
     actions: q('select id, status from payout_actions order by id'),
     workflows: q('select id, chain_status from workflow_configs order by id'),
+    recipients: q('select id, name, max_amount, active, readiness from recipients order by id'),
+    recipientEvents: q('select count(*) as n from recipient_events'),
+    settings: q('select key, value from app_settings order by key'),
+    assistant: q('select count(*) as n from assistant_requests'),
   });
 }
 
@@ -93,8 +111,11 @@ beforeAll(async () => {
   db = handle.db;
   sqlite = handle.sqlite;
   const seed = await import('@/server/db/seed');
-  await seed.seedDemo(db);
+  await seed.seedDemo(db, { recipientDirectory: true });
   (await import('@/server/chain/vault-client')).setVaultClientForTests(fake);
+  (await import('@/server/assistant/factory')).setAssistantModelForTests((await import('@/server/assistant/stub-model')).stubModel());
+  (await import('@/server/recipients/readiness')).setReadinessCheckerForTests({ check: async () => 'ready' });
+  EMMA = (sqlite.prepare("select id from recipients where near_account_id = 'recipient1.gajian-payroll.testnet'").get() as { id: string }).id;
   const { users } = await import('@/server/db/schema');
   const hash = sqlite.prepare("select password_hash as h from users where id = 'usr_maker'").get() as { h: string };
   db.insert(users).values([
@@ -135,10 +156,20 @@ beforeAll(async () => {
   route.audit = await load('@/app/api/admin/audit/route');
   route.company = await load('@/app/api/reports/company/route');
   route.recipients = await load('@/app/api/reports/recipients/route');
+  route.rcpList = await load('@/app/api/admin/recipients/route');
+  route.rcpOne = await load('@/app/api/admin/recipients/[recipientId]/route');
+  route.rcpStatus = await load('@/app/api/admin/recipients/[recipientId]/status/route');
+  route.rcpCheck = await load('@/app/api/admin/recipients/[recipientId]/check/route');
+  route.rcpImport = await load('@/app/api/admin/recipients/import/route');
+  route.settings = await load('@/app/api/admin/settings/route');
+  route.assistant = await load('@/app/api/assistant/route');
+  route.assistantDraft = await load('@/app/api/assistant/drafts/route');
 }, 60_000);
 
 afterAll(async () => {
   (await import('@/server/chain/vault-client')).setVaultClientForTests(undefined);
+  (await import('@/server/assistant/factory')).setAssistantModelForTests(undefined);
+  (await import('@/server/recipients/readiness')).setReadinessCheckerForTests(undefined);
   (await import('@/server/db/client')).closeDatabase();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -168,7 +199,7 @@ describe('API permission boundaries', () => {
         checked += 1;
       }
     }
-    expect(checked).toBe(43);
+    expect(checked).toBe(63);
     expect(state()).toBe(before);
     expect(fake.calls.length).toBe(calls);
   });
@@ -185,6 +216,23 @@ describe('API permission boundaries', () => {
     }
     expect(state()).toBe(before);
     expect(fake.calls.length).toBe(calls);
+  });
+
+  it('Phase 19 happy paths: the admin adds a recipient (checked on testnet), the maker drafts with the assistant, nobody else can use that preview', async () => {
+    const ops = new Map(operations().map((o) => [o.name, o]));
+    const add = ops.get('admin recipient add')!;
+    const added = await call('admin', 'POST', add.path(''), add.h(), '', add.body());
+    expect(added.status).toBe(201);
+    expect(((await added.json()) as { recipient: { readinessLabel: string } }).recipient.readinessLabel).toBe('Ready to receive tUSDC');
+    const ask = ops.get('assistant')!;
+    const reply = (await (await call('maker', 'POST', ask.path(''), ask.h(), '', ask.body())).json()) as { kind: string; requestId: string; preview: { count: number } };
+    expect(reply).toMatchObject({ kind: 'preview', preview: { count: 3 } }); // Emma, Daniel and the probe recipient
+    const draft = ops.get('assistant draft')!;
+    const stolen = await call('maker2', 'POST', draft.path(''), draft.h(), '', JSON.stringify({ requestId: reply.requestId }));
+    expect(stolen.status).toBe(404);
+    const created = await call('maker', 'POST', draft.path(''), draft.h(), '', JSON.stringify({ requestId: reply.requestId }));
+    expect(created.status).toBe(201);
+    expect(fake.calls.filter((c) => c.method === 'create_run').length).toBe(1); // only the earlier boundary run: the assistant sends nothing
   });
 
   it('read routes stay scoped: lists and exports show only what the caller may see', async () => {

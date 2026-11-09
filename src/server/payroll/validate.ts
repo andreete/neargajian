@@ -37,6 +37,24 @@ export interface RowResult {
 
 export interface Limits { maxRowAmount: bigint; maxRunTotal: bigint }
 
+/** A recipient-directory entry as the validation sees it (Phase 19). */
+export interface DirectoryEntry { active: boolean; maxAmount: bigint }
+
+/**
+ * "Pay registered recipients only": when given, every row must match an active recipient
+ * (same NEAR account) and stay within that recipient's maximum per payout.
+ */
+export interface RecipientRule { lookup(accountId: string): DirectoryEntry | undefined }
+
+export const NOT_IN_DIRECTORY = 'No active recipient with this NEAR account in the recipient directory. Ask the admin to add it.';
+export const INACTIVE_IN_DIRECTORY = 'This recipient is inactive in the recipient directory.';
+export const aboveRecipientMax = (max: bigint) => `Amount is above this recipient's maximum of ${formatAmountShort(max)} tUSDC per payout.`;
+
+/** Builds a rule from a plain map of active accounts → maximum in base units (browser side). */
+export function ruleFromMap(active: Readonly<Record<string, string>>): RecipientRule {
+  return { lookup: (a) => (Object.hasOwn(active, a) ? { active: true, maxAmount: BigInt(active[a] ?? '0') } : undefined) };
+}
+
  
 const CONTROL = /[\u0000-\u001f\u007f]/;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
@@ -46,7 +64,7 @@ export function normalizePhone(raw: string): string | null {
   return /^\+?\d{7,15}$/.test(compact) ? compact : null;
 }
 
-export function validateRow(raw: Partial<RawRow>, index: number, limits: Limits): RowResult {
+export function validateRow(raw: Partial<RawRow>, index: number, limits: Limits, directory?: RecipientRule): RowResult {
   const v = (f: Field) => (raw[f] ?? '').trim();
   const errors: FieldIssue[] = [];
   const err = (field: Field, message: string) => errors.push({ field, message });
@@ -55,6 +73,11 @@ export function validateRow(raw: Partial<RawRow>, index: number, limits: Limits)
   if (!account) err('near_account_id', 'NEAR account ID is required.');
   else if (account !== account.toLowerCase() && isValidAccountId(account.toLowerCase())) err('near_account_id', 'NEAR account IDs are lowercase.');
   else if (!isValidAccountId(account)) err('near_account_id', 'Invalid NEAR account ID.');
+  const entry = directory && isValidAccountId(account) ? directory.lookup(account) : undefined;
+  if (directory && isValidAccountId(account)) {
+    if (!entry) err('near_account_id', NOT_IN_DIRECTORY);
+    else if (!entry.active) err('near_account_id', INACTIVE_IN_DIRECTORY);
+  }
 
   const name = v('receiver_name');
   if (!name) err('receiver_name', 'Receiver name is required.');
@@ -69,6 +92,8 @@ export function validateRow(raw: Partial<RawRow>, index: number, limits: Limits)
   const amount = parseAmount(amountText, limits.maxRowAmount);
   if (!amount.ok) {
     err('amount', amount.error === 'above_row_cap' ? `Amount is above the per-row cap of ${formatAmountShort(limits.maxRowAmount)} tUSDC.` : amount.message);
+  } else if (entry?.active && amount.value > entry.maxAmount) {
+    err('amount', aboveRecipientMax(entry.maxAmount));
   }
 
   const phoneRaw = v('mobile_phone');
@@ -98,8 +123,8 @@ export interface ValidationSummary {
   runErrors: string[];
 }
 
-export function validateRows(rows: Partial<RawRow>[], limits: Limits, maxRows = 1000): ValidationSummary {
-  const results = rows.map((r, i) => validateRow(r, i, limits));
+export function validateRows(rows: Partial<RawRow>[], limits: Limits, maxRows = 1000, directory?: RecipientRule): ValidationSummary {
+  const results = rows.map((r, i) => validateRow(r, i, limits, directory));
   const valid = results.filter((r) => r.valid);
   let total = 0n;
   for (const r of valid) total += r.valid?.amount ?? 0n;

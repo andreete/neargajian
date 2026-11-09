@@ -299,6 +299,17 @@ reference,run_title,run_version,file_row,near_account_id,receiver_name,email,pai
 GJN-X9YQEYYV-0001,Phase 16 rehearsal: November bonuses,1,2,recipient1.gajian-payroll.testnet,Emma Clark,emma.clark@example.com,2026-11-09T14:48:45Z,0.300000,tUSDC,56UPmkwb4fyhnyBaimqCjoZvG17Lbo9dv1zBUyjzYAQT,https://testnet.nearblocks.io/txns/56UPmkwb4fyhnyBaimqCjoZvG17Lbo9dv1zBUyjzYAQT
 ```
 
+## Phase 19: vault2 top-up for QA and video retakes (10 Nov 2026)
+
+Vault2 held 0.24 tUSDC; the admin minted 1.76 test tUSDC (mock token, zero value) and funded vault2 with `ft_transfer_call` (`node scripts/testnet/phase16.ts fund 1.76`). Vault2 books **2.00 tUSDC available, 0 reserved** (`get_balances`).
+
+| Step | Signer | Tx | Result |
+| --- | --- | --- | --- |
+| Admin mints 1.76 test tUSDC to itself | admin | [`BnoNtc6B…`](https://testnet.nearblocks.io/txns/BnoNtc6B1foUateaR31MjmngbmGub5ECETMvund3aiMa) | ok |
+| Admin funds vault2 with 1.76 tUSDC (`ft_transfer_call`) | admin | [`BW1zAEpm…`](https://testnet.nearblocks.io/txns/BW1zAEpm627EnfkeJPEZxNTTJ15twdGD6rVVWR8JJrpi) | ok, used `1760000`; vault2 total 2.000000 |
+
+NEAR across all our accounts: 9.87311 → 9.87234 = 0.00077 NEAR.
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -309,5 +320,6 @@ GJN-X9YQEYYV-0001,Phase 16 rehearsal: November bonuses,1,2,recipient1.gajian-pay
 | 9 Nov 2026 | Phase 07: 2 workflow updates via the app | — | — | ≈ 0.0005 | Phase 07 table |
 | 9 Nov 2026 | Phase 13: live app run (submit, 2 approvals, release, 3 payouts) | 3 | 0.120000 | 0.00297 | Phase 13 table |
 | 9 Nov 2026 | Phase 16: final vault deploy + lock + 5 keys, fund migration (6 txs), 3 app runs (demo, maker release, awaiting funding), 2 workflow changes, duplicate proof, funding | 9 | 0.960000 to recipients (+0.70 migrated) | 0.02182 | Phase 16 tables |
+| 10 Nov 2026 | Phase 19: vault2 top-up (mint 1.76 + `ft_transfer_call`) | — | — (vault2 0.24 → 2.00) | 0.00077 | Phase 19 table |
 
-**Total testnet NEAR burned so far: ≈ 0.127 NEAR** (10.00000 → 9.87311 across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.128 NEAR** (10.00000 → 9.87234 across all our accounts; storage deposits and contract storage stay inside our accounts).

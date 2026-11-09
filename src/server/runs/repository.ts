@@ -40,6 +40,8 @@ export interface NewRunInput {
   source: 'manual' | 'upload';
   now: Date;
   id?: string;
+  /** Set when the payroll assistant drafted the run (fixed afterwards, trigger). */
+  assistant?: { requestId: string; requestText: string };
 }
 
 export function createRun(db: Queryable, input: NewRunInput): string {
@@ -49,6 +51,7 @@ export function createRun(db: Queryable, input: NewRunInput): string {
   db.insert(payrollRuns).values({
     id, makerUserId: input.makerUserId, title, postingMode: input.postingMode, source: input.source,
     draftRevision: 0, createdAt: input.now, updatedAt: input.now,
+    ...(input.assistant ? { assistantRequestId: input.assistant.requestId, assistantRequestText: input.assistant.requestText } : {}),
   }).run();
   return id;
 }
@@ -126,6 +129,8 @@ export function createVersion(db: Db, input: {
   postingMode: PostingMode; source?: { filename: string; sha256: string } | null; salt?: Buffer;
   /** The vault contract the version is submitted to. */
   vaultContractId?: string;
+  /** Recipient-directory check at submission (Phase 19), frozen with the version. */
+  directoryCheck?: { enforced: boolean; matched: number; rows: number } | null;
 }) {
   if (input.rows.length < 1 || input.rows.length > 1000) throw new DomainError('invalid', 'A version needs 1-1,000 rows.');
   const leaves: PayoutLeaf[] = input.rows.map((r, index) => ({ index, accountId: r.accountId, amount: r.amount }));
@@ -149,6 +154,7 @@ export function createVersion(db: Db, input: {
       payoutRoot: toHex(tree.root), reviewDigest: toHex(digest), reviewSalt: salt.toString('hex'),
       sourceFilename: input.source?.filename ?? null, sourceSha256: input.source?.sha256 ?? null,
       createdByUserId: input.makerUserId, createdAt: input.now, status, statusUpdatedAt: input.now,
+      directoryCheck: input.directoryCheck ? JSON.stringify(input.directoryCheck) : null,
     }).run();
     input.rows.forEach((r, rowIndex) => {
       tx.insert(versionRows).values({

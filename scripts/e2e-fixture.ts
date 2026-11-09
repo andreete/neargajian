@@ -13,6 +13,8 @@ import { uploadToDraft } from '../src/server/runs/draft-service.ts';
 import { decide, latestVersion, reconcileVersion, submitRun } from '../src/server/runs/lifecycle.ts';
 import { payRows, requestRelease } from '../src/server/payouts/release.ts';
 import { FakeVault } from '../tests/helpers/fake-vault.ts';
+import { createDraftFromPreview, interpretRequest } from '../src/server/assistant/service.ts';
+import { stubModel } from '../src/server/assistant/stub-model.ts';
 
 const { db, file } = getDatabase();
 if (!file.includes('/.tmp/')) throw new Error(`Refusing to write the e2e fixture outside .tmp/: ${file}`);
@@ -54,6 +56,16 @@ async function run(title: string, posting: 'consolidated' | 'detailed', csv: str
   return id;
 }
 
+/** A run drafted by the payroll assistant (TEST STUB model) and submitted: waiting for approver 1. */
+async function assistantRun() {
+  const reply = await interpretRequest(db, stubModel(), maker, [{ role: 'user', text: 'Create a disbursement for the Sales division, 0.04 tUSDC each, called November commissions' }], tick());
+  if (reply.kind !== 'preview') throw new Error(`fixture: expected a preview, got ${reply.kind}`);
+  const { runId } = createDraftFromPreview(db, maker, reply.requestId, tick());
+  await submitRun(db, fake, maker, runId, { expectedRevision: 1, now: tick() });
+  await reconcileVersion(db, fake, latestVersion(db, runId)!.id, tick());
+  return runId;
+}
+
 const three = 'tests/live/live-3-rows.csv';
 const ids = {
   paidDetailed: await run('October contractors', 'detailed', three, 'paid'),
@@ -63,6 +75,7 @@ const ids = {
   pending: await run('November contractors', 'detailed', three, 'pending'),
   rejected: await run('November expenses', 'consolidated', three, 'rejected'),
   longTitle: await run('November contractors and freelance designers: second payroll batch for the product team', 'detailed', three, 'pending'),
+  assistantPending: await assistantRun(),
 };
 console.log(JSON.stringify(ids));
 closeDatabase();

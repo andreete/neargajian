@@ -11,10 +11,16 @@ import { payrollRuns, runVersions, workflowConfigs, type PostingMode } from '../
 import { validateRows, type Limits, type RawRow, type ValidationSummary } from '../payroll/validate.ts';
 import { DomainError, getDraftRows, replaceDraft, type DraftRowInput } from './repository.ts';
 import { importPayrollFile } from '../payroll/import.ts';
+import { enforcedRule } from '../recipients/directory.ts';
 
 export function activeLimits(db: Db): Limits {
   const wf = db.select().from(workflowConfigs).where(activeWorkflowWhere()).get();
   return { maxRowAmount: wf?.maxRowAmount ?? 1_000_000n, maxRunTotal: wf?.maxRunTotal ?? 100_000_000n };
+}
+
+/** Validates draft rows with the active caps and, when "Pay registered recipients only" is on, the directory. */
+export function validateDraft(db: Db, rows: Partial<RawRow>[]): ValidationSummary {
+  return validateRows(rows, activeLimits(db), 1000, enforcedRule(db));
 }
 
 export function toRaw(r: DraftRowInput): RawRow {
@@ -53,7 +59,7 @@ export function draftLock(db: Db, runId: string): string | null {
 }
 
 export interface DraftView {
-  run: { id: string; title: string; postingMode: PostingMode; source: 'manual' | 'upload'; draftRevision: number; draftFilename: string | null; draftFileSha256: string | null };
+  run: { id: string; title: string; postingMode: PostingMode; source: 'manual' | 'upload'; draftRevision: number; draftFilename: string | null; draftFileSha256: string | null; assistantRequestText: string | null };
   rows: (RawRow & { sourceLine: number | null })[];
   summary: ValidationSummary;
 }
@@ -62,9 +68,9 @@ export function draftView(db: Db, principal: Principal, runId: string): DraftVie
   const run = editableRun(db, principal, runId, { allowLocked: true });
   const rows = getDraftRows(db, runId).map((r) => ({ ...toRaw(r), sourceLine: r.sourceLine }));
   return {
-    run: { id: run.id, title: run.title, postingMode: run.postingMode, source: run.source, draftRevision: run.draftRevision, draftFilename: run.draftFilename, draftFileSha256: run.draftFileSha256 },
+    run: { id: run.id, title: run.title, postingMode: run.postingMode, source: run.source, draftRevision: run.draftRevision, draftFilename: run.draftFilename, draftFileSha256: run.draftFileSha256, assistantRequestText: run.assistantRequestText },
     rows,
-    summary: validateRows(rows, activeLimits(db)),
+    summary: validateDraft(db, rows),
   };
 }
 
@@ -80,7 +86,7 @@ export function saveManualDraft(db: Db, principal: Principal, runId: string, inp
     rows: input.rows.map((r) => fromRaw(r)),
     meta: { ...(input.title !== undefined ? { title: input.title } : {}), ...(input.postingMode ? { postingMode: input.postingMode } : {}) },
   });
-  return { revision, summary: validateRows(input.rows, activeLimits(db)) };
+  return { revision, summary: validateDraft(db, input.rows) };
 }
 
 /**
@@ -102,7 +108,7 @@ export function confirmValidSubset(db: Db, principal: Principal, runId: string, 
     runId, makerUserId: principal.id, expectedRevision: input.expectedRevision, now: input.now,
     rows: keep.map((r) => fromRaw(r, r.sourceLine)),
   });
-  return { revision, removed: invalid.length, summary: validateRows(keep, activeLimits(db)) };
+  return { revision, removed: invalid.length, summary: validateDraft(db, keep) };
 }
 
 /**
@@ -115,7 +121,8 @@ export function uploadToDraft(db: Db, principal: Principal, runId: string, input
   const run = editableRun(db, principal, runId);
   if (run.source !== 'upload') throw new DomainError('invalid', 'This run uses manual entry. Create an upload run to import a file.');
   if (run.draftRevision !== input.expectedRevision) throw new DomainError('conflict', 'The draft changed in another window. Reload and upload again.');
-  const result = importPayrollFile({ filename: input.filename, bytes: input.bytes, limits: activeLimits(db) });
+  const directory = enforcedRule(db);
+  const result = importPayrollFile({ filename: input.filename, bytes: input.bytes, limits: activeLimits(db), ...(directory ? { directory } : {}) });
   if (!result.ok) return { result, revision: run.draftRevision };
   const revision = replaceDraft(db, {
     runId, makerUserId: principal.id, expectedRevision: input.expectedRevision, now: input.now,

@@ -62,7 +62,8 @@ async function view<T>(contract: string, method: string, args: object): Promise<
   const r = await rpc('query', { request_type: 'call_function', finality: 'final', account_id: contract, method_name: method, args_base64: Buffer.from(JSON.stringify(args)).toString('base64') });
   return JSON.parse(Buffer.from(r.result).toString()) as T;
 }
-const tusdc = (s: string) => { const p = parseAmount(s, 1_000_000n); if (!p.ok) throw new Error(p.message); return p.value; };
+// Funding is not a payout row: allow up to 10 tUSDC per top-up (the row cap does not apply).
+const tusdc = (s: string) => { const p = parseAmount(s, 10_000_000n); if (!p.ok) throw new Error(p.message); return p.value; };
 
 async function migrate() {
   const bal = await view<{ available: string; reserved: string }>(LEGACY_VAULT, 'get_balances', {});
