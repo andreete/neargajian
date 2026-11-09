@@ -251,21 +251,21 @@
     "rows": [
       {
         "accountId": "recipient1.gajian-payroll.testnet",
-        "receiverName": "Dewi Lestari",
+        "receiverName": "Emma Clark",
         "currency": "tUSDC",
         "amount": "50000",
-        "mobilePhone": "+628000000001",
-        "email": "dewi@example.com"
+        "mobilePhone": "+447700900001",
+        "email": "emma@example.com"
       },
       {
         "accountId": "recipient2.gajian-payroll.testnet",
-        "receiverName": "José Ramírez",
+        "receiverName": "Zoë O’Brien",
         "currency": "tUSDC",
         "amount": "20000",
-        "mobilePhone": "+628000000002",
-        "email": "jose@example.com"
+        "mobilePhone": "+447700900002",
+        "email": "zoe@example.com"
       }
     ],
-    "digest": "ae854eb0518de768fa27930dc0e2567a20b3854778131effe182c2e63cb534c2"
+    "digest": "aba06584cb23db5d458a1faca064f8ecdd5fb30752e8326d71debed19a508c88"
   }
 }

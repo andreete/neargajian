@@ -62,7 +62,7 @@ function plan(runId: string, rows: [string, string][]) {
   // Synthetic private review data (never on-chain); the salt stays local.
   const review: ReviewRow[] = leaves.map((l, i) => ({
     accountId: l.accountId, receiverName: `Demo Recipient ${i + 1}`, currency: 'tUSDC', amount: l.amount,
-    mobilePhone: `+62800000000${i}`, email: `recipient${i + 1}@example.com`,
+    mobilePhone: `+44770090000${i}`, email: `recipient${i + 1}@example.com`,
   }));
   const digest = reviewDigest(newReviewSalt(), 'detailed', review);
   return {

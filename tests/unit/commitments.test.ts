@@ -32,8 +32,8 @@ const LEAF_CASES: PayoutLeaf[] = [
 ];
 const REVIEW_SALT = Buffer.from(Array.from({ length: 32 }, (_, i) => i + 1));
 const REVIEW_ROWS = [
-  { accountId: `recipient1.${M}`, receiverName: 'Dewi Lestari', currency: 'tUSDC', amount: 50_000n, mobilePhone: '+628000000001', email: 'dewi@example.com' },
-  { accountId: `recipient2.${M}`, receiverName: 'José Ramírez', currency: 'tUSDC', amount: 20_000n, mobilePhone: '+628000000002', email: 'jose@example.com' },
+  { accountId: `recipient1.${M}`, receiverName: 'Emma Clark', currency: 'tUSDC', amount: 50_000n, mobilePhone: '+447700900001', email: 'emma@example.com' },
+  { accountId: `recipient2.${M}`, receiverName: 'Zoë O’Brien', currency: 'tUSDC', amount: 20_000n, mobilePhone: '+447700900002', email: 'zoe@example.com' },
 ];
 
 function computeVectors() {
@@ -129,7 +129,7 @@ describe('review digest', () => {
     otherSalt[0] = 0xff;
     expect(reviewDigest(otherSalt, 'detailed', REVIEW_ROWS).equals(base)).toBe(false);
     expect(reviewDigest(REVIEW_SALT, 'consolidated', REVIEW_ROWS).equals(base)).toBe(false);
-    const changed = REVIEW_ROWS.map((r, i) => (i === 1 ? { ...r, email: 'jose2@example.com' } : r));
+    const changed = REVIEW_ROWS.map((r, i) => (i === 1 ? { ...r, email: 'zoe2@example.com' } : r));
     expect(reviewDigest(REVIEW_SALT, 'detailed', changed).equals(base)).toBe(false);
     expect(() => reviewDigest(Buffer.alloc(16), 'detailed', REVIEW_ROWS)).toThrow('32 bytes');
   });

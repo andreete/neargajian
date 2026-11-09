@@ -2,7 +2,7 @@
 
 **Payroll batches with a clear approval trail, paid to NEAR testnet wallets.**
 
-GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
+GAJIAN lets a finance team prepare a payroll run (manual rows or a CSV/TXT upload of up to 1,000 rows), route it to one or two approvers (in sequence or in parallel), and pay recipients from a custom NEAR vault contract that enforces those approvals on-chain. Company reporting shows the same payouts either as one consolidated entry or as one entry per recipient. Built for NEAR HACKATHON, Real-World Money track.
 
 > **Status: Phase 06 of 18.** Contracts with live testnet payouts, the database model, the landing page, sign-in and role dashboards exist. Building, approving and releasing runs in the app come in Phases 07–12. This README describes only what exists and has been verified. See `docs/BUILD-STATE.md` for evidence per phase.
 
@@ -19,8 +19,8 @@ GAJIAN ("payroll" in Indonesian) lets a finance team prepare a payroll run (manu
 | --- | --- | --- |
 | Sample files reproduce byte-for-byte | `npm run samples:check` | 4/4 SHA-256 checksums match `docs/SAMPLE-DATA.md`, no git diff |
 | Lint, typecheck | `npm run lint`, `npm run typecheck` | pass |
-| Unit + integration tests | `npm test` | 76/76 pass |
-| Browser tests (Chromium, production build) | `npm run test:e2e` | 10/10 pass |
+| Unit + integration tests | `npm test` | 78/78 pass |
+| Browser tests (Chromium, production build) | `npm run test:e2e` | 11/11 pass |
 | Production build | `npm run build` | pass |
 | Health endpoint | `npm run start`, then `curl http://127.0.0.1:8092/api/health` | `{"status":"ok","network":"testnet",...}` |
 | Contracts (sandbox) | `npm run contracts:test` | tUSDC + vault Wasm on a local nearcore 2.14.0 sandbox: fund, approve, reserve, pay; premature release, wrong token and duplicate payout rejected; real failed transfer recorded and retried |
@@ -66,10 +66,12 @@ On a shared or small machine, prefix heavy commands with `nice -n 19` and set `C
 
 | Role | Email | Password | Lands on |
 | --- | --- | --- | --- |
-| Maker | `maker@gajian.my.id` | `12345678` | `/maker` My payroll runs |
-| Approver 1 | `app1@gajian.my.id` | `12345678` | `/approver` Review queue |
-| Approver 2 | `app2@gajian.my.id` | `12345678` | `/approver` Review queue |
-| Admin | `admin@gajian.my.id` | `12345678` | `/admin` Workflow settings |
+| Maker (Maya Maker) | `maker@gajian.my.id` | `12345678` | `/maker` My runs |
+| Approver 1 (Alex Approver) | `app1@gajian.my.id` | `12345678` | `/approver` Review queue |
+| Approver 2 (Riley Reviewer) | `app2@gajian.my.id` | `12345678` | `/approver` Review queue |
+| Admin (Adam Admin) | `admin@gajian.my.id` | `12345678` | `/admin` Workflow settings |
+
+Type the email and password; the server opens the dashboard for the account's role. All times are shown in UTC.
 
 Security model (sessions, CSRF, CSP, rate limiting, authorization matrix): `docs/SECURITY.md`.
 
@@ -79,7 +81,7 @@ Security model (sessions, CSRF, CSP, rate limiting, authorization matrix): `docs
 npx playwright install chromium   # once, user-level
 npm run build
 npm run test:e2e                  # starts the build on 127.0.0.1:8092 with an isolated seeded DB, then stops it
-npm run screenshots               # writes docs/screenshots/phase-06/*.png
+npm run screenshots               # writes the current phase's design screenshots
 ```
 
 ## Database
@@ -91,6 +93,8 @@ npm run db:migrate   # apply migrations, print row counts
 npm run db:seed      # demo users + active workflow + a demo draft (requires DEMO_MODE=true in .env)
 npm run db:status    # row counts per table
 ```
+
+The seed also imports the real Phase 02/04 testnet runs from `db/seed/testnet-history.json` (exported from the chain by `scripts/testnet/export-history.mjs`; `--check` re-verifies against testnet), shown in the app as "Testnet run".
 
 Schema: `src/server/db/schema.ts`; integrity triggers: `db/migrations/0001_integrity.sql` (submitted versions and their rows can never change, one live payout action per row). To start over locally, stop the app and delete `data/gajian.sqlite*`.
 

@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import { desc, eq } from 'drizzle-orm';
 import { EditIcon, ExternalIcon } from '@/components/icons';
+import { StatusChip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
 import { getDb } from '@/server/db/client';
 import { auditEvents, users } from '@/server/db/schema';
-import { activeWorkflow } from '@/server/dashboard/queries';
+import { activeWorkflow, allTestnetRuns, testnetTotals } from '@/server/dashboard/queries';
 import { requireRole } from '@/server/web/page-auth';
-import { formatDateTime } from '@/lib/format';
+import { displayAmount, formatDateTime } from '@/lib/format';
 import { KIND_LABEL, RELEASE_LABEL, SignerPanel, WorkflowPanel } from '../workflow-panel';
+import { TestnetChip, TxLink } from '../history-bits';
 
 export const metadata: Metadata = { title: 'Workflow settings' };
 
@@ -20,8 +22,10 @@ export default async function AdminDashboard() {
   const db = getDb();
   const config = getConfig();
   const workflow = activeWorkflow(db);
+  const totals = testnetTotals(db);
+  const runs = allTestnetRuns(db);
   const events = db.select({ at: auditEvents.at, action: auditEvents.action, actor: users.displayName })
-    .from(auditEvents).leftJoin(users, eq(auditEvents.actorUserId, users.id)).orderBy(desc(auditEvents.id)).limit(8).all();
+    .from(auditEvents).leftJoin(users, eq(auditEvents.actorUserId, users.id)).orderBy(desc(auditEvents.id)).limit(6).all();
 
   return (
     <>
@@ -32,18 +36,36 @@ export default async function AdminDashboard() {
         </div>
         <div className="page-head-actions">
           <button type="button" className="btn btn-primary" disabled aria-describedby="edit-hint"><EditIcon size={18} />Edit workflow</button>
-          <span id="edit-hint" className="hint">Editing arrives in the next build (Phase 07).</span>
+          <span id="edit-hint" className="hint">Editing: coming soon (Phase 07).</span>
         </div>
       </div>
 
       <div className="stats">
-        <div className="card stat"><div className="label">Policy</div><div className="value sm">{workflow ? KIND_LABEL[workflow.kind] : '—'}</div></div>
-        <div className="card stat"><div className="label">Release</div><div className="value sm">{workflow ? RELEASE_LABEL[workflow.releaseMode] : '—'}</div></div>
-        <div className="card stat"><div className="label">Workflow revision</div><div className="value">{workflow?.revision ?? '—'}</div></div>
-        <div className="card stat"><div className="label">Network</div><div className="value sm">NEAR testnet</div></div>
+        <div className="card stat"><div className="label">Active policy</div><div className="value sm">{workflow ? `${KIND_LABEL[workflow.kind]}, ${RELEASE_LABEL[workflow.releaseMode].toLowerCase()}` : '—'}</div></div>
+        <div className="card stat"><div className="label">Paid on testnet</div><div className="value amount">{displayAmount(totals.paidTotal)}<small>tUSDC</small></div><div className="foot">{totals.payouts} payouts in {totals.paidRuns} runs</div></div>
+        <div className="card stat"><div className="label">Rejected runs</div><div className="value">{totals.rejectedRuns}</div></div>
+        <div className="card stat"><div className="label">Refused on-chain</div><div className="value">{totals.refusedAttempts}</div><div className="foot">out-of-order, wrong-role or repeat attempts</div></div>
       </div>
 
-      <div className="grid-2">
+      <section className="card" aria-labelledby="testnet-title">
+            <div className="panel-title"><h2 id="testnet-title">Testnet runs</h2><span className="muted">{runs.length}</span></div>
+            <div className="table-wrap" role="region" aria-labelledby="testnet-title" tabIndex={0}>
+              <table className="data">
+                <thead><tr><th scope="col">Run</th><th scope="col">Status</th><th scope="col" className="amount">Rows</th><th scope="col" className="amount">Total (tUSDC)</th><th scope="col">Created (UTC)</th><th scope="col">Proof</th></tr></thead>
+                <tbody>{runs.map((r) => (
+                  <tr key={r.id}>
+                    <td><div className="title">{r.title}</div><div className="sub mono">{r.id}</div></td>
+                    <td><span className="chips"><StatusChip status={r.status === 'paid' ? 'paid' : r.status === 'rejected' ? 'rejected' : 'needs_attention'} /><TestnetChip /></span></td>
+                    <td className="amount">{r.rowCount}</td>
+                    <td className="amount">{displayAmount(r.total)}</td>
+                    <td className="sub when">{formatDateTime(r.createdAt)}</td>
+                    <td><TxLink hash={r.createdTxHash} label="Created" /></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+      </section>
+      <div className="grid-2 panels">
         <div className="stack">
           <section className="card" aria-labelledby="reviewers-title">
             <div className="panel-title"><h2 id="reviewers-title">Assigned reviewers</h2></div>
@@ -64,16 +86,16 @@ export default async function AdminDashboard() {
           </section>
           <section className="card" aria-labelledby="audit-title">
             <div className="panel-title"><h2 id="audit-title">Recent security events</h2></div>
-            <div className="table-wrap" role="region" aria-labelledby="audit-title" tabIndex={0}>
-              <table className="data">
-                <thead><tr><th scope="col">Event</th><th scope="col">User</th><th scope="col">When</th></tr></thead>
-                <tbody>
-                  {events.map((e, i) => (
-                    <tr key={i}><td>{ACTION_LABEL[e.action] ?? e.action}</td><td>{e.actor ?? '—'}</td><td className="sub">{formatDateTime(e.at)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {events.length === 0 ? (
+              <div className="empty"><h3>No security events yet</h3><p>Sign-ins, sign-outs and workflow changes appear here.</p></div>
+            ) : (
+              <div className="table-wrap" role="region" aria-labelledby="audit-title" tabIndex={0}>
+                <table className="data">
+                  <thead><tr><th scope="col">Event</th><th scope="col">User</th><th scope="col">When (UTC)</th></tr></thead>
+                  <tbody>{events.map((e, i) => <tr key={i}><td>{ACTION_LABEL[e.action] ?? e.action}</td><td>{e.actor ?? '—'}</td><td className="sub when">{formatDateTime(e.at)}</td></tr>)}</tbody>
+                </table>
+              </div>
+            )}
           </section>
         </div>
         <div className="stack">

@@ -1,11 +1,12 @@
 /**
- * Design-review screenshots (Phase 06): 1440x900 landing, login modal and the four role
- * dashboards, plus the landing page at 768 px wide. Output: docs/screenshots/phase-06/.
+ * Design-review screenshots (Phase 06b): landing first screen at four desktop sizes, full
+ * landing at 1440, landing at 768, the sign-in dialog and the four dashboards at 1440x900.
+ * Output: docs/screenshots/phase-06b/.
  */
 import { mkdirSync } from 'node:fs';
 import { test, type Page } from '@playwright/test';
 
-const OUT = 'docs/screenshots/phase-06';
+const OUT = 'docs/screenshots/phase-06b';
 mkdirSync(OUT, { recursive: true });
 
 async function settle(page: Page) {
@@ -13,55 +14,59 @@ async function settle(page: Page) {
   await page.evaluate(() => document.fonts.ready);
 }
 
-async function signInAs(page: Page, role: string) {
+async function signIn(page: Page, email: string) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
-  await dialog.getByText(role, { exact: true }).click();
+  await dialog.getByLabel('Email').fill(email);
+  await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
 }
 
-test.describe('desktop 1440x900', () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('landing', async ({ page }) => {
+for (const [w, h] of [[1280, 720], [1366, 768], [1440, 900], [1920, 1080]] as const) {
+  test(`landing first screen ${w}x${h}`, async ({ page }) => {
+    await page.setViewportSize({ width: w, height: h });
     await page.goto('/');
     await settle(page);
-    await page.screenshot({ path: `${OUT}/01-landing-1440x900.png` });
-    await page.screenshot({ path: `${OUT}/01b-landing-1440-fullpage.png`, fullPage: true });
+    await page.screenshot({ path: `${OUT}/01-landing-${w}x${h}.png` });
   });
+}
 
-  test('login modal', async ({ page }) => {
-    await page.goto('/');
-    await settle(page);
-    await page.getByRole('button', { name: 'Try the demo' }).first().click();
-    await page.getByRole('dialog').getByText('Maker', { exact: true }).click();
-    await page.mouse.move(0, 0);
-    await page.screenshot({ path: `${OUT}/02-login-modal-1440x900.png` });
-  });
-
-  for (const [role, file, url] of [
-    ['Maker', '03-maker-dashboard', '/maker'],
-    ['Approver 1', '04-approver1-dashboard', '/approver'],
-    ['Approver 2', '05-approver2-dashboard', '/approver'],
-    ['Admin', '06-admin-dashboard', '/admin'],
-  ] as const) {
-    test(`${role} dashboard`, async ({ page }) => {
-      await signInAs(page, role);
-      await page.waitForURL(`**${url}`);
-      await settle(page);
-      await page.screenshot({ path: `${OUT}/${file}-1440x900.png` });
-    });
-  }
+test('landing full page 1440', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await settle(page);
+  await page.screenshot({ path: `${OUT}/02-landing-1440-fullpage.png`, fullPage: true });
 });
 
-test.describe('tablet 768 wide', () => {
-  test.use({ viewport: { width: 768, height: 1024 } });
-
-  test('landing at 768', async ({ page }) => {
-    await page.goto('/');
-    await settle(page);
-    await page.screenshot({ path: `${OUT}/07-landing-768x1024.png` });
-    await page.screenshot({ path: `${OUT}/07b-landing-768-fullpage.png`, fullPage: true });
-  });
+test('landing 768', async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto('/');
+  await settle(page);
+  await page.screenshot({ path: `${OUT}/03-landing-768x1024.png` });
+  await page.screenshot({ path: `${OUT}/03b-landing-768-fullpage.png`, fullPage: true });
 });
+
+test('sign-in dialog', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await settle(page);
+  await page.getByRole('button', { name: 'Try the demo' }).first().click();
+  await page.mouse.move(0, 0);
+  await page.screenshot({ path: `${OUT}/04-sign-in-1440x900.png` });
+});
+
+for (const [email, file, url] of [
+  ['maker@gajian.my.id', '05-maker', '/maker'],
+  ['app1@gajian.my.id', '06-approver1', '/approver'],
+  ['app2@gajian.my.id', '07-approver2', '/approver'],
+  ['admin@gajian.my.id', '08-admin', '/admin'],
+] as const) {
+  test(`dashboard ${file}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await signIn(page, email);
+    await page.waitForURL(`**${url}`);
+    await settle(page);
+    await page.screenshot({ path: `${OUT}/${file}-dashboard-1440x900.png` });
+  });
+}

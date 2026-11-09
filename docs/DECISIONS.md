@@ -12,7 +12,7 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 | D-004 | Platform priority | Desktop first (1280–1920 px); upload is a flagship feature (kickoff section 4). |
 | D-005 | Scope strategy | Core-first: contract-controlled payout → approvals → upload (1,000 rows) → posting modes → UI polish. Never cut: contract approval enforcement, both posting modes, 1,000-row import check, honest test evidence, money-safety invariants. |
 | D-006 | Payout token | Own mock **tUSDC**, NEP-141, 6 decimals, zero value, deployed by us on testnet. Currency code `tUSDC`. |
-| D-007 | Showcase amounts | 0.01–0.10 tUSDC per row. Sample-1000 total 56.690860; uniform-1000 total 10.000000. Mint to the vault only as needed (suggested 100 tUSDC). |
+| D-007 | Showcase amounts | 0.01–0.10 tUSDC per row. Sample-1000 total 56.690860; uniform-1000 total 10.000000 (re-verified after the 06b regeneration with English names and +44 phones: unchanged). Mint to the vault only as needed (suggested 100 tUSDC). |
 | D-008 | Testnet NEAR budget | Faucet NEAR is for gas/storage only. Reuse accounts, no mass account creation, log NEAR spent per live run in `docs/TESTNET.md`. No live 1,000-row payout unless Andre asks. |
 | D-009 | Design reference | Rise main, Deel secondary. Palette from the logo: navy `#0A3C90` primary, bright blue `#2577FE` highlight, sky blue `#57B5FD` accent (never body text on white). Keep amber/red/green status colours; WCAG AA. |
 | D-010 | Target date | Feature-complete and rehearsed by Thu 12 Nov 2026. Official deadline 15 Nov 2026 06:59 WIB (14 Nov 23:59 UTC). |
@@ -76,7 +76,7 @@ Newest decisions at the bottom. Each entry: date, decision, reason. The kickoff 
 
 - 1 tUSDC per row (`1000000` base units) and 100 tUSDC per run (`100000000` base units), the suggested values in kickoff section 2. Both are above the sample totals (max row 0.10; 1,000-row sample 56.690860). Configured in `.env` and enforced server-side; the contract enforces its own bounds (Phase 04).
 
-### D-028 · Indonesian Excel CSV handling (recommended addition, accepted)
+### D-028 · Regional Excel CSV settings (semicolon separator, comma decimals) (recommended addition, accepted)
 
 - Auto-detect `,` / `;` / tab from the header row. Reject comma decimals with a specific error: "Use a dot as the decimal separator, e.g. 1500.50". The template instructions recommend Save As → Text (Tab delimited) (.txt) or CSV UTF-8. Implemented in Phase 09.
 
@@ -233,8 +233,34 @@ Andre verified the key transactions and balances independently on testnet.
 
 ### D-059 · Visual system
 
-- Rise-inspired light surfaces with the logo palette; Plus Jakarta Sans (an Indonesian-designed typeface, self-hosted at build time by `next/font`); status chips use text + icon; approval maps switch to a vertical layout in narrow containers (CSS container queries). Contrast is enforced by `tests/unit/contrast.test.ts`.
+- Rise-inspired light surfaces with the logo palette; Plus Jakarta Sans (self-hosted at build time by `next/font`); status chips use text + icon; approval maps switch to a vertical layout in narrow containers (CSS container queries). Contrast is enforced by `tests/unit/contrast.test.ts`.
 
 ### D-060 · Playwright 1.64.1
 
 - Newest release at least two weeks old (1.65.0 is from 5 Nov). Chromium headless shell only; screenshots and e2e run against the production build with an isolated database.
+
+## Phase 06b decisions (9 Nov 2026, Andre's design review)
+
+### D-061 · English-only product
+
+- No IDR, no Indonesian names, no +62 numbers, no local time zones in the product, data, tests or docs meant for users. Times are UTC with the "UTC" label. Phones use the fictional UK range +44 7700 900000–900999. The GAJIAN brand and logo stay. (Internal ops notes such as the host's weekend batch window keep their local time.)
+
+### D-062 · NEAR RPC: FastNEAR
+
+- `rpc.testnet.near.org` returned HTTP 429 "THIS ENDPOINT IS DEPRECATED … Switch to FastNEAR". Default RPC is now `https://rpc.testnet.fastnear.com` (listed on docs.near.org RPC providers), configurable with `NEAR_RPC_URL`.
+
+### D-063 · Real testnet history as demo data, kept separate
+
+- Runs executed by the Phase 02/04 scripts are imported from the chain (`db/seed/testnet-history.json`, re-verifiable with `export-history.mjs --check`) into separate immutable `testnet_*` tables, not into `run_versions`: they have no app review snapshot or salt, and faking one would break the integrity rules. The UI labels them "Testnet run". No transaction, amount or reason is invented.
+
+### D-064 · Sign-in by email and password only
+
+- No role picker; the account decides the role and the server picks the dashboard. In demo mode a plain-text note lists the demo emails and the shared password.
+
+### D-065 · Layout system
+
+- One container (max 1280 px, gutters 48/32/20 px), one section rhythm (96/72/56 px). App shell: left sidebar ≥ 1024 px, top row below. Main tables full width with supporting panels underneath, so wide tables never squeeze. Enforced by the first-screen e2e test.
+
+### D-066 · Amount display
+
+- UI: exact amount, trailing zeros removed down to 2 decimals, thousands separators, tabular figures, right-aligned (`displayAmount`). CSV exports and base-unit/on-chain views: 6 fixed decimals (`fixedAmount`). Never rounded (property test).

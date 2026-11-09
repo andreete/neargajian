@@ -2,7 +2,7 @@
 
 Public information only: account IDs, contract IDs, transaction hashes and explorer links. **Never** keys, seed phrases or `.env` contents. Network: **testnet** only (no mainnet, ever).
 
-- RPC: `https://rpc.testnet.near.org` (provider list: https://docs.near.org/api/rpc/providers)
+- RPC: `https://rpc.testnet.fastnear.com` (since 9 Nov 2026; `rpc.testnet.near.org` is deprecated and returned HTTP 429 "switch to FastNEAR") (provider list: https://docs.near.org/api/rpc/providers)
 - Explorer: `https://testnet.nearblocks.io` (links below). near-cli also prints `explorer.testnet.near.org` links for the same hashes.
 - Network state checked 9 Nov 2026: nearcore `2.14.0-rc.5`, protocol 88.
 - Keys: `~/.near-credentials/testnet/` on the dev server only (legacy keychain of near-cli-rs 0.31.1).

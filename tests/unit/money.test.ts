@@ -24,7 +24,7 @@ describe('parseAmount', () => {
     expect(ok('007.5')).toBe(7_500_000n);
   });
 
-  it('rejects comma decimals with the Indonesian-Excel hint (D-028)', () => {
+  it('rejects comma decimals from regional Excel settings with a clear hint (D-028)', () => {
     const r = parseAmount('1500,50');
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.message).toBe('Use a dot as the decimal separator, e.g. 1500.50');
@@ -82,5 +82,29 @@ describe('sums', () => {
   it('enforces the run cap and u128 overflow', () => {
     expect(() => sumUnits([60_000_000n, 50_000_000n], 100_000_000n)).toThrow('run cap');
     expect(() => sumUnits([U128_MAX, 1n])).toThrow('u128');
+  });
+});
+
+describe('display amounts (point 6: exact, trailing zeros trimmed to 2 decimals)', () => {
+  it('formats without rounding', async () => {
+    const { displayAmount, formatTusdc } = await import('@/lib/format');
+    expect(displayAmount(150_000n)).toBe('0.15');
+    expect(displayAmount(1_000_000n)).toBe('1.00');
+    expect(displayAmount(56_690_860n)).toBe('56.69086');
+    expect(displayAmount(1n)).toBe('0.000001');
+    expect(displayAmount(999_999n)).toBe('0.999999');
+    expect(displayAmount(1_234_567_890_123n)).toBe('1,234,567.890123');
+    expect(formatTusdc(10_000n)).toBe('0.01 tUSDC');
+  });
+
+  it('round-trips every value exactly (never rounds)', async () => {
+    const { displayAmount } = await import('@/lib/format');
+    let x = 1n;
+    for (let i = 0; i < 2000; i++) {
+      x = (x * 6364136223846793005n + 1442695040888963407n) % 10n ** 15n;
+      const shown = displayAmount(x).replace(/,/g, '');
+      const back = parseAmount(shown);
+      expect(back.ok && back.value === x, `${x} -> ${shown}`).toBe(x === 0n ? false : true);
+    }
   });
 });

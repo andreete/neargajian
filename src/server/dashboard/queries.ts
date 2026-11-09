@@ -5,7 +5,7 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Queryable } from '../db/client.ts';
 import {
-  approvalEvents, draftRows, payrollRuns, runVersions, users, workflowConfigs,
+  approvalEvents, draftRows, payrollRuns, runVersions, testnetRunEvents, testnetRunRows, testnetRuns, users, workflowConfigs,
   type PostingMode, type ReleaseMode, type VersionStatus, type WorkflowKind,
 } from '../db/schema.ts';
 import { parseAmount } from '../money.ts';
@@ -130,4 +130,91 @@ export function runContext(db: Queryable, runId: string): (RunContext & { title:
   const assigned = new Set<string>();
   for (const { s } of snapshots) for (const a of (JSON.parse(s) as WorkflowSnapshot).approvers) assigned.add(a.userId);
   return { makerUserId: run.makerUserId, assignedApproverIds: [...assigned], title: run.title };
+}
+
+// ------------------------------------------------------------- imported testnet history
+
+export interface TestnetRunSummary {
+  id: string;
+  title: string;
+  status: 'paid' | 'rejected' | 'incomplete';
+  kind: WorkflowKind;
+  releaseMode: ReleaseMode;
+  rowCount: number;
+  total: bigint;
+  paidTotal: bigint;
+  createdAt: Date;
+  createdTxHash: string;
+  lastPaidTxHash: string | null;
+  vaultGeneration: string;
+  rejectionReason: string | null;
+}
+
+function summarizeTestnetRuns(db: Queryable, runs: (typeof testnetRuns.$inferSelect)[]): TestnetRunSummary[] {
+  if (runs.length === 0) return [];
+  const rows = db.select().from(testnetRunRows).where(inArray(testnetRunRows.runId, runs.map((r) => r.id))).all();
+  return runs.map((r) => {
+    const mine = rows.filter((x) => x.runId === r.id);
+    const paid = mine.filter((x) => x.paidTxHash);
+    const last = paid.sort((a, b) => (b.paidAt?.getTime() ?? 0) - (a.paidAt?.getTime() ?? 0))[0];
+    return {
+      id: r.id, title: r.title, status: r.status, kind: r.kind, releaseMode: r.releaseMode, rowCount: r.rowCount, total: r.total,
+      paidTotal: paid.reduce((s, x) => s + x.amount, 0n), createdAt: r.createdAt, createdTxHash: r.createdTxHash,
+      lastPaidTxHash: last?.paidTxHash ?? null, vaultGeneration: r.vaultGeneration, rejectionReason: r.rejectionReason,
+    };
+  });
+}
+
+export function makerTestnetRuns(db: Queryable, makerUserId: string): TestnetRunSummary[] {
+  return summarizeTestnetRuns(db, db.select().from(testnetRuns).where(eq(testnetRuns.makerUserId, makerUserId)).orderBy(desc(testnetRuns.createdAt)).all());
+}
+
+export function allTestnetRuns(db: Queryable): TestnetRunSummary[] {
+  return summarizeTestnetRuns(db, db.select().from(testnetRuns).orderBy(desc(testnetRuns.createdAt)).all());
+}
+
+export interface TestnetDecision extends TestnetRunSummary {
+  decision: 'approved' | 'rejected';
+  decidedAt: Date;
+  decisionTxHash: string;
+}
+
+/** Imported runs this approver approved or rejected on-chain (successful transactions only). */
+export function approverTestnetDecisions(db: Queryable, chainAccountId: string | null): TestnetDecision[] {
+  if (!chainAccountId) return [];
+  const events = db.select().from(testnetRunEvents)
+    .where(and(eq(testnetRunEvents.signerAccount, chainAccountId), eq(testnetRunEvents.success, true), inArray(testnetRunEvents.method, ['approve', 'reject']))).all();
+  if (events.length === 0) return [];
+  const runs = summarizeTestnetRuns(db, db.select().from(testnetRuns).where(inArray(testnetRuns.id, events.map((e) => e.runId))).all());
+  return events.map((e) => {
+    const run = runs.find((r) => r.id === e.runId);
+    if (!run) throw new Error('missing run');
+    return { ...run, decision: e.method === 'approve' ? 'approved' as const : 'rejected' as const, decidedAt: e.at, decisionTxHash: e.txHash };
+  }).sort((a, b) => b.decidedAt.getTime() - a.decidedAt.getTime());
+}
+
+export interface TestnetTotals {
+  runs: number;
+  paidRuns: number;
+  rejectedRuns: number;
+  payouts: number;
+  paidTotal: bigint;
+  refusedAttempts: number;
+  duplicatePayoutsRefused: number;
+}
+
+export function testnetTotals(db: Queryable): TestnetTotals {
+  const runs = db.select().from(testnetRuns).all();
+  const rows = db.select().from(testnetRunRows).all();
+  const events = db.select().from(testnetRunEvents).all();
+  const paidRows = rows.filter((r) => r.paidTxHash);
+  return {
+    runs: runs.length,
+    paidRuns: runs.filter((r) => r.status === 'paid').length,
+    rejectedRuns: runs.filter((r) => r.status === 'rejected').length,
+    payouts: paidRows.length,
+    paidTotal: paidRows.reduce((s, r) => s + r.amount, 0n),
+    refusedAttempts: events.filter((e) => !e.success).length,
+    duplicatePayoutsRefused: events.filter((e) => !e.success && e.method === 'pay_row' && /already paid|not releasing/i.test(e.error ?? '')).length,
+  };
 }

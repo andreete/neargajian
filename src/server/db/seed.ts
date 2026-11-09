@@ -9,6 +9,7 @@ import { hashPassword } from '../auth/password.ts';
 import type { Db } from './client.ts';
 import { payrollRuns, users, workflowConfigs, type Role } from './schema.ts';
 import { createRun, replaceDraft } from '../runs/repository.ts';
+import { importTestnetHistory, readTestnetHistory } from './testnet-history.ts';
 
 export type SeedEnv = Readonly<Record<string, string | undefined>>;
 
@@ -20,9 +21,9 @@ export interface DemoUser { id: string; email: string; displayName: string; role
 export function demoUsers(env: SeedEnv = process.env): DemoUser[] {
   return [
     { id: 'usr_maker', email: 'maker@gajian.my.id', displayName: 'Maya Maker', role: 'maker', chainAccountId: env.MAKER_ACCOUNT_ID ?? `maker.${MASTER}` },
-    { id: 'usr_app1', email: 'app1@gajian.my.id', displayName: 'Arif Approver', role: 'approver', chainAccountId: env.APPROVER1_ACCOUNT_ID ?? `approver1.${MASTER}` },
-    { id: 'usr_app2', email: 'app2@gajian.my.id', displayName: 'Rina Reviewer', role: 'approver', chainAccountId: env.APPROVER2_ACCOUNT_ID ?? `approver2.${MASTER}` },
-    { id: 'usr_admin', email: 'admin@gajian.my.id', displayName: 'Ade Admin', role: 'admin', chainAccountId: env.ADMIN_SIGNER_ACCOUNT_ID ?? `admin.${MASTER}` },
+    { id: 'usr_app1', email: 'app1@gajian.my.id', displayName: 'Alex Approver', role: 'approver', chainAccountId: env.APPROVER1_ACCOUNT_ID ?? `approver1.${MASTER}` },
+    { id: 'usr_app2', email: 'app2@gajian.my.id', displayName: 'Riley Reviewer', role: 'approver', chainAccountId: env.APPROVER2_ACCOUNT_ID ?? `approver2.${MASTER}` },
+    { id: 'usr_admin', email: 'admin@gajian.my.id', displayName: 'Adam Admin', role: 'admin', chainAccountId: env.ADMIN_SIGNER_ACCOUNT_ID ?? `admin.${MASTER}` },
   ];
 }
 
@@ -60,12 +61,15 @@ export async function seedDemo(db: Db, options: { now?: Date; env?: SeedEnv } = 
     replaceDraft(db, {
       runId: DEMO_DRAFT_RUN_ID, makerUserId: 'usr_maker', expectedRevision: 0, now,
       rows: [
-        { nearAccountId: `recipient1.${MASTER}`, receiverName: 'Dewi Lestari', currency: 'tUSDC', amount: '0.03', mobilePhone: '+62 800-0000-1001', email: 'dewi.lestari@example.com' },
-        { nearAccountId: `recipient2.${MASTER}`, receiverName: 'Budi Santoso', currency: 'tUSDC', amount: '0.07', mobilePhone: '+62 800-0000-1002', email: 'budi.santoso@example.com' },
-        { nearAccountId: `recipient3.${MASTER}`, receiverName: 'Sari Wulandari', currency: 'tUSDC', amount: '0.05', mobilePhone: '+62 800-0000-1003', email: 'sari.wulandari@example.com' },
+        { nearAccountId: `recipient1.${MASTER}`, receiverName: 'Emma Clark', currency: 'tUSDC', amount: '0.03', mobilePhone: '+44 7700 900101', email: 'emma.clark@example.com' },
+        { nearAccountId: `recipient2.${MASTER}`, receiverName: 'Daniel Hall', currency: 'tUSDC', amount: '0.07', mobilePhone: '+44 7700 900102', email: 'daniel.hall@example.com' },
+        { nearAccountId: `recipient3.${MASTER}`, receiverName: 'Grace Lewis', currency: 'tUSDC', amount: '0.05', mobilePhone: '+44 7700 900103', email: 'grace.lewis@example.com' },
       ],
     });
     created.push('demo draft run');
   }
+
+  const history = importTestnetHistory(db, readTestnetHistory());
+  if (history) created.push(`${history} testnet runs from db/seed/testnet-history.json`);
   return created;
 }

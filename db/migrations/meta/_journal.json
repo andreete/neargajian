@@ -15,6 +15,13 @@
       "when": 1794222465485,
       "tag": "0001_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794226321678,
+      "tag": "0002_testnet_history",
+      "breakpoints": true
     }
   ]
 }

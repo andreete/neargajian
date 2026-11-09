@@ -264,3 +264,56 @@ export const reportEntries = sqliteTable('report_entries', {
   uniqueIndex('report_entries_version_row_uq').on(t.versionId, t.rowIndex),
   check('report_entries_posting_ck', inList('posting_mode', POSTING_MODES)),
 ]);
+
+/**
+ * Imported testnet history: real runs executed on NEAR testnet by the Phase 02/04 scripts
+ * before the app existed (db/seed/testnet-history.json, read from the chain by
+ * scripts/testnet/export-history.mjs). Kept apart from app versions because they have no
+ * app review snapshot or salt. Shown in the UI with a "Testnet run" label.
+ */
+export const testnetRuns = sqliteTable('testnet_runs', {
+  id: text('id').primaryKey(), // the vault run_id
+  vaultAccount: text('vault_account').notNull(),
+  vaultGeneration: text('vault_generation').notNull(),
+  title: text('title').notNull(),
+  makerUserId: text('maker_user_id').references(() => users.id),
+  kind: text('kind', { enum: WORKFLOW_KINDS }).notNull(),
+  releaseMode: text('release_mode', { enum: RELEASE_MODES }).notNull(),
+  approverAccounts: text('approver_accounts').notNull(), // JSON array of chain accounts
+  status: text('status', { enum: ['paid', 'rejected', 'incomplete'] }).notNull(),
+  rejectionReason: text('rejection_reason'),
+  rowCount: integer('row_count').notNull(),
+  total: units('total').notNull(),
+  payoutRoot: text('payout_root'),
+  reviewDigest: text('review_digest'),
+  createdAt: ms('created_at').notNull(),
+  createdTxHash: text('created_tx_hash').notNull(),
+}, (t) => [
+  check('testnet_runs_status_ck', inList('status', ['paid', 'rejected', 'incomplete'])),
+  index('testnet_runs_maker_ix').on(t.makerUserId),
+]);
+
+export const testnetRunRows = sqliteTable('testnet_run_rows', {
+  runId: text('run_id').notNull().references(() => testnetRuns.id),
+  rowIndex: integer('row_index').notNull(),
+  receiverAccount: text('receiver_account').notNull(),
+  amount: units('amount').notNull(),
+  paidTxHash: text('paid_tx_hash'),
+  paidAt: ms('paid_at'),
+}, (t) => [primaryKey({ columns: [t.runId, t.rowIndex] })]);
+
+export const testnetRunEvents = sqliteTable('testnet_run_events', {
+  runId: text('run_id').notNull().references(() => testnetRuns.id),
+  seq: integer('seq').notNull(),
+  txHash: text('tx_hash').notNull(),
+  signerAccount: text('signer_account').notNull(),
+  method: text('method').notNull(),
+  rowIndex: integer('row_index'),
+  success: integer('success', { mode: 'boolean' }).notNull(),
+  error: text('error'),
+  at: ms('at').notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.runId, t.seq] }),
+  uniqueIndex('testnet_run_events_tx_uq').on(t.txHash),
+  index('testnet_run_events_signer_ix').on(t.signerAccount),
+]);

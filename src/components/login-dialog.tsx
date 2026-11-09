@@ -3,18 +3,16 @@
 /**
  * Accessible sign-in dialog: native modal <dialog> plus an explicit Tab focus trap, Escape
  * to close, focus restored to the control that opened it, labelled fields with visible
- * errors, and a live region for form errors. In demo mode a role picker fills the demo
- * credentials. The server decides the dashboard from the session role.
+ * errors, and a live region for form errors. In demo mode a plain-text note lists the demo
+ * accounts. The user types email and password; the server decides the role and dashboard.
  */
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AlertIcon, XIcon } from './icons';
 
-export interface DemoAccount {
-  key: string;
-  label: string;
-  description: string;
-  email: string;
-  initials: string;
+/** Demo credentials shown as plain text (demo mode only). The server picks the role. */
+export interface DemoInfo {
+  emails: string[];
+  password: string;
 }
 
 const OpenContext = createContext<(() => void) | null>(null);
@@ -32,13 +30,12 @@ export function SignInButton({ className = 'btn btn-primary', children }: { clas
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export function LoginDialogProvider({ children, demoAccounts, demoPassword, autoOpen = false, notice }: {
-  children: ReactNode; demoAccounts: DemoAccount[]; demoPassword: string | null; autoOpen?: boolean; notice?: string | null;
+export function LoginDialogProvider({ children, demo, autoOpen = false, notice }: {
+  children: ReactNode; demo: DemoInfo | null; autoOpen?: boolean; notice?: string | null;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const emailRef = useRef<HTMLInputElement>(null);
-  const [role, setRole] = useState<string>('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
@@ -54,8 +51,8 @@ export function LoginDialogProvider({ children, demoAccounts, demoPassword, auto
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setErrors(notice ? { form: notice } : {});
     dialog.showModal();
-    (demoAccounts.length ? dialog.querySelector<HTMLInputElement>('input[name="demo-role"]') : emailRef.current)?.focus();
-  }, [demoAccounts.length, notice]);
+    emailRef.current?.focus();
+  }, [notice]);
 
   const close = useCallback(() => dialogRef.current?.close(), []);
 
@@ -97,13 +94,6 @@ export function LoginDialogProvider({ children, demoAccounts, demoPassword, auto
     if (autoOpen) open();
   }, [autoOpen, open]);
 
-  function pickRole(account: DemoAccount) {
-    setRole(account.key);
-    setEmail(account.email);
-    if (demoPassword) setPassword(demoPassword);
-    setErrors({});
-  }
-
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (pending) return;
@@ -142,28 +132,11 @@ export function LoginDialogProvider({ children, demoAccounts, demoPassword, auto
         <div className="modal-head">
           <div>
             <h2 id={titleId}>Sign in to GAJIAN</h2>
-            <p id={descId}>{demoAccounts.length ? 'Pick a demo role to fill in the credentials, or type them yourself.' : 'Use your work email and password.'}</p>
+            <p id={descId}>Use your work email and password. We open the dashboard for your role.</p>
           </div>
           <button type="button" className="icon-btn" onClick={close} aria-label="Close sign-in dialog"><XIcon size={18} /></button>
         </div>
         <form className="modal-body" onSubmit={onSubmit} noValidate aria-busy={pending}>
-          {demoAccounts.length ? (
-            <fieldset className="role-picker">
-              <legend>Demo role</legend>
-              <div className="role-options">
-                {demoAccounts.map((a) => (
-                  <label key={a.key} className="role-option">
-                    <input type="radio" name="demo-role" value={a.key} checked={role === a.key} onChange={() => pickRole(a)} />
-                    <span className="avatar" aria-hidden="true">{a.initials}</span>
-                    <span>
-                      <span className="r-name">{a.label}</span>
-                      <span className="r-desc"><br />{a.description}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ) : null}
           <div aria-live="assertive" aria-atomic="true">
             {errors.form ? <div className="form-error" role="alert"><AlertIcon size={18} />{errors.form}</div> : null}
           </div>
@@ -184,8 +157,12 @@ export function LoginDialogProvider({ children, demoAccounts, demoPassword, auto
           <button type="submit" className="btn btn-primary" disabled={pending}>
             {pending ? 'Signing in…' : 'Sign in'}
           </button>
-          {demoPassword ? (
-            <p className="demo-note">Demo accounts only. Synthetic data, zero-value tUSDC on NEAR testnet.</p>
+          {demo ? (
+            <section className="demo-accounts" aria-labelledby="demo-accounts-title">
+              <h3 id="demo-accounts-title">Demo accounts</h3>
+              <ul>{demo.emails.map((e) => <li key={e}>{e}</li>)}</ul>
+              <p>Shared demo password: <span className="mono">{demo.password}</span>. Synthetic data, zero-value tUSDC on NEAR testnet.</p>
+            </section>
           ) : null}
         </form>
       </dialog>

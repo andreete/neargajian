@@ -139,7 +139,7 @@ describe('direct API access is authorized on the server', () => {
     const { createVersion } = await import('@/server/runs/repository');
     createVersion(db, {
       runId: 'run_demo_november', makerUserId: 'usr_maker', postingMode: 'detailed', now: new Date(),
-      rows: [{ accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Dewi', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+628000001001', email: 'dewi@example.com' }],
+      rows: [{ accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Emma', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+447700900101', email: 'emma@example.com' }],
       workflow: { revision: 3, kind: 'two_sequential', releaseMode: 'automatic', maxRowAmount: '1000000', maxRunTotal: '100000000',
         approvers: [{ userId: 'usr_app1', chainAccountId: 'approver1.gajian-payroll.testnet' }, { userId: 'usr_app2', chainAccountId: 'approver2.gajian-payroll.testnet' }] },
     });

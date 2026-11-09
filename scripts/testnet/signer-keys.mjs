@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-export const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.near.org';
+export const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
 export const MASTER = process.env.GAJIAN_MASTER ?? 'gajian-payroll.testnet';
 export const VAULT = `vault.${MASTER}`;

@@ -26,8 +26,8 @@ const WORKFLOW: WorkflowSnapshot = {
   maxRowAmount: '1000000', maxRunTotal: '100000000',
 };
 const ROWS = [
-  { accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Dewi', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+628000001001', email: 'dewi@example.com' },
-  { accountId: 'recipient2.gajian-payroll.testnet', receiverName: 'Budi', currency: 'tUSDC', amount: 70_000n, mobilePhone: '+628000001002', email: 'budi@example.com' },
+  { accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Emma', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+447700900101', email: 'emma@example.com' },
+  { accountId: 'recipient2.gajian-payroll.testnet', receiverName: 'Daniel', currency: 'tUSDC', amount: 70_000n, mobilePhone: '+447700900102', email: 'daniel@example.com' },
 ];
 
 let dir: string;
@@ -97,7 +97,7 @@ describe('uniqueness and constraints', () => {
 });
 
 describe('drafts', () => {
-  const row = (i: number) => ({ nearAccountId: `a${i}.testnet`, receiverName: `R${i}`, currency: 'tUSDC', amount: '0.01', mobilePhone: '+628000000000', email: `r${i}@example.com` });
+  const row = (i: number) => ({ nearAccountId: `a${i}.testnet`, receiverName: `R${i}`, currency: 'tUSDC', amount: '0.01', mobilePhone: '+447700900000', email: `r${i}@example.com` });
 
   it('replaces a draft atomically with optimistic concurrency', () => {
     const rev = replaceDraft(h.db, { runId: DEMO_DRAFT_RUN_ID, makerUserId: 'usr_maker', expectedRevision: 1, rows: [row(1), row(2)], now: NOW });
@@ -143,7 +143,7 @@ describe('immutable versions', () => {
     expectSqlError(() => h.db.update(versionRows).set({ amount: 1n }).where(eq(versionRows.versionId, v.id)).run(), /immutable/);
     expectSqlError(() => h.db.delete(versionRows).where(eq(versionRows.versionId, v.id)).run(), /never deleted/);
     setVersionStatus(h.db, v.id, 'pending_approval', NOW);
-    expectSqlError(() => h.db.insert(versionRows).values({ versionId: v.id, rowIndex: 2, nearAccountId: 'x.testnet', receiverName: 'x', currency: 'tUSDC', amount: 1n, mobilePhone: '+628000000000', email: 'x@example.com' }).run(), /no longer accepting rows/);
+    expectSqlError(() => h.db.insert(versionRows).values({ versionId: v.id, rowIndex: 2, nearAccountId: 'x.testnet', receiverName: 'x', currency: 'tUSDC', amount: 1n, mobilePhone: '+447700900000', email: 'x@example.com' }).run(), /no longer accepting rows/);
     setVersionStatus(h.db, v.id, 'rejected', NOW);
     expectSqlError(() => setVersionStatus(h.db, v.id, 'approved', NOW), /terminal/);
   });

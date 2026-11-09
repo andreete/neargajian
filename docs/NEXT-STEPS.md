@@ -4,9 +4,7 @@ Updated: Mon 9 Nov 2026, end of Phase 01. Schedule: on track (kickoff section 8:
 
 ## Single next action
 
-**Andre's design review of Phase 06** (stop requested; do not start Phase 07 until approved). Screenshots: `docs/screenshots/phase-06/`. The production build runs on http://127.0.0.1:8092 for the review (database `data/gajian.sqlite`, demo logins `maker@`, `app1@`, `app2@`, `admin@gajian.my.id`, password `12345678`).
-
-After approval: **Phase 07** (admin setup and approval map: editable workflow, distinct reviewers, release modes, chain sync via the admin's restricted key, snapshot proof), then continue phase by phase.
+Phase 06b (design review fixes) is done. Continue with **Phase 07** (admin workflow editor + chain sync), **08** (manual builder) and **09** (template and upload), then take the Phase 09 screenshots, start the production build for Andre's review and STOP (do not start Phase 10).
 
 ## Phase 16 follow-ups (from Andre's Phases 02–04 review, D-050)
 

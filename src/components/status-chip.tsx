@@ -25,6 +25,6 @@ export function StatusChip({ status }: { status: RunStatus }) {
   return <span className={`chip chip-${s.tone}`}>{s.icon}{s.label}</span>;
 }
 
-export function Chip({ tone, icon, children }: { tone: 'neutral' | 'info' | 'waiting' | 'danger' | 'success'; icon?: ReactNode; children: ReactNode }) {
+export function Chip({ tone, icon, children }: { tone: 'neutral' | 'info' | 'waiting' | 'danger' | 'success' | 'testnet'; icon?: ReactNode; children: ReactNode }) {
   return <span className={`chip chip-${tone}`}>{icon}{children}</span>;
 }

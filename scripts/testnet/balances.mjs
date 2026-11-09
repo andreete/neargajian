@@ -2,7 +2,7 @@
 // Prints public NEAR balances (and tUSDC balances once the token is deployed) for the
 // GAJIAN testnet accounts. Read-only RPC queries; no keys involved.
 // Usage: node scripts/testnet/balances.mjs [master-account]
-const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.near.org';
+const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
 const master = process.argv[2] ?? 'gajian-payroll.testnet';
 const roles = ['', 'tusdc', 'vault', 'admin', 'maker', 'approver1', 'approver2', 'worker',

@@ -1,14 +1,14 @@
 /**
  * Deterministic synthetic payroll fixtures (no real people): valid runs of any size up to
  * 1,000 rows and invalid variants for importer and validation tests. Same seed → same bytes.
- * Phone numbers use the reserved +62 800 range; emails use example.com.
+ * Phone numbers use the fictional UK range +44 7700 900000-900999; emails use example.com.
  */
 
 export const HEADERS = ['near_account_id', 'receiver_name', 'currency', 'amount', 'mobile_phone', 'email'] as const;
 export type FixtureRow = Record<(typeof HEADERS)[number], string>;
 
-const FIRST = ['Adi', 'Bayu', 'Citra', 'Dewi', 'Eka', 'Fajar', 'Gita', 'Hendra', 'Indah', 'Joko', 'Kartika', 'Lestari', 'Made', 'Nur', 'Putri', 'Rizky', 'Sari', 'Teguh', 'Wahyu', 'Yuni'];
-const LAST = ['Pratama', 'Santoso', 'Wijaya', 'Lestari', 'Saputra', 'Hidayat', 'Kurniawan', 'Wulandari', 'Nugroho', 'Siregar', 'Harahap', 'Gunawan', 'Putra', 'Rahmawati', 'Setiawan'];
+const FIRST = ['James', 'Mary', 'John', 'Linda', 'David', 'Emily', 'Michael', 'Sarah', 'Daniel', 'Grace', 'Thomas', 'Olivia', 'Mark', 'Chloe', 'Paul', 'Hannah', 'Kevin', 'Lucy', 'Brian', 'Ella'];
+const LAST = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davis', 'Clark', 'Lewis', 'Walker', 'Hall', 'Young', 'Harris', 'Moore', 'Martin', 'White'];
 
 /** mulberry32: tiny deterministic PRNG for fixtures (not for security). */
 function prng(seed: number): () => number {
@@ -36,7 +36,7 @@ export function validRows(count: number, seed = 2026): FixtureRow[] {
       receiver_name: `${first} ${last}`,
       currency: 'tUSDC',
       amount: `0.${String(cents).padStart(2, '0')}`,
-      mobile_phone: `+62 800-1000-${n}`,
+      mobile_phone: `+44 7700 900${String(i % 1000).padStart(3, '0')}`,
       email: `${first}.${last}.${n}@example.com`.toLowerCase(),
     };
   });

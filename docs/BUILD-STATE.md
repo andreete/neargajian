@@ -10,8 +10,37 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 03 Commitments and money math | Done | none (sandbox + local only by design; live use of proofs comes with the Phase 04 redeploy) |
 | 04 Contract policy and payout recovery | Done, approved by Andre 9 Nov | **Yes**: 3 policy runs signed with restricted keys, see docs/TESTNET.md |
 | 05 Persistent application model | Done | none (local DB only) |
-| 06 Landing, login and role boundaries | **Done, awaiting Andre's design review** | none |
+| 06 Landing, login and role boundaries | Done; design review by Andre → 06b | none |
+| 06b Design review fixes | Done | read-only: history export from testnet RPC |
 | 07 Admin setup and approval map | Not started (stop requested) | — |
+
+---
+
+## Phase 06b · Design review fixes (9 Nov 2026)
+
+Andre's review points 1–8, all done:
+
+1. **Sign-in without a role picker**: email + password only; the server picks the role and dashboard (all server checks unchanged). Demo mode shows a plain-text "Demo accounts" note (4 emails + shared password). Focus trap, Escape and focus return kept (e2e).
+2. **Desktop first screen**: one centred container (max 1280 px) with 48 / 32 / 20 px gutters (desktop / tablet / phone) and one section rhythm (96 / 72 / 56 px). New e2e test asserts that at 1280x720, 1366x768, 1440x900 and 1920x1080 the headline, lead, both CTA buttons and the complete hero card are inside the first screen and at least 48 px from the edges, at 768 the copy and buttons fit, and no page ever scrolls horizontally. App pages use the same container and gutter.
+3. **English only**: demo users Maya Maker, Alex Approver, Riley Reviewer, Adam Admin; all times in UTC with the label; sample generator uses international English names (55 rows ≈ 5.5 % with ", Jr.", ", CPA", … suffixes forcing CSV quotes) and 1,000 unique fictional UK numbers `+44 7700 900000`–`900999`, mixed formatting. Regenerated files: **totals unchanged** (56.690860 and 10.000000 tUSDC; the amount sequence is the same), new checksums in `docs/SAMPLE-DATA.md`. Fixtures, seed draft, tests and shared commitment vectors (review digest only) moved to English names and +44 numbers; D-028 now says "regional Excel settings".
+4. **Sidebar app shell**: left sidebar from 1024 px (role items; later-phase items disabled with "Soon"), collapsing into a top row below 1024 px; NEAR testnet badge and user menu stay in the top bar.
+5. **Demo data from real testnet runs**: `scripts/testnet/export-history.mjs` reads every transaction of the Phase 02 and Phase 04 runs from testnet RPC (signer, method, arguments, success, block time, NEP-141 transfer events), recomputes payout roots and checks them against the on-chain roots, and writes `db/seed/testnet-history.json` (`--check` re-verifies: **matches the chain**). Migration `0002_testnet_history.sql` adds immutable `testnet_runs`, `testnet_run_rows`, `testnet_run_events`; the seed imports 5 runs (4 paid, 1 rejected), 17 rows, 41 transactions. Shown with a **"Testnet run"** chip and explorer links. The rejected run shows "No reason recorded (scripted test run before the app existed)": no reason was invented.
+6. **Amounts**: UI shows exact amounts with trailing zeros removed down to 2 decimals (`displayAmount`), tabular, right-aligned; 6 fixed decimals kept for CSV/on-chain views (`fixedAmount`). Tests: fixed examples + 2,000 pseudo-random values round-trip exactly (never rounds).
+7. **Landing**: larger hero card (approvals + first payouts + progress, "Sample data"); slim proof strip with facts computed from committed evidence (vault ID; approvals enforced on-chain; 1,000-row upload; "0 double payments, 4 testnet runs, 2 repeats refused" computed from the history JSON); upload section with a static drop-zone mock of the real `gajian-payroll-sample-1000.csv` (size, 1,000 rows, exact total, validated), its first 5 rows with source row numbers, and the example error; "Try the demo" in the header; varied layouts (split, timeline, policy rows, centred ledgers) on alternating white / canvas / sky / navy backgrounds.
+8. **Empty states** keep a next action where the role has one (maker: New run, disabled until Phase 08 with hint; approver: "See runs you reviewed").
+
+Also: `rpc.testnet.near.org` now answers HTTP 429 ("deprecated, switch to FastNEAR"); all scripts and `.env.example` use `https://rpc.testnet.fastnear.com` (D-062). `.env` rewritten by `write-env.mjs`.
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npm test` | 78/78 |
+| `npm run test:e2e` | 11/11 (incl. first-screen test at 5 sizes) |
+| `npm run screenshots` | 12 PNGs in `docs/screenshots/phase-06b/`, reviewed against points 1–8 (fixed: header links wrapping, 3-line headline at 1920, cramped run table, reviewed table overflow) |
+| `node scripts/testnet/export-history.mjs --check` | matches the chain |
+| `cargo test --lib -p gajian-vault commitment` | 4/4 (shared vectors) |
+| lint, typecheck | clean |
 
 ---
 

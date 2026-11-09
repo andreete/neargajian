@@ -36,6 +36,8 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 - Server-side validation and authorization on every read, write and export. Idempotent mutations, DB transactions around state changes.
 - Release worker survives restarts, never double-pays, keeps unknown outcomes unknown until reconciled.
 - No fake paths in the main flow; any mock or sandbox-only path is labelled in code, UI and README.
+- English only, times in UTC with the label, phones in +44 7700 900xxx, amounts via `displayAmount` (UI) / `fixedAmount` (exports) (D-061, D-066).
+- Default NEAR RPC is FastNEAR (`https://rpc.testnet.fastnear.com`); `rpc.testnet.near.org` is deprecated (D-062).
 - Strict CSP (D-058): no inline `style=` attributes, no `next/image`; e2e fails on CSP violations.
 - Honest evidence: never claim a test ran if it did not. Separate sandbox results from live-testnet results.
 - **Contract freeze** during the app phases (D-051): no contract changes; if unavoidable, batch them, retire-and-recreate by script, return funds through an approved run, log NEAR spent.

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { AppHeader } from '@/components/app-header';
+import { AppShell, navFor } from '@/components/app-shell';
 import { getDb } from '@/server/db/client';
 import { activeWorkflow } from '@/server/dashboard/queries';
 import { currentSession } from '@/server/web/page-auth';
@@ -17,11 +17,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     roleDetail = step >= 0 ? `Approver ${step + 1}` : 'Approver';
   }
   return (
-    <div className="app-body">
-      <AppHeader user={session.user} csrfToken={session.csrfToken} {...(roleDetail ? { roleDetail } : {})} />
-      <main id="main" className="app-main">
-        <div className="container">{children}</div>
-      </main>
-    </div>
+    <AppShell user={session.user} csrfToken={session.csrfToken} nav={navFor(session.user.role)} {...(roleDetail ? { roleDetail } : {})}>
+      {children}
+    </AppShell>
   );
 }

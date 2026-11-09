@@ -10,11 +10,14 @@ function watchConsole(page: Page) {
   return problems;
 }
 
-async function signInAs(page: Page, role: 'Maker' | 'Approver 1' | 'Approver 2' | 'Admin') {
+const EMAIL = { Maker: 'maker@gajian.my.id', 'Approver 1': 'app1@gajian.my.id', 'Approver 2': 'app2@gajian.my.id', Admin: 'admin@gajian.my.id' } as const;
+
+async function signInAs(page: Page, role: keyof typeof EMAIL) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
   const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
-  await dialog.getByText(role, { exact: true }).click();
+  await dialog.getByLabel('Email').fill(EMAIL[role]);
+  await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
 }
 
@@ -38,7 +41,9 @@ test('login dialog: focus moves in, Tab is trapped, Escape closes and restores f
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('radio', { name: /Maker/ })).toBeFocused();
+  await expect(dialog.getByLabel('Email')).toBeFocused();
+  await expect(dialog.getByRole('radio')).toHaveCount(0); // no role picker: the server decides the role
+  await expect(dialog.getByText('Demo accounts')).toBeVisible();
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press('Tab');
     expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
@@ -64,10 +69,10 @@ test('login dialog shows field errors and a generic credential error', async ({ 
 });
 
 const ROLES = [
-  { role: 'Maker', path: '/maker', heading: 'My payroll runs', name: 'Maya Maker' },
-  { role: 'Approver 1', path: '/approver', heading: 'Review queue', name: 'Arif Approver' },
-  { role: 'Approver 2', path: '/approver', heading: 'Review queue', name: 'Rina Reviewer' },
-  { role: 'Admin', path: '/admin', heading: 'Workflow settings', name: 'Ade Admin' },
+  { role: 'Maker', path: '/maker', heading: 'My runs', name: 'Maya Maker' },
+  { role: 'Approver 1', path: '/approver', heading: 'Review queue', name: 'Alex Approver' },
+  { role: 'Approver 2', path: '/approver', heading: 'Review queue', name: 'Riley Reviewer' },
+  { role: 'Admin', path: '/admin', heading: 'Workflow settings', name: 'Adam Admin' },
 ] as const;
 
 for (const r of ROLES) {
@@ -117,4 +122,28 @@ test('query parameters cannot grant a role', async ({ page }) => {
   await page.waitForURL('**/approver');
   const res = await page.goto('/admin?role=admin');
   expect(res?.status()).toBe(403);
+});
+
+test('first screen shows headline, text, both buttons and the full hero card at desktop sizes', async ({ page }) => {
+  for (const [width, height] of [[1280, 720], [1366, 768], [1440, 900], [1920, 1080], [768, 1024]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    await page.evaluate(() => document.fonts.ready);
+    const desktop = width >= 1024;
+    const targets = [
+      page.getByRole('heading', { level: 1 }),
+      page.locator('.hero-lead'),
+      page.locator('.hero-actions').getByRole('button', { name: 'Try the demo' }),
+      page.locator('.hero-actions').getByRole('link', { name: 'See how it works' }),
+      ...(desktop ? [page.getByTestId('hero-card')] : []),
+    ];
+    for (const t of targets) {
+      const box = await t.boundingBox();
+      expect(box, `${width}x${height}`).not.toBeNull();
+      expect(box!.y + box!.height, `${width}x${height} bottom`).toBeLessThanOrEqual(height);
+      expect(box!.x, `${width}x${height} left`).toBeGreaterThanOrEqual(desktop ? 48 : 32);
+      expect(box!.x + box!.width, `${width}x${height} right`).toBeLessThanOrEqual(width - (desktop ? 48 : 32));
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${width} no horizontal scroll`).toBe(true);
+  }
 });
