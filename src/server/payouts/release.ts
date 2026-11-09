@@ -1,0 +1,165 @@
+/**
+ * Release and payouts (Phase 12). Used by the release worker process and by maker release.
+ *
+ * Safety rules (PRD §5.4, docs/RECOVERY.md):
+ * - Every chain action is claimed in `payout_actions` (unique live claim per row) and its tx
+ *   hash stored BEFORE sending. A restart resumes from these records.
+ * - Before retrying anything, the outcome is read from the vault (`get_row`, `get_run`) and
+ *   the tx status. Unknown outcomes stay unknown until the chain proves them.
+ * - Only proven failures are retried (bounded attempts, backoff); the vault itself refuses a
+ *   second payment of a row that is in flight or paid.
+ * - A version becomes Paid only when the vault reports the run as Paid.
+ */
+import { and, eq, inArray } from 'drizzle-orm';
+import { buildPayoutTree, proofFor, toHex } from '../commitments.ts';
+import type { ChainRole, VaultClient } from '../chain/vault-client.ts';
+import type { Db } from '../db/client.ts';
+import { auditEvents, payoutActions, runVersions, versionRows } from '../db/schema.ts';
+import { claimPayoutAction, updatePayoutAction, type PayoutAction } from './actions.ts';
+import { reconcileVersion, snapshotOf, type Version } from '../runs/lifecycle.ts';
+import { createReportEntries } from '../reports/entries.ts';
+
+export const MAX_ROW_ATTEMPTS = 3;
+export const RETRY_BACKOFF_MS = 30_000;
+export const RELEASE_RETRY_MS = 60_000;
+export const LEASE_MS = 120_000;
+
+interface ChainRow { status: 'InFlight' | 'Paid' | 'Failed'; receiver_id: string; amount: string; attempts: number }
+
+function log(db: Db, action: string, versionId: string, detail: Record<string, unknown>, now: Date) {
+  db.insert(auditEvents).values({ at: now, action, entityType: 'run_version', entityId: versionId, detail: JSON.stringify(detail) }).run();
+}
+
+function actionsOf(db: Db, versionId: string, kind: 'release' | 'pay_row') {
+  return db.select().from(payoutActions).where(and(eq(payoutActions.versionId, versionId), eq(payoutActions.kind, kind))).all();
+}
+
+function latestPerRow(actions: PayoutAction[]): Map<number, PayoutAction> {
+  const m = new Map<number, PayoutAction>();
+  for (const a of actions) if (a.rowIndex !== null && (!m.has(a.rowIndex) || a.attempt > m.get(a.rowIndex)!.attempt)) m.set(a.rowIndex, a);
+  return m;
+}
+
+// ---------------------------------------------------------------------- release
+
+/** Reserves the run total in the vault (start_release). Worker in automatic mode, maker in maker mode. */
+export async function requestRelease(db: Db, client: VaultClient, v: Version, opts: { role: 'worker' | 'maker'; workerId: string; now?: Date }) {
+  const now = opts.now ?? new Date();
+  if (v.status !== 'approved') return { status: v.status };
+  const claim = claimPayoutAction(db, { versionId: v.id, kind: 'release', rowIndex: null, workerId: opts.workerId, now, leaseMs: LEASE_MS });
+  if (!claim.claimed) {
+    await reconcileActions(db, client, v, now);
+    return { status: db.select().from(runVersions).where(eq(runVersions.id, v.id)).get()!.status, action: claim.existing };
+  }
+  const outcome = await client.call(opts.role, 'start_release', { run_id: v.chainRunId }, {
+    gasTgas: 30, onSigned: (h) => updatePayoutAction(db, claim.action.id, { status: 'submitted', now, txHash: h }),
+  });
+  if (outcome.status === 'success') updatePayoutAction(db, claim.action.id, { status: 'succeeded', now });
+  else if (outcome.status === 'failure') updatePayoutAction(db, claim.action.id, { status: 'failed', now, error: outcome.error ?? 'Refused by the vault.' });
+  else updatePayoutAction(db, claim.action.id, { status: 'unknown', now });
+  log(db, `release.${outcome.status}`, v.id, { by: opts.role, txHash: outcome.txHash, error: outcome.error ?? null }, now);
+  const r = await reconcileVersion(db, client, v.id, now);
+  return { status: r.status, outcome };
+}
+
+// ------------------------------------------------------------------- reconcile
+
+/** Settles claimed / submitted / unknown actions from the vault before anything is retried. */
+export async function reconcileActions(db: Db, client: VaultClient, v: Version, now = new Date()) {
+  const open = db.select().from(payoutActions)
+    .where(and(eq(payoutActions.versionId, v.id), inArray(payoutActions.status, ['claimed', 'submitted', 'unknown']))).all();
+  for (const a of open) {
+    if (!a.txHash) {
+      // Claimed but never signed: if the lease expired, nothing was sent.
+      if (a.leaseExpiresAt.getTime() < now.getTime()) updatePayoutAction(db, a.id, { status: 'failed', now, error: 'Not sent (worker stopped before signing).' });
+      continue;
+    }
+    if (a.kind === 'release') {
+      const run = await client.view<{ status: string } | null>('get_run', { run_id: v.chainRunId });
+      if (run && ['Releasing', 'Paid', 'PartiallyPaid'].includes(run.status)) { updatePayoutAction(db, a.id, { status: 'succeeded', now }); continue; }
+      const out = await client.txOutcome(a.txHash, (snapshotOf(v).releaseMode === 'maker' ? 'maker' : 'worker') as ChainRole);
+      if (out.status === 'failure') updatePayoutAction(db, a.id, { status: 'failed', now, error: out.error ?? 'Refused by the vault.' });
+      continue;
+    }
+    const row = await client.view<ChainRow | null>('get_row', { run_id: v.chainRunId, index: a.rowIndex });
+    if (row?.status === 'Paid' && row.attempts >= a.attempt) { updatePayoutAction(db, a.id, { status: 'succeeded', now }); continue; }
+    if (row?.status === 'Failed' && row.attempts >= a.attempt) { updatePayoutAction(db, a.id, { status: 'failed', now, error: 'The token transfer failed (proven on-chain).' }); continue; }
+    if (row?.status === 'InFlight') continue; // the callback has not run yet
+    const out = await client.txOutcome(a.txHash, 'worker');
+    if (out.status === 'failure') updatePayoutAction(db, a.id, { status: 'failed', now, error: out.error ?? 'Refused by the vault.' });
+  }
+}
+
+// ---------------------------------------------------------------------- payouts
+
+function proofsFor(db: Db, v: Version) {
+  const rows = db.select().from(versionRows).where(eq(versionRows.versionId, v.id)).orderBy(versionRows.rowIndex).all();
+  const tree = buildPayoutTree(rows.map((r) => ({ index: r.rowIndex, accountId: r.nearAccountId, amount: r.amount })));
+  if (toHex(tree.root) !== v.payoutRoot) throw new Error('Stored rows do not match the approved payout root.');
+  return { rows, tree };
+}
+
+/** Pays up to `max` eligible rows, one transaction per row, in row order. */
+export async function payRows(db: Db, client: VaultClient, v: Version, opts: { role: 'worker' | 'maker'; workerId: string; max: number; now?: Date }) {
+  const now = opts.now ?? new Date();
+  if (v.status !== 'releasing') return { paid: 0 };
+  await reconcileActions(db, client, v, now);
+  const { rows, tree } = proofsFor(db, v);
+  const latest = latestPerRow(actionsOf(db, v.id, 'pay_row'));
+  let sent = 0;
+  let paid = 0;
+  for (const r of rows) {
+    if (sent >= opts.max) break;
+    const prev = latest.get(r.rowIndex);
+    if (prev && prev.status !== 'failed') continue; // paid, in progress or unknown: never resend
+    if (prev && (prev.attempt >= MAX_ROW_ATTEMPTS || now.getTime() - prev.updatedAt.getTime() < RETRY_BACKOFF_MS)) continue;
+    const claim = claimPayoutAction(db, { versionId: v.id, kind: 'pay_row', rowIndex: r.rowIndex, workerId: opts.workerId, now, leaseMs: LEASE_MS });
+    if (!claim.claimed) continue;
+    sent += 1;
+    const outcome = await client.call(opts.role, 'pay_row', {
+      run_id: v.chainRunId, index: r.rowIndex, receiver_id: r.nearAccountId, amount: r.amount.toString(),
+      proof: proofFor(tree, r.rowIndex).map(toHex),
+    }, { gasTgas: 50, onSigned: (h) => updatePayoutAction(db, claim.action.id, { status: 'submitted', now, txHash: h }) });
+    if (outcome.status === 'success' && outcome.value === true) { updatePayoutAction(db, claim.action.id, { status: 'succeeded', now }); paid += 1; }
+    else if (outcome.status === 'success') updatePayoutAction(db, claim.action.id, { status: 'failed', now, error: 'The token transfer failed (for example, the recipient is not registered with tUSDC).' });
+    else if (outcome.status === 'failure') {
+      updatePayoutAction(db, claim.action.id, { status: /already paid|already in flight/i.test(outcome.error ?? '') ? 'unknown' : 'failed', now, error: outcome.error ?? 'Refused by the vault.' });
+    } else updatePayoutAction(db, claim.action.id, { status: 'unknown', now });
+    log(db, `payout.${outcome.status}`, v.id, { index: r.rowIndex, attempt: claim.action.attempt, txHash: outcome.txHash, value: outcome.value ?? null }, now);
+  }
+  await reconcileActions(db, client, v, now);
+  const r = await reconcileVersion(db, client, v.id, now);
+  if (r.status === 'paid') createReportEntries(db, v.id, now);
+  return { paid, status: r.status };
+}
+
+// ------------------------------------------------------------------------- tick
+
+/** One worker pass: reconcile live versions, release automatic ones, pay releasing ones. */
+export async function workerTick(db: Db, client: VaultClient, opts: { workerId: string; maxRowsPerTick?: number; now?: Date }) {
+  const now = opts.now ?? new Date();
+  const live = db.select().from(runVersions).where(inArray(runVersions.status, ['submitting', 'pending_approval', 'approved', 'releasing'])).all();
+  const summary = { reconciled: 0, released: 0, paidRows: 0 };
+  for (const v0 of live) {
+    const r = await reconcileVersion(db, client, v0.id, now);
+    summary.reconciled += 1;
+    let v = db.select().from(runVersions).where(eq(runVersions.id, v0.id)).get()!;
+    const mode = snapshotOf(v).releaseMode;
+    if (r.status === 'approved' && mode === 'automatic') {
+      const last = actionsOf(db, v.id, 'release').sort((a, b) => b.attempt - a.attempt)[0];
+      const due = !last || (last.status === 'failed' && now.getTime() - last.updatedAt.getTime() >= RELEASE_RETRY_MS);
+      if (due || (last && last.status !== 'failed' && last.status !== 'succeeded')) {
+        const res = await requestRelease(db, client, v, { role: 'worker', workerId: opts.workerId, now });
+        if (res.status === 'releasing') summary.released += 1;
+      }
+      v = db.select().from(runVersions).where(eq(runVersions.id, v0.id)).get()!;
+    }
+    if (v.status === 'releasing') {
+      const res = await payRows(db, client, v, { role: 'worker', workerId: opts.workerId, max: opts.maxRowsPerTick ?? 5, now });
+      summary.paidRows += res.paid;
+    } else if (v.status === 'paid') {
+      createReportEntries(db, v.id, now);
+    }
+  }
+  return summary;
+}

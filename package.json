@@ -29,7 +29,8 @@
     "test:e2e": "./scripts/with-tmp.sh playwright test",
     "screenshots": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase09.spec.ts",
     "templates:xlsx": "./scripts/with-tmp.sh node scripts/generate-xlsx-template.mjs",
-    "screenshots:06b": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase06b.spec.ts"
+    "screenshots:06b": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase06b.spec.ts",
+    "worker": "./scripts/with-tmp.sh node --env-file-if-exists=.env src/worker/index.ts"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

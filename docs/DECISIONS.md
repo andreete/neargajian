@@ -304,7 +304,7 @@ Andre verified the key transactions and balances independently on testnet.
 
 - `npm run test:e2e` skips `tests/e2e/screenshots-*.spec.ts`; `npm run screenshots` (Phase 09 set) and `npm run screenshots:06b` run them with `SCREENSHOTS=1`, so review screenshots are never overwritten by a normal test run.
 
-## Phase 09b decisions (10 Nov 2026, Andre's review)
+## Phase 09b decisions (9 Nov 2026, Andre's review)
 
 ### D-075 · Operations transfers are not payroll
 
@@ -314,7 +314,7 @@ Andre verified the key transactions and balances independently on testnet.
 
 - The manual builder fixes the currency to tUSDC (the only allowed value) and shows it in the amount header; the stored row still carries `tUSDC` and the shared validation still checks it (files can contain other values and are rejected).
 
-## Phase 10 decisions (10 Nov 2026, by the agent)
+## Phase 10 decisions (9 Nov 2026, by the agent)
 
 ### D-077 · Submit returns at inclusion; the page reconciles
 
@@ -323,3 +323,13 @@ Andre verified the key transactions and balances independently on testnet.
 ### D-078 · One live version per run
 
 - A run has at most one live version. Editing reopens only after rejection, cancellation or a failed submission; replacing a pending version uses `supersedes` (atomic on-chain cancel). Paid runs are closed; further payments need a new run.
+
+## Phase 12 decisions (9 Nov 2026, by the agent)
+
+### D-079 · Worker as its own process, sequential payouts
+
+- The release worker runs as a separate Node process sharing the SQLite file (WAL). It pays one row per transaction, rows in order, at most 5 per tick per run (bounded concurrency). In maker-release mode the maker reserves (start_release) and the worker pays, as the contract allows (D-045).
+
+### D-080 · Retry policy
+
+- Retry only proven failures (the token transfer failed: `pay_row` returned false or `get_row` is Failed), at most 3 attempts per row with 30 s backoff; afterwards the run shows Needs attention and an operator follows docs/RECOVERY.md. "Already paid / in flight" refusals are reconciled from the vault, never treated as failures.

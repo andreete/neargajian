@@ -18,12 +18,22 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 09b Review fixes | Done | none |
 | 10 Read-only preview and immutable submission | Done | proven live at the end of Phase 13 |
 | 11 Approver queues and review | Done | proven live at the end of Phase 13 |
-| 12 Release worker and maker release | Not started | — |
+| 12 Release worker and maker release | Done | proven live at the end of Phase 13 |
 | 13 History and accounting CSVs | Not started | — |
 
 ---
 
-## Phase 11 · Approver queues and review (10 Nov 2026)
+## Phase 12 · Release worker and maker release (9 Nov 2026)
+
+- `src/server/payouts/release.ts`: `requestRelease` (start_release; worker key in automatic mode, maker key in maker mode), `payRows` (one `pay_row` per row with its Merkle proof, rows in order, at most 5 per tick per run, tx hash stored before sending), `reconcileActions` (claimed-but-unsigned after lease expiry → not sent; otherwise the vault's `get_row` / `get_run` and the tx status decide: Paid → succeeded, Failed → proven failure, InFlight → wait, unknown → stays unknown), `workerTick`. Only proven failures are retried, at most 3 attempts with a 30 s backoff; a refused release (awaiting funding) is retried after 60 s. A run becomes Paid only when the vault reports it Paid; then company posting entries are created (`src/server/reports/entries.ts`, opaque references, totals checked, idempotent).
+- `src/worker/index.ts` (`npm run worker`): separate long-running Node process (runs the TypeScript directly), 3 s interval, JSON log lines without personal data, graceful stop on SIGINT/SIGTERM. Smoke-tested: starts, reconciles, stops cleanly; no process left running.
+- Maker release: `POST /api/runs/[id]/release` (maker owner, approved, maker-release snapshot) + "Release payments" money action dialog; the worker then pays the rows.
+- Run detail derives **Awaiting funding** (approved, last release refused for funding) and **Needs attention** (releasing with a failed row).
+- Tests `tests/integration/release.test.ts` (8): automatic release pays each row exactly once and Paid only from the vault (balances: vault −0.15, reserved back to 0; recipients +0.03/+0.07/+0.05); repeated ticks never pay again; **two workers at once** never double-pay; **interruption** between claim and signing resumes after the lease; **unknown-but-landed** reconciled from `get_row` without a second payment; **unknown-never-landed** stays unknown until proven, then retried once; **insufficient funding** → Awaiting funding → releases after top-up; **proven transfer failure** retried 3 times then Needs attention, no false Paid, no report entries; maker release (worker never releases a maker-release run). `npm test` 135/135.
+
+---
+
+## Phase 11 · Approver queues and review (9 Nov 2026)
 
 - `decide` (lifecycle): only an approver snapshotted into the **latest** version, only while it waits for approval, once per approver, in the vault's order (approver 2 only after approver 1 is **confirmed on NEAR**); rejection needs a 3–500 character reason that stays off-chain. The event is stored `pending` with its tx hash before signing (approver's restricted key, mapped from the snapshotted chain account); a vault refusal is stored as `failed` with the error; reconciliation confirms from the vault's approval list.
 - API `POST /api/runs/[id]/decision` (approver role, assignment checked in the service; maker/admin 404).
@@ -32,7 +42,7 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 
 ---
 
-## Phase 10 · Read-only preview and immutable submission (10 Nov 2026)
+## Phase 10 · Read-only preview and immutable submission (9 Nov 2026)
 
 - `src/server/runs/lifecycle.ts`: `submitRun` validates the whole draft, freezes it with `activeSnapshot` + `createVersion` (status `submitting`, deterministic chain run ID, salted review digest), then signs `create_run` with the maker's restricted key, **storing the tx hash before sending** and returning as soon as the tx is included. `reconcileVersion` advances only from what the vault reports (`get_run` must match root, total, row count and workflow revision; tx status for refusals), confirms approval events from the vault's approval list, links superseded versions. `cancelVersion` (maker, `cancel_run`). A retried submit while `submitting` reconciles instead of sending again; "Run already exists" is treated as a landed earlier attempt.
 - Draft lock (`draftLock`): no edits or uploads while a version is submitting / waiting / approved / releasing or after payment; reopened after rejection, cancellation or a failed submission, for a new version that needs fresh approvals (`supersede` cancels a pending version atomically on-chain).
@@ -41,7 +51,7 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 
 ---
 
-## Phase 09b · Review fixes (10 Nov 2026)
+## Phase 09b · Review fixes (9 Nov 2026)
 
 1. **Manual builder fits at 1280 px and wider**: fixed table layout with an account column wide enough for `recipient1.gajian-payroll.testnet`; the currency (only `tUSDC` is allowed) moved into the "Amount (tUSDC)" header, its errors show under the amount; remove buttons inside the card; header labels may wrap. New e2e test at 1280x720 and 1440x900: account input `scrollWidth ≤ clientWidth`, remove button inside the card, card inside the 48 px gutter, no horizontal scroll in the table or the page.
 2. **Operations transfer**: the vault retirement (`p02-drain`, 10 × 0.095 tUSDC back to the admin) is now `category = operations` (export script, `db/seed/testnet-history.json` re-exported and `--check` = matches the chain; migration `0004_testnet_category.sql` adds the column and corrects the existing row without rebuilding the table). It is listed in a separate "Operations transfers" section (maker, approver, admin) with its explorer link and excluded from every payroll count and total: payroll on testnet is now **0.23 tUSDC in 6 payouts across 3 paid runs** (was 1.18 / 16 / 4); the landing proof strip says "3 testnet runs".
