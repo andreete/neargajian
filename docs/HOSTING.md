@@ -65,7 +65,7 @@ Copy each value straight into Railway (step 4). Close the terminal afterwards.
 
 Railway deploys **only from the `release` branch**. `main` stays the working branch. Nothing is pushed to `release` without Andre's explicit yes.
 
-1. The agent (with your yes) creates the branch from the tested `main`: `git push origin main:release`.
+1. The agent (with your yes) creates the branch from the tested `main`: `git push origin main:release`. First check GitHub → **Actions**: the latest `main` run is green, including the job **Hosted image**, which builds this Dockerfile on GitHub's runner and boots it in hosted demo mode (health, banner, first-boot reset, clean stop, migrations-only second boot, service stops when the worker dies).
 2. In Railway: **New Project** → **Deploy from GitHub repo** → `andreete/neargajian`. Railway finds the root `Dockerfile` and builds with it automatically.
 3. Open the new service → **Settings**:
    - **Source → Branch**: choose `release`. Railway calls this the trigger branch.
@@ -178,7 +178,7 @@ Railway issues the Let's Encrypt certificate, usually within an hour of the reco
 
 ## 7. Releasing an update (with Andre's yes)
 
-1. On this server, all checks pass on `main` (`npm run lint && npm run typecheck && npm test`, build, browser tests) and the commit is pushed.
+1. On this server, all checks pass on `main` (`npm run lint && npm run typecheck && npm test`, build, browser tests) and the commit is pushed; GitHub → **Actions** shows the run green, including **Hosted image**.
 2. Railway → **Backups** → manual backup.
 3. The agent runs `git push origin main:release` (only with your yes). Railway builds and deploys.
 4. A service with a volume has a short downtime on each deploy (old and new deployments cannot mount the volume at the same time).

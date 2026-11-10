@@ -57,5 +57,5 @@ If a step takes longer on testnet (a few seconds per transaction), cut the waiti
 
 - Stop the worker if no more takes are planned (`kill $(cat .tmp/worker.pid)`, or Ctrl+C in its terminal).
 - Record the run's transaction hashes from the run page in `docs/TESTNET.md` (a "Demo video run" section) so the video's run is evidence too, and add the run to `docs/evidence/testnet-runs.json` if it should be re-checked by `npm run judge:verify`.
-- Upload the video to YouTube (public or unlisted) and put its link in `docs/X-POST.md` and `docs/SUBMISSION.md`. There is no hosted demo (local-only, decided 10 Nov).
+- Upload the video to YouTube (public or unlisted) and put its link in `docs/X-POST.md` and `docs/SUBMISSION.md`. Once the hosted demo is live, the X post links it too (`docs/X-POST.md`).
 - The assistant draft from a take stays as an unsubmitted draft in "My runs" (drafts are never paid); `npm run demo:reset` before the next take clears it.

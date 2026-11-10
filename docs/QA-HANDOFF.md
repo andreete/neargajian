@@ -1,6 +1,6 @@
-# QA handoff (Phase 18, updated for Phase 19)
+# QA handoff (Phase 18, updated for Phase 20)
 
-For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built GAJIAN. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10).
+For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built GAJIAN. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11).
 
 ## 0. Your role and rules
 
@@ -181,7 +181,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 6. **npm audit:** 14 moderate advisories (esbuild, minimatch and uuid chains, development tooling); none high or critical.
 7. **Desktop first:** checked at 1024, 1280 and 1440 px wide. Narrower screens work (top navigation, tables scroll inside their region) but are not optimised.
 8. **Historic export:** the company CSV downloaded during the Phase 16 rehearsal showed 14:44:29 for one line, from the worker clock. Since Phase 16b, paid times come from the chain (that line is 14:44:26, the block time). This is documented in `docs/TESTNET.md`; it is not a current defect.
-9. **CI status on GitHub was not checked from the build machine** (no GitHub CLI there). Locally, the same steps pass, including the browser tests with all keys blank. Please check the Actions tab for the phase-19 commit.
+9. **CI status on GitHub was not checked from the build machine** (no GitHub CLI there). Locally, the same steps pass, including the browser tests with all keys blank. Since Phase 20b, CI also runs the judge-mode and hosted-mode browser tests and builds and boots the hosted image (job "Hosted image"; the image is never built on the build machine). Please check the Actions tab for the latest commit.
 10. **Demo passwords are public by design** (demo mode only). Failed sign-ins are rate-limited.
 11. **The recipient directory is an app guardrail, not a contract rule.** The vault does not know it (vault2 cannot change). A maker key used outside the app could commit rows outside the directory; approvers are the check (README, SECURITY).
 12. **The payroll assistant needs the team's `ANTHROPIC_API_KEY`;** the live assistant run was done in Phase 19b with the team's key (`docs/TESTNET.md`). Browser tests use a labelled stub model.
@@ -190,7 +190,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 
 ## 6. Out of scope
 
-Mainnet; real stablecoins; NEAR Intents; user-held wallets or wallet login; email delivery (the app sends no email); mobile layouts; hosting (not pursued, decided 10 Nov: local-only with a YouTube video); localisation (English only); load testing beyond 1,000 rows per run.
+Mainnet; real stablecoins; NEAR Intents; user-held wallets or wallet login; email delivery (the app sends no email); mobile layouts; the Railway account and its dashboard settings (Andre's, `docs/HOSTING.md`; A11 covers what the hosted site does); localisation (English only); load testing beyond 1,000 rows per run.
 
 ## 7. How to report
 
@@ -207,4 +207,4 @@ Actual: …
 Evidence: command output, screenshot path, file:line
 ```
 
-End with a table of A01–A08 (Pass / Fail / Blocked plus one line of evidence each) and a list of anything you could not run, with the reason.
+End with a table of A01–A11 (Pass / Fail / Blocked plus one line of evidence each) and a list of anything you could not run, with the reason.

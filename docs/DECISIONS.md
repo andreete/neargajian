@@ -522,3 +522,10 @@ Andre verified the key transactions and balances independently on testnet.
 - gajian.my.id's DNS is Vercel DNS (`ns1/ns2.vercel-dns.com`, checked 10 Nov), and **the apex already serves a live site** ("Gajian — HR & Payroll Modern untuk UMKM Indonesia"). `app.gajian.my.id` is free.
 - Railway needs CNAME + TXT. A CNAME is not allowed at the apex; Railway supports CNAME flattening and ALIAS, and Vercel DNS supports ALIAS at the apex. So the apex is possible, but it replaces the existing site.
 - Recommendation: `app.gajian.my.id` (CNAME). The runbook covers both, plus Cloudflare and typical registrars.
+
+### D-115 · CI builds and boots the hosted image on GitHub's runner (Phase 20b, 10 Nov 2026)
+
+- The Dockerfile had never been built: Docker is forbidden on the build server, so Railway's first build would have been its first real build.
+- New CI job **Hosted image** (`.github/workflows/ci.yml`): `docker build` of the root Dockerfile on GitHub's runner, then boots it with `HOSTED_DEMO=true`, a volume at `/data` and a throwaway random worker key (never added to any account, masked in the log). It checks health (`db ok`, `hostedDemo true`), the banner on the landing page, the first-boot reset, a clean SIGTERM stop (exit 0), a migrations-only second boot, and that the service stops non-zero when the worker dies. Nothing is pushed to a registry or deployed.
+- The app job now also runs `npm run test:judge-mode` and `npm run test:hosted`.
+- The runbook asks for a green Actions run (including **Hosted image**) before every `git push origin main:release`. This keeps the rule "never run Docker on this server"; GitHub's runner is not this server.

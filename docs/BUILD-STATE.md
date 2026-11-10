@@ -30,6 +30,17 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 19 Recipient directory and payroll assistant | Done, approved by Andre | **Yes**: vault2 top-up to 2.00 tUSDC; read-only check of the 3 live recipients |
 | 19b Live assistant run | Done | **Yes**: assistant-drafted Sales run approved in the browser and paid (`gjn-6e2922fcf5cd4d0f91f1-v1`), `judge:verify` 130/130 |
 | 20 Hosting readiness (Railway) | Done: ready, **not live** (no account, deploy, `release` branch or host key yet) | none (read-only checks only) |
+| 20b CI image check and doc gaps | Done; **CI result not checked from here** (no GitHub CLI): Andre checks the Actions tab | none |
+
+---
+
+## Phase 20b · CI image check and doc gaps (10 Nov 2026)
+
+- **Gap closed: the hosted image had never been built** (no Docker on this server). New CI job **Hosted image** builds the root Dockerfile on GitHub's runner and boots it in hosted demo mode: health `db ok` / `hostedDemo true`, banner on the landing page, first-boot reset, SIGTERM → exit 0, second boot migrations only (one reset in total), worker killed → service exits non-zero. Throwaway random worker key (on no account, masked). Nothing pushed to a registry or deployed (D-115).
+- The CI app job now also runs `npm run test:judge-mode` and `npm run test:hosted` (both passed locally in Phase 20).
+- `docs/HOSTING.md` steps 3 and 7: a green Actions run, including **Hosted image**, before every `git push origin main:release`.
+- Stale docs fixed: VIDEO ("there is no hosted demo"), QA-HANDOFF (out of scope still said hosting was not pursued; report table A01–A11; known issue 9), README and ACCEPTANCE (A01–A11; new **A11** row: pass locally, live pending).
+- Evidence: the workflow file parses (Python `yaml.safe_load`: jobs app, image, secrets, contracts). **The new CI steps have not run yet as far as this server can see**: the first result is on GitHub → Actions for this commit. No code changed, so the Phase 20 local results stand.
 
 ---
 

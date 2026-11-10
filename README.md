@@ -146,7 +146,7 @@ npm run build && npm run test:e2e     # 29 passed
 
 These use an isolated database with a test-only fixture of runs in every state against a stand-in vault (`scripts/e2e-fixture.ts`), and a labelled **test stub** instead of the Claude API for the payroll assistant (`ASSISTANT_STUB=browser-tests`, refused outside a database under `.tmp/`; the box then says "Test stub model (browser tests only)"). No testnet transactions and no API key are needed (adding a recipient makes one read-only testnet RPC call).
 
-More detail: `docs/JUDGE.md`. Acceptance checks A01–A08, with app/sandbox evidence kept apart from live evidence: `docs/ACCEPTANCE.md`.
+More detail: `docs/JUDGE.md`. Acceptance checks A01–A11, with app/sandbox evidence kept apart from live evidence: `docs/ACCEPTANCE.md`.
 
 ## What is real, and what is limited
 
@@ -228,7 +228,7 @@ public/          logo and payroll templates          docs/         evidence, dec
 ## Documents
 
 - `docs/JUDGE.md`: reproduce and verify, with expected output.
-- `docs/ACCEPTANCE.md`: acceptance checks A01–A08.
+- `docs/ACCEPTANCE.md`: acceptance checks A01–A11.
 - `docs/TESTNET.md`: accounts, deployments, every live transaction, balances, NEAR spent.
 - `docs/SECURITY.md`: sessions, CSRF, CSP, rate limits, authorization matrix.
 - `docs/RECOVERY.md`: how stuck or unknown payouts are resolved.

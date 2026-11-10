@@ -1,6 +1,6 @@
 # Next steps
 
-Updated: Tue 10 Nov 2026 (WIB), after Phase 19b (live assistant run) and Phase 20 (hosting readiness). Deadline 2026-11-14 23:59 UTC = 2026-11-15 06:59 WIB; **our target: submit by Friday 13 Nov**.
+Updated: Tue 10 Nov 2026 (WIB), after Phase 19b (live assistant run), Phase 20 (hosting readiness) and 20b (CI image check). Deadline 2026-11-14 23:59 UTC = 2026-11-15 06:59 WIB; **our target: submit by Friday 13 Nov**.
 
 ## Single next action
 
@@ -10,12 +10,15 @@ Updated: Tue 10 Nov 2026 (WIB), after Phase 19b (live assistant run) and Phase 2
 - a second Anthropic key in its own workspace with a monthly spend limit;
 - the domain: **`app.gajian.my.id` (recommended)** or the apex `gajian.my.id`, which today serves your existing "Gajian — HR & Payroll Modern untuk UMKM Indonesia" site on Vercel and would be replaced.
 
+Also check GitHub → **Actions** for the latest `main` commit (phase-20b): the new job **Hosted image** is the first real build of the Railway image. If it is red, send the agent the failing step's log.
+
 Then tell the agent "add the host keys" and "push main to release".
 
 Running for review on http://127.0.0.1:8092 (this server's database, unchanged by Phase 20; it holds the Phase 19b run), final vault `vault2.gajian-payroll.testnet` (1.94 tUSDC):
 
 - production server, PID in `.tmp/review-server.pid` → stop: `kill $(cat /home/neargajian/near-gajian/.tmp/review-server.pid)`
 - release worker, PID in `.tmp/worker.pid` → stop: `kill $(cat /home/neargajian/near-gajian/.tmp/worker.pid)`
+- from Andre's laptop (no tunnel; SSH port forwarding he starts himself): `ssh -N -L 8092:127.0.0.1:8092 neardao@andre.tail66ca93.ts.net`, then http://127.0.0.1:8092 (use exactly this address: the app checks the origin)
 
 ## Order of work
 

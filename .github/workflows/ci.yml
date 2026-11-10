@@ -39,6 +39,63 @@ jobs:
           npx playwright install --with-deps chromium
           echo "SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: npm run test:e2e
+      - name: Judge mode (fresh demo DB, no signer keys)
+        run: npm run test:judge-mode
+      - name: Hosted demo mode, then the kill switch (no admin key; reads testnet history read-only)
+        run: npm run test:hosted
+
+  image:
+    # The hosted demo image, built exactly as Railway builds it (root Dockerfile), on GitHub's
+    # runner. Never on the development server (no Docker there). Nothing is pushed or deployed.
+    name: Hosted image (build, boot in hosted demo mode, restart)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t gajian-hosted .
+      - name: Boot with HOSTED_DEMO=true and check health, banner and logs
+        run: |
+          # Throwaway worker key: random, never added to any account, so it can sign nothing.
+          key=$(docker run --rm gajian-hosted node -e "import('near-api-js').then(({KeyPair})=>console.log(KeyPair.fromRandom('ed25519').toString()))")
+          echo "::add-mask::$key"
+          docker volume create gajian-data
+          docker run -d --name gajian -p 127.0.0.1:8080:8080 -v gajian-data:/data \
+            -e SESSION_SECRET="$(openssl rand -hex 32)" -e DEMO_MODE=true -e HOSTED_DEMO=true \
+            -e APP_BASE_URL=http://127.0.0.1:8080 -e WORKER_ACCOUNT_ID=worker.gajian-payroll.testnet \
+            -e WORKER_SIGNER_PRIVATE_KEY="$key" gajian-hosted
+          ok=
+          for i in $(seq 1 90); do
+            if curl -fsS -o health.json http://127.0.0.1:8080/api/health; then ok=1; break; fi
+            sleep 2
+          done
+          docker logs gajian > boot.log 2>&1
+          cat boot.log
+          test -n "$ok"
+          cat health.json
+          grep -q '"db":"ok"' health.json
+          grep -q '"hostedDemo":true' health.json
+          curl -fsS -o landing.html http://127.0.0.1:8080/
+          grep -q 'data-testid="hosted-banner"' landing.html
+          grep -q '"event":"demo_reset_done"' boot.log
+          grep -q '"service":"hosted-start","event":"started"' boot.log
+      - name: SIGTERM stops both processes cleanly; second boot runs migrations only
+        run: |
+          docker stop -t 30 gajian
+          test "$(docker inspect -f '{{.State.ExitCode}}' gajian)" = 0
+          docker start gajian
+          for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:8080/api/health && break; sleep 2; done
+          curl -fsS -o health.json http://127.0.0.1:8080/api/health
+          grep -q '"db":"ok"' health.json
+          docker logs gajian > boot.log 2>&1
+          grep -q '"event":"migrations_applied"' boot.log
+          test "$(grep -c '"event":"demo_reset_done"' boot.log)" = 1
+      - name: If the worker dies, the service stops non-zero
+        run: |
+          docker exec gajian sh -c 'for p in /proc/[0-9]*; do grep -qs "src/worker/index[.]ts" "$p/cmdline" && kill -TERM "${p#/proc/}"; done; true'
+          for i in $(seq 1 30); do test "$(docker inspect -f '{{.State.Running}}' gajian)" = false && break; sleep 1; done
+          test "$(docker inspect -f '{{.State.Running}}' gajian)" = false
+          test "$(docker inspect -f '{{.State.ExitCode}}' gajian)" != 0
+          docker logs gajian 2>&1 | tail -n 5
 
   secrets:
     name: Credential scan (working tree + full Git history)
