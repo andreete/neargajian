@@ -21,7 +21,7 @@ Follow **`docs/HOSTING.md` section 0** (about 20 minutes):
 7. For pushes to `discoverateagency-ops/sentfund` in later sessions: either add a deploy key yourself (GitHub → repo Settings → Deploy keys → Add, **Allow write access**; the agent can generate the key pair and give you only the public key), or give a token at the start of the session. **Revoke the token pasted in chat on 10 Nov** (GitHub → Settings → Developer settings → Fine-grained tokens): it is in the conversation transcript.
 8. Say **"deploy"**.
 
-Also: check GitHub → Actions on `discoverateagency-ops/sentfund` for the Phase 21 commit (first run there; the image job now also self-tests the face models). If red, send the agent the failing step's log.
+Also: check GitHub → Actions on `discoverateagency-ops/sentfund` (the token given on 10 Nov cannot read Actions, so the agent could not) for the Phase 21 commit (first run there; the image job now also self-tests the face models). If red, send the agent the failing step's log.
 
 ## Then the agent ("deploy", with Andre's yes)
 
@@ -46,7 +46,7 @@ Also: check GitHub → Actions on `discoverateagency-ops/sentfund` for the Phase
 - Workflow revision 3 (two in sequence, automatic release). Directory: Sales = Emma Clark + Daniel Hall, Operations = Grace Lewis (max 0.10 each), 1,000 sample employees (never identity-verified, so the 1,000-row sample can no longer be submitted while "Pay identity-verified recipients only" is on).
 - Identity: the three live recipients are seeded as verified ("Demo seed"). Specimen checks on this copy change statuses (the impostor sets Daniel to Failed: re-run Daniel's specimen to verify him again); in hosted mode they are dry runs.
 - `npm run judge:verify` 130/130.
-- Review server for Andre: started after Phase 21 on http://127.0.0.1:8092 if the PID files exist: stop with `kill $(cat /home/neargajian/near-gajian/.tmp/review-server.pid)` and `kill $(cat /home/neargajian/near-gajian/.tmp/worker.pid)`. From the laptop: `ssh -N -L 8092:127.0.0.1:8092 neardao@andre.tail66ca93.ts.net`, then http://127.0.0.1:8092.
+- **Review server for Andre is running** (production build of Phase 21, started 13:04 WIB) on http://127.0.0.1:8092 with the release worker, on this server's database `data/gajian.sqlite` (kept, holds the Phase 19b run; migration 0009 applied on open: sign-ins are now `…@sentfund.my.id`, all 1,003 recipients **Not checked**, "Pay identity-verified recipients only" **off** because this database predates the seed). To try the identity check: admin → Identity checks → run the Emma/Daniel/Grace specimens (real Claude reader; ~5 s each), then switch the setting on. For the exact demo state instead: stop both processes and run `npm run demo:reset` (the current DB is moved to `data/backups/`, never deleted). Stop with `kill $(cat /home/neargajian/near-gajian/.tmp/review-server.pid)` and `kill $(cat /home/neargajian/near-gajian/.tmp/worker.pid)`. From the laptop: `ssh -N -L 8092:127.0.0.1:8092 neardao@andre.tail66ca93.ts.net`, then http://127.0.0.1:8092.
 - Scratch from the killed session (face test images, fonts, scripts) is kept in `~/.cache/sentfund-p21-scratch/`; `~/.cache/sentfund-contracts-target-aside` must not exist (it was moved back).
 
 ## Resume prompt
