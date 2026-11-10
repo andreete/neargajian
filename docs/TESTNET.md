@@ -325,6 +325,19 @@ The maker typed "Create a disbursement for the Sales division, 0.03 tUSDC each, 
 
 Balances (`node scripts/testnet/balances.mjs`, RPC `final`): vault2 2.000000 → **1.940000**, recipient1 0.490000 → 0.520000, recipient2 0.470000 → 0.500000 tUSDC: exactly the paid amounts. NEAR across all our accounts 9.87234 → 9.87007 = **0.00227 NEAR**. (One balance read during the run reported recipient2 as "does not exist"; a re-read seconds later showed it normally: a transient RPC answer, not an account change.) Screenshots: `docs/screenshots/phase-19/03`–`06`.
 
+## Phase 21: host keys for the hosted demo on Railway (10 Nov 2026 06:37 UTC)
+
+Four restricted function-call keys for the public demo at `https://sentfund.my.id`, added with `scripts/testnet/hosting-keys.sh add --yes` after Andre's "deploy". Each is limited to its vault2 methods and a small NEAR allowance, separate from this server's keys; private keys only in the git-ignored `.hosting/host-keys.env` (mode 600) and in Railway Variables. Never the admin, master or a full-access key. Delete after the event: `scripts/testnet/hosting-keys.sh delete --yes`.
+
+| Account | Public key | Methods on vault2 | Allowance | Tx |
+| --- | --- | --- | --- | --- |
+| maker | `ed25519:CKZ4UaE1ir6cnSS8ixFBEG9GacAEHd2kp1gd2dpNMdf8` | create_run, cancel_run | 0.1 NEAR | [`CpWyX9Mx…`](https://testnet.nearblocks.io/txns/CpWyX9Mx1gRvbyZfam4wyM3G7JrqXsKhhm9Wf5pbY8v3) |
+| approver1 | `ed25519:BZ8o5PhYus9DmpNwUjj1z1jjrAYLDayMWwkd56RX3BjJ` | approve, reject | 0.05 NEAR | [`EvBvkzdS…`](https://testnet.nearblocks.io/txns/EvBvkzdSgcbhhMSQhbXTV1WwNWs3m7wd1x9wk5jpYhoa) |
+| approver2 | `ed25519:4iJ4ay1e5ZP1bH7h7TrEbv5VRZ7ab2r92wF4zKWz3BUn` | approve, reject | 0.05 NEAR | [`EGtHwYRf…`](https://testnet.nearblocks.io/txns/EGtHwYRfUaKr51LdFvkuvH3PDdHc4ug9RGgG8pj9Mj3M) |
+| worker | `ed25519:En4HTTFZmMRy2r7Bo21NCTjsL8u8KUBjxXkFkzwSEQf8` | start_release, pay_row | 0.25 NEAR | [`691MXEav…`](https://testnet.nearblocks.io/txns/691MXEavDGfmVGWEHkfNz5nszygLw1VdxnNkqq4KK4DE) |
+
+Balances after (`node scripts/testnet/balances.mjs`): total NEAR across our accounts **9.86991** (≈ 0.00016 NEAR for the four key additions); vault2 still 1.940000 tUSDC.
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -337,5 +350,6 @@ Balances (`node scripts/testnet/balances.mjs`, RPC `final`): vault2 2.000000 →
 | 9 Nov 2026 | Phase 16: final vault deploy + lock + 5 keys, fund migration (6 txs), 3 app runs (demo, maker release, awaiting funding), 2 workflow changes, duplicate proof, funding | 9 | 0.960000 to recipients (+0.70 migrated) | 0.02182 | Phase 16 tables |
 | 10 Nov 2026 | Phase 19: vault2 top-up (mint 1.76 + `ft_transfer_call`) | — | — (vault2 0.24 → 2.00) | 0.00077 | Phase 19 table |
 | 10 Nov 2026 | Phase 19b: assistant-drafted run through the app (submit, 2 approvals, release, 2 payouts) | 2 | 0.060000 | 0.00227 | Phase 19b table |
+| 10 Nov 2026 | Phase 21: 4 host keys for the Railway demo (`add-key`, function-call only) | — | — | 0.00016 | Phase 21 table |
 
-**Total testnet NEAR burned so far: ≈ 0.130 NEAR** (10.00000 → 9.87007 across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.130 NEAR** (10.00000 → 9.86991 across all our accounts; storage deposits and contract storage stay inside our accounts).

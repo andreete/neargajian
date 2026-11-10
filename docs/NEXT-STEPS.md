@@ -9,6 +9,19 @@ Updated: Tue 10 Nov 2026, 13:40 WIB, after **Phase 21** (SentFund rebrand + KTP/
 - Code is on `origin` (`andreete/neargajian`) and on the new private **`discoverateagency-ops/sentfund`** (remote `sentfund`), branch `main`. No `release` branch yet, nothing deployed, nothing on-chain changed in Phase 21.
 - **Hosting decided** (D-121): Railway Hobby runs the app; Cloudflare Free hosts the DNS of `sentfund.my.id` (registered at Sumopod; public resolvers answer SERVFAIL until the nameservers point at Cloudflare).
 
+## IN PROGRESS: Phase 22, testnet migration to `sentfund-payroll.testnet` (Andre's yes, 10 Nov 2026 ~07:05 UTC)
+
+Andre: "you can migrate … continue with sentfund-payroll.testnet to make sure all align, run all safe without mistake". Plan (each step checked before the next; record every tx in docs/TESTNET.md):
+1. Preconditions (read-only): name free; no live version on vault2; local review server + worker stopped.
+2. Master `sentfund-payroll.testnet` from the faucet (10 NEAR); sub-accounts admin, maker, approver1, approver2, worker, recipient1-3, tusdc, vault (same funding as the gajian set).
+3. Deploy tUSDC (`fd5a0b9a…`, same bytes as tusdc.gajian) with owner = admin; deploy the vault from the reproducible release Wasm `38953891…` (same bytes as vault2) at `vault.sentfund-payroll.testnet`, init two-in-sequence/automatic/caps 1/100; register with tUSDC; **delete its full-access key**; restricted keys per role.
+4. Register recipients 1-3 with tUSDC; admin mints and funds the vault with 2.18 tUSDC.
+5. `phase04-live.ts` on the new vault → 3 policy runs (0.18 paid) ending at workflow revision 3, vault 2.00 tUSDC. New `testnet-history.json` from those txs (`export-history.mjs`).
+6. Switch code defaults, `.env` (write-env.mjs), tests, fixtures, specimens manifest, evidence (`finalVault`), docs to the new accounts; old gajian runs stay as labelled earlier-deployment evidence in judge:verify.
+7. Hosted: delete the gajian host keys (before switching constants), add host keys on the new accounts, update Railway variables, new DEMO_RESET_TOKEN, release.
+8. Local: `demo:reset` (old DB moved to data/backups), app run through the browser, `record-run-evidence`, judge:verify, judge:deployment.
+Old deployment: vault2 stays locked with 1.94 tUSDC of the OLD token (zero value, cannot be moved without an approved run on it); the contract's payout memo prefix `gajian:` is in the frozen code and stays.
+
 ## Progress on HOSTING section 0 (10 Nov, 14:00 WIB)
 
 - **Done: Cloudflare.** Zone `sentfund.my.id` is **Active** (Free) with nameservers `leonidas.ns.cloudflare.com` and `zelda.ns.cloudflare.com`, set at Sumopod (was `ns1/ns2.sumopod.com`); 1.1.1.1 and 8.8.8.8 answer with them. The zone has **no records yet**. `CLOUDFLARE_API_TOKEN` is in `.env` (verified active, can read the zone's DNS; given in chat, so **roll it after the deploy**).

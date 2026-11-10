@@ -1,44 +1,79 @@
-"""Draws the SentFund logo: public/brand/sentfund-logo.png (transparent, trimmed).
+"""Builds the SentFund logo files from the official artwork (Andre, 10 Nov 2026):
+  public/brand/sentfund-logo-source.jpg  the artwork as delivered (white background)
+  public/brand/sentfund-logo.png         transparent, trimmed: used by the app header and landing
+  src/app/icon.png                       512x512 favicon/app icon: the shield mark only
+Only the white that touches the image border becomes transparent (flood fill), so the white
+"S" and arrow inside the shield stay white. Anti-aliased edges are un-blended against white.
+Run: python3 -I scripts/make-logo-png.py
+"""
+from collections import deque
+from PIL import Image
 
-Mark: a navy rounded square with a sky "coin" and a white arrow leaving it (money sent).
-Wordmark: "SentFund" in Plus Jakarta Sans ExtraBold (SIL Open Font License, the app's UI font),
-navy "Sent" + blue "Fund", and ".my.id" in sky, the palette of src/app/globals.css.
-Run: python3 -I scripts/make-logo-png.py <path/to/PlusJakartaSans[wght].ttf>
-(the font file from github.com/google/fonts, ofl/plusjakartasans; not committed)."""
-import sys
-from PIL import Image, ImageDraw, ImageFont
+SRC = "public/brand/sentfund-logo-source.jpg"
+WHITE_MIN = 236  # a pixel is "background white" when every channel is at least this
 
-NAVY, BLUE, SKY, WHITE = (10, 60, 144), (37, 119, 254), (87, 181, 253), (255, 255, 255)
-S = 4  # supersampling
-H = 330 * S
 
-font = ImageFont.truetype(sys.argv[1], 210 * S)
-font.set_variation_by_name("ExtraBold")
-img = Image.new("RGBA", (2000 * S, H), (0, 0, 0, 0))
-d = ImageDraw.Draw(img)
+def transparent(img: Image.Image) -> Image.Image:
+    img = img.convert("RGB")
+    w, h = img.size
+    px = img.load()
+    bg = bytearray(w * h)
+    q = deque()
+    for x in range(w):
+        q.extend(((x, 0), (x, h - 1)))
+    for y in range(h):
+        q.extend(((0, y), (w - 1, y)))
+    while q:
+        x, y = q.popleft()
+        i = y * w + x
+        if bg[i] or min(px[x, y]) < WHITE_MIN:
+            continue
+        bg[i] = 1
+        if x > 0: q.append((x - 1, y))
+        if x < w - 1: q.append((x + 1, y))
+        if y > 0: q.append((x, y - 1))
+        if y < h - 1: q.append((x, y + 1))
+    out = Image.new("RGBA", (w, h))
+    op = out.load()
+    for y in range(h):
+        for x in range(w):
+            r, g, b = px[x, y]
+            if bg[y * w + x]:
+                op[x, y] = (255, 255, 255, 0)
+                continue
+            near_bg = any(
+                0 <= x + dx < w and 0 <= y + dy < h and bg[(y + dy) * w + x + dx]
+                for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2)
+            )
+            if not near_bg:
+                op[x, y] = (r, g, b, 255)
+                continue
+            # Edge pixel blended with the white background: colour-to-alpha against white.
+            a = max(255 - r, 255 - g, 255 - b) / 255
+            if a <= 0:
+                op[x, y] = (255, 255, 255, 0)
+                continue
+            un = lambda c: max(0, min(255, round((c - 255 * (1 - a)) / a)))
+            op[x, y] = (un(r), un(g), un(b), round(a * 255))
+    return out
 
-# Mark
-m = 300 * S
-x0, y0 = 10 * S, (H - m) // 2
-d.rounded_rectangle([x0, y0, x0 + m, y0 + m], radius=72 * S, fill=NAVY)
-cx, cy, r = x0 + int(m * 0.40), y0 + int(m * 0.60), int(m * 0.19)
-d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=SKY)
-# arrow from the coin to the top right corner
-w = int(m * 0.085)
-tip = (x0 + int(m * 0.80), y0 + int(m * 0.20))
-start = (cx + int(r * 0.35), cy - int(r * 0.35))
-d.line([start, (tip[0] - int(w * 0.9), tip[1] + int(w * 0.9))], fill=WHITE, width=w)
-head = int(m * 0.25)
-d.polygon([tip, (tip[0] - head, tip[1]), (tip[0], tip[1] + head)], fill=WHITE)
 
-# Wordmark
-x = x0 + m + 50 * S
-base = H // 2
-for text, colour in (("Sent", NAVY), ("Fund", BLUE), (".my.id", SKY)):
-    d.text((x, base), text, font=font, fill=colour, anchor="lm")
-    x += int(d.textlength(text, font=font))
+logo = transparent(Image.open(SRC))
+logo = logo.crop(logo.getbbox())
+logo.save("public/brand/sentfund-logo.png", optimize=True)
+print("wrote public/brand/sentfund-logo.png", logo.size)
 
-out = img.crop(img.getbbox())
-out = out.resize((out.width // S, out.height // S), Image.LANCZOS)
-out.save("public/brand/sentfund-logo.png", optimize=True)
-print("wrote public/brand/sentfund-logo.png", out.size)
+# Favicon: the shield mark is the left part of the artwork, up to the first gap before "Sent".
+alpha = logo.getchannel("A")
+w, h = logo.size
+col_has_ink = [any(alpha.getpixel((x, y)) > 40 for y in range(0, h, 2)) for x in range(w)]
+end = next(x for x in range(int(h * 0.6), w) if not col_has_ink[x])
+mark = logo.crop((0, 0, end, h))
+mark = mark.crop(mark.getbbox())
+side = max(mark.size)
+pad = round(side * 0.06)
+icon = Image.new("RGBA", (side + 2 * pad, side + 2 * pad), (255, 255, 255, 0))
+icon.paste(mark, ((icon.width - mark.width) // 2, (icon.height - mark.height) // 2), mark)
+icon = icon.resize((512, 512), Image.LANCZOS)
+icon.save("src/app/icon.png", optimize=True)
+print("wrote src/app/icon.png", icon.size, "from mark", mark.size)
