@@ -22,7 +22,7 @@ import { payRows, requestRelease, workerTick } from '@/server/payouts/release';
 import { buildPayoutTree, toHex } from '@/server/commitments';
 import { FakeVault } from '../helpers/fake-vault';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-reg-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-reg-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 const app1 = { id: 'usr_app1', role: 'approver' as const };

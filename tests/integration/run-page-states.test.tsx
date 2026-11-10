@@ -17,7 +17,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { DatabaseHandle, Db } from '@/server/db/client';
 import { FakeVault } from '../helpers/fake-vault';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-page-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-page-'));
 process.env.DATABASE_URL = `file:${join(dir, 'page-0.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = 'http://127.0.0.1:8092';
@@ -30,7 +30,7 @@ vi.mock('next/navigation', () => ({
   redirect: () => { throw new Error('NEXT_REDIRECT'); },
   forbidden: () => { throw new Error('NEXT_FORBIDDEN'); },
 }));
-const viewer = { current: { id: 'usr_maker', email: 'maker@gajian.my.id', displayName: 'Maya Maker', role: 'maker' as const, chainAccountId: 'maker.gajian-payroll.testnet' } };
+const viewer = { current: { id: 'usr_maker', email: 'maker@sentfund.my.id', displayName: 'Maya Maker', role: 'maker' as const, chainAccountId: 'maker.gajian-payroll.testnet' } };
 vi.mock('@/server/web/page-auth', () => ({
   requireRole: async () => ({ user: viewer.current, csrfToken: 'csrf', expiresAt: new Date(Date.now() + 3_600_000) }),
   currentSession: async () => null,

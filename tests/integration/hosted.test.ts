@@ -11,7 +11,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { FakeVault } from '../helpers/fake-vault';
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-hosted-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-hosted-'));
 process.env.DATABASE_URL = `file:${join(dir, 'h.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -78,7 +78,7 @@ describe('hosted mode flags and keys', () => {
 describe('public demo submit gate', () => {
   it('refuses the 1,000-row sample (upload and preview work) and sends nothing', async () => {
     process.env.HOSTED_DEMO = 'true';
-    const id = await uploadRun('public/templates/gajian-payroll-sample-1000.csv', 'Hosted sample check');
+    const id = await uploadRun('public/templates/sentfund-payroll-sample-1000.csv', 'Hosted sample check');
     const { submitRun, latestVersion } = await import('@/server/runs/lifecycle');
     const fake = new FakeVault();
     await expect(submitRun(db, fake, maker, id, { expectedRevision: 1, now: NOW })).rejects.toThrow(
@@ -107,7 +107,9 @@ describe('public demo submit gate', () => {
     recordReadiness(db, 'usr_admin', grace, 'ready', NOW);
 
     delete process.env.HOSTED_DEMO; // off: the sample is submittable (validated and sent to the stand-in vault)
-    const sample = await uploadRun('public/templates/gajian-payroll-uniform-1000.csv', 'Local sample');
+    const { setIdentityVerifiedOnly } = await import('@/server/identity/service');
+    setIdentityVerifiedOnly(db, { id: 'usr_admin', role: 'admin' }, false, NOW); // the sample employees are not identity-verified (Phase 21)
+    const sample = await uploadRun('public/templates/sentfund-payroll-uniform-1000.csv', 'Local sample');
     const fake3 = new FakeVault();
     expect((await submitRun(db, fake3, maker, sample, { expectedRevision: 1, now: NOW })).status).toBe('submitting');
   });
@@ -154,7 +156,7 @@ describe('kill switch HOSTED_READONLY', () => {
     expect(((await create.json()) as { error: { code: string; message: string } }).error).toMatchObject({ code: 'read_only', message: expect.stringMatching(/read-only right now/) });
     expect((await runs.GET(req('maker', '/api/runs'))).status).toBe(200);
     const login = (await import('@/app/api/auth/login/route')) as unknown as { POST: H };
-    const signIn = await login.POST(new Request(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE, 'x-forwarded-for': '10.9.0.1' }, body: JSON.stringify({ email: 'app1@gajian.my.id', password: '12345678' }) }));
+    const signIn = await login.POST(new Request(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE, 'x-forwarded-for': '10.9.0.1' }, body: JSON.stringify({ email: 'app1@sentfund.my.id', password: '12345678' }) }));
     expect(signIn.status).toBe(200);
     const logout = (await import('@/app/api/auth/logout/route')) as unknown as { POST: H };
     expect((await logout.POST(req('admin', '/api/auth/logout', 'POST'))).status).toBe(204);
@@ -167,7 +169,7 @@ describe('sign-in lockout in the public demo', () => {
   it('a visitor who keeps failing locks only themselves, not the shared demo account', async () => {
     const { login } = await import('@/server/auth/login');
     const at = new Date();
-    const attempt = (password: string, client: string) => login(db, { email: 'app2@gajian.my.id', password, clientKey: client, secret: 'test-secret', now: at });
+    const attempt = (password: string, client: string) => login(db, { email: 'app2@sentfund.my.id', password, clientKey: client, secret: 'test-secret', now: at });
     process.env.HOSTED_DEMO = 'true';
     for (let i = 0; i < 5; i++) expect((await attempt('wrong', '203.0.113.7')).ok).toBe(false);
     expect(await attempt('12345678', '203.0.113.7')).toMatchObject({ ok: false, reason: 'rate_limited' });

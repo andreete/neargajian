@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FakeVault } from '../helpers/fake-vault';
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-bnd-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-bnd-'));
 process.env.DATABASE_URL = `file:${join(dir, 'bnd.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -75,10 +75,14 @@ function operations(): { name: string; method: string; path: (id: string) => str
     { name: 'admin settings change', method: 'POST', path: () => '/api/admin/settings', h: () => route.settings!.POST!, body: j({ registeredRecipientsOnly: false }), run: () => '' },
     { name: 'assistant', method: 'POST', path: () => '/api/assistant', h: () => route.assistant!.POST!, body: j({ messages: [{ role: 'user', text: 'Pay the Sales division 0.05 each' }] }), run: () => '' },
     { name: 'assistant draft', method: 'POST', path: () => '/api/assistant/drafts', h: () => route.assistantDraft!.POST!, body: j({ requestId: 'none' }), run: () => '' },
+    // Phase 21: identity checks (admin only).
+    { name: 'identity check', method: 'POST', path: () => '/api/admin/identity/check', h: () => route.idCheck!.POST!, body: () => { const f = new FormData(); f.set('recipientId', EMMA); f.set('ktp', new File([readFileSync('public/specimens/emma-ktp.jpg')], 'k.jpg', { type: 'image/jpeg' })); f.set('face', new File([readFileSync('public/specimens/emma-selfie.jpg')], 'f.jpg', { type: 'image/jpeg' })); return f; }, run: () => '' },
+    { name: 'identity specimen', method: 'POST', path: () => '/api/admin/identity/specimen', h: () => route.idSpecimen!.POST!, body: j({ scenario: 'impostor' }), run: () => '' },
+    { name: 'identity review', method: 'POST', path: () => '/api/admin/identity/review', h: () => route.idReview!.POST!, body: () => JSON.stringify({ recipientId: EMMA, decision: 'failed', reason: 'probe reason' }), run: () => '' },
   ];
 }
 
-const ADMIN_DIRECTORY = ['admin recipients list', 'admin recipient add', 'admin recipient edit', 'admin recipient status', 'admin recipient check', 'admin recipients import', 'admin settings read', 'admin settings change'];
+const ADMIN_DIRECTORY = ['admin recipients list', 'admin recipient add', 'admin recipient edit', 'admin recipient status', 'admin recipient check', 'admin recipients import', 'admin settings read', 'admin settings change', 'identity check', 'identity specimen', 'identity review'];
 
 /** Who must be refused where, and with which status. */
 const DENIED: [Who, string[], number][] = [
@@ -102,6 +106,8 @@ function state() {
     recipientEvents: q('select count(*) as n from recipient_events'),
     settings: q('select key, value from app_settings order by key'),
     assistant: q('select count(*) as n from assistant_requests'),
+    identity: q('select id, identity_status, identity_check_id from recipients order by id'),
+    identityChecks: q('select count(*) as n from identity_checks'),
   });
 }
 
@@ -115,6 +121,7 @@ beforeAll(async () => {
   (await import('@/server/chain/vault-client')).setVaultClientForTests(fake);
   (await import('@/server/assistant/factory')).setAssistantModelForTests((await import('@/server/assistant/stub-model')).stubModel());
   (await import('@/server/recipients/readiness')).setReadinessCheckerForTests({ check: async () => 'ready' });
+  (await import('@/server/identity/ktp-reader')).setKtpReaderForTests((await import('@/server/identity/ktp-reader')).stubKtpReader());
   EMMA = (sqlite.prepare("select id from recipients where near_account_id = 'recipient1.gajian-payroll.testnet'").get() as { id: string }).id;
   const { users } = await import('@/server/db/schema');
   const hash = sqlite.prepare("select password_hash as h from users where id = 'usr_maker'").get() as { h: string };
@@ -164,6 +171,9 @@ beforeAll(async () => {
   route.settings = await load('@/app/api/admin/settings/route');
   route.assistant = await load('@/app/api/assistant/route');
   route.assistantDraft = await load('@/app/api/assistant/drafts/route');
+  route.idCheck = await load('@/app/api/admin/identity/check/route');
+  route.idSpecimen = await load('@/app/api/admin/identity/specimen/route');
+  route.idReview = await load('@/app/api/admin/identity/review/route');
 }, 60_000);
 
 afterAll(async () => {
@@ -199,7 +209,7 @@ describe('API permission boundaries', () => {
         checked += 1;
       }
     }
-    expect(checked).toBe(63);
+    expect(checked).toBe(69); // Phase 21: + 3 identity routes × (approver, maker)
     expect(state()).toBe(before);
     expect(fake.calls.length).toBe(calls);
   });

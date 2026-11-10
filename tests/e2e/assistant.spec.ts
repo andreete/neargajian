@@ -18,7 +18,7 @@ function watchCsp(page: Page) {
 }
 
 async function openAssistant(page: Page) {
-  await signIn(page, 'maker@gajian.my.id');
+  await signIn(page, 'maker@sentfund.my.id');
   await page.waitForURL(/\/maker$/);
   await page.goto('/maker/runs/new');
   const box = page.getByTestId('payroll-assistant');

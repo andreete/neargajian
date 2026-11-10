@@ -15,7 +15,7 @@ const rejectedErrors = (r: ImportResult) => (r.ok ? [] : r.errors);
 
 describe('importer (A03)', () => {
   it('accepts the three sample files with their exact totals (docs/SAMPLE-DATA.md)', () => {
-    for (const [file, total] of [['gajian-payroll-sample-1000.csv', 56_690_860n], ['gajian-payroll-sample-1000.txt', 56_690_860n], ['gajian-payroll-uniform-1000.csv', 10_000_000n]] as const) {
+    for (const [file, total] of [['sentfund-payroll-sample-1000.csv', 56_690_860n], ['sentfund-payroll-sample-1000.txt', 56_690_860n], ['sentfund-payroll-uniform-1000.csv', 10_000_000n]] as const) {
       const r = importPayrollFile({ filename: file, bytes: tpl(file), limits: LIMITS });
       expect(r.ok, file).toBe(true);
       if (r.ok) {
@@ -125,7 +125,7 @@ describe('Excel template', () => {
   it('is macro-free, has instructions and 1,000 sample rows with Text-formatted account, amount and phone', async () => {
     const ExcelJS = (await import('exceljs')).default;
     const wb = new ExcelJS.Workbook();
-    const bytes = tpl('gajian-payroll-template.xlsx');
+    const bytes = tpl('sentfund-payroll-template.xlsx');
     await wb.xlsx.load(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
     expect(wb.worksheets.map((w) => w.name)).toEqual(['Instructions', 'Payroll']);
     const text = wb.getWorksheet('Instructions')!.getColumn(1).values.join(' ');
@@ -141,14 +141,14 @@ describe('Excel template', () => {
     }
     expect(sheet.getCell('E2').value).toBe('+44 7700 900000');
     expect(sheet.getCell('D2').value).toBe('0.05');
-    expect(tpl('gajian-payroll-template.xlsx').includes(Buffer.from('vbaProject'))).toBe(false);
+    expect(tpl('sentfund-payroll-template.xlsx').includes(Buffer.from('vbaProject'))).toBe(false);
   });
 });
 
 // ------------------------------------------------------------------ upload API
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-upload-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-upload-'));
 process.env.DATABASE_URL = `file:${join(dir, 'u.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -191,9 +191,9 @@ const ctx = (runId: string) => ({ params: Promise.resolve({ runId }) });
 
 describe('upload API', () => {
   it('accepts a file atomically, and a failed replacement preserves the earlier draft', async () => {
-    const maker = await as('maker@gajian.my.id');
+    const maker = await as('maker@sentfund.my.id');
     const { id } = (await (await runs.POST(maker.json('/api/runs', 'POST', { title: 'Upload run', postingMode: 'detailed', source: 'upload' }))).json()) as { id: string };
-    const ok = await upload.POST(maker.file(`/api/runs/${id}/upload`, 'gajian-payroll-sample-1000.csv', tpl('gajian-payroll-sample-1000.csv'), 0), ctx(id));
+    const ok = await upload.POST(maker.file(`/api/runs/${id}/upload`, 'sentfund-payroll-sample-1000.csv', tpl('sentfund-payroll-sample-1000.csv'), 0), ctx(id));
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ accepted: true, rowCount: 1000, total: '56.690860', revision: 1, delimiter: 'comma' });
 
@@ -202,7 +202,7 @@ describe('upload API', () => {
     expect(await bad.json()).toMatchObject({ accepted: false, revision: 1, errorCount: 1, summary: 'Row 61: invalid NEAR account ID. Fix the file and upload it again.' });
 
     const view = (await (await draft.GET(maker.get(`/api/runs/${id}/draft`), ctx(id))).json()) as { run: { draftFilename: string; draftRevision: number }; rows: { sourceLine: number }[]; summary: { validTotal: string } };
-    expect(view.run).toMatchObject({ draftFilename: 'gajian-payroll-sample-1000.csv', draftRevision: 1 });
+    expect(view.run).toMatchObject({ draftFilename: 'sentfund-payroll-sample-1000.csv', draftRevision: 1 });
     expect(view.rows).toHaveLength(1000);
     expect(view.rows[49]?.sourceLine).toBe(51);
     expect(view.summary.validTotal).toBe('56.690860');
@@ -211,9 +211,9 @@ describe('upload API', () => {
   });
 
   it('only the run maker can upload', async () => {
-    const maker = await as('maker@gajian.my.id');
+    const maker = await as('maker@sentfund.my.id');
     const { id } = (await (await runs.POST(maker.json('/api/runs', 'POST', { title: 'Scoped', postingMode: 'detailed', source: 'upload' }))).json()) as { id: string };
-    for (const email of ['app1@gajian.my.id', 'admin@gajian.my.id']) {
+    for (const email of ['app1@sentfund.my.id', 'admin@sentfund.my.id']) {
       const u = await as(email);
       expect((await upload.POST(u.file(`/api/runs/${id}/upload`, 'p.csv', toDelimited(validRows(2)), 0), ctx(id))).status).toBe(403);
     }

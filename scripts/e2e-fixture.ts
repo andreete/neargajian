@@ -15,6 +15,7 @@ import { payRows, requestRelease } from '../src/server/payouts/release.ts';
 import { FakeVault } from '../tests/helpers/fake-vault.ts';
 import { createDraftFromPreview, interpretRequest } from '../src/server/assistant/service.ts';
 import { stubModel } from '../src/server/assistant/stub-model.ts';
+import { setIdentityVerifiedOnly } from '../src/server/identity/service.ts';
 
 const { db, file } = getDatabase();
 if (!file.includes('/.tmp/')) throw new Error(`Refusing to write the e2e fixture outside .tmp/: ${file}`);
@@ -67,9 +68,14 @@ async function assistantRun() {
 }
 
 const three = 'tests/live/live-3-rows.csv';
+// These runs are history from before the identity check existed (Phase 21, dated 5 Nov), and the
+// 1,000 sample employees are never identity-verified: the gate is off while they are built, then
+// back on (the demo default) for the browser tests.
+const admin = { id: 'usr_admin', role: 'admin' as const };
+setIdentityVerifiedOnly(db, admin, false, clock);
 const ids = {
   paidDetailed: await run('October contractors', 'detailed', three, 'paid'),
-  paidConsolidated: await run('October staff payroll (1,000 rows)', 'consolidated', 'public/templates/gajian-payroll-uniform-1000.csv', 'paid'),
+  paidConsolidated: await run('October staff payroll (1,000 rows)', 'consolidated', 'public/templates/sentfund-payroll-uniform-1000.csv', 'paid'),
   releasing: await run('November freelancers', 'detailed', three, 'releasing'),
   awaitingFunding: await run('November bonuses', 'consolidated', three, 'awaiting_funding'),
   pending: await run('November contractors', 'detailed', three, 'pending'),
@@ -77,5 +83,6 @@ const ids = {
   longTitle: await run('November contractors and freelance designers: second payroll batch for the product team', 'detailed', three, 'pending'),
   assistantPending: await assistantRun(),
 };
+setIdentityVerifiedOnly(db, admin, true, tick());
 console.log(JSON.stringify(ids));
 closeDatabase();

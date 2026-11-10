@@ -8,7 +8,7 @@ import { parse } from 'csv-parse/sync';
 import { parseAmount } from './money.ts';
 import { readTestnetHistory } from './db/testnet-history.ts';
 
-export const SAMPLE_FILE = 'gajian-payroll-sample-1000.csv';
+export const SAMPLE_FILE = 'sentfund-payroll-sample-1000.csv';
 
 export interface SamplePreview {
   fileName: string;

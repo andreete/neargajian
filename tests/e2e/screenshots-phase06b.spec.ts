@@ -17,7 +17,7 @@ async function settle(page: Page) {
 async function signIn(page: Page, email: string) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -57,10 +57,10 @@ test('sign-in dialog', async ({ page }) => {
 });
 
 for (const [email, file, url] of [
-  ['maker@gajian.my.id', '05-maker', '/maker'],
-  ['app1@gajian.my.id', '06-approver1', '/approver'],
-  ['app2@gajian.my.id', '07-approver2', '/approver'],
-  ['admin@gajian.my.id', '08-admin', '/admin'],
+  ['maker@sentfund.my.id', '05-maker', '/maker'],
+  ['app1@sentfund.my.id', '06-approver1', '/approver'],
+  ['app2@sentfund.my.id', '07-approver2', '/approver'],
+  ['admin@sentfund.my.id', '08-admin', '/admin'],
 ] as const) {
   test(`dashboard ${file}`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

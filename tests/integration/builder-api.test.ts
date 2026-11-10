@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-builder-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-builder-'));
 process.env.DATABASE_URL = `file:${join(dir, 'b.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -21,7 +21,7 @@ beforeAll(async () => {
   // A second maker, to prove one maker cannot touch another maker's draft.
   const { users } = await import('@/server/db/schema');
   const { hashPassword } = await import('@/server/auth/password');
-  db.insert(users).values({ id: 'usr_maker2', email: 'maker2@gajian.my.id', displayName: 'Mia Maker', role: 'maker', passwordHash: await hashPassword('12345678'), chainAccountId: null, createdAt: new Date() }).run();
+  db.insert(users).values({ id: 'usr_maker2', email: 'maker2@sentfund.my.id', displayName: 'Mia Maker', role: 'maker', passwordHash: await hashPassword('12345678'), chainAccountId: null, createdAt: new Date() }).run();
   runs = (await import('@/app/api/runs/route')) as unknown as typeof runs;
   draft = (await import('@/app/api/runs/[runId]/draft/route')) as unknown as typeof draft;
   subset = (await import('@/app/api/runs/[runId]/draft/confirm-subset/route')) as unknown as typeof subset;
@@ -48,7 +48,7 @@ const row = (over: Record<string, string> = {}) => ({ near_account_id: 'recipien
 
 describe('manual builder API', () => {
   it('maker creates a run, saves rows (invalid ones kept), and confirms the valid subset explicitly', async () => {
-    const maker = await as('maker@gajian.my.id');
+    const maker = await as('maker@sentfund.my.id');
     const created = await runs.POST(maker.req('/api/runs', 'POST', { title: 'December payroll', postingMode: 'detailed', source: 'manual' }));
     expect(created.status).toBe(201);
     const { id } = (await created.json()) as { id: string };
@@ -79,12 +79,12 @@ describe('manual builder API', () => {
   });
 
   it('other makers, approvers and the admin cannot read or change a draft', async () => {
-    const maker = await as('maker@gajian.my.id');
+    const maker = await as('maker@sentfund.my.id');
     const { id } = (await (await runs.POST(maker.req('/api/runs', 'POST', { title: 'Private draft', postingMode: 'detailed', source: 'manual' }))).json()) as { id: string };
-    const other = await as('maker2@gajian.my.id');
+    const other = await as('maker2@sentfund.my.id');
     expect((await draft.GET(other.req(`/api/runs/${id}/draft`), ctx(id))).status).toBe(404);
     expect((await draft.PUT(other.req(`/api/runs/${id}/draft`, 'PUT', { expectedRevision: 0, rows: [row()] }), ctx(id))).status).toBe(404);
-    for (const email of ['app1@gajian.my.id', 'admin@gajian.my.id']) {
+    for (const email of ['app1@sentfund.my.id', 'admin@sentfund.my.id']) {
       const u = await as(email);
       expect((await draft.GET(u.req(`/api/runs/${id}/draft`), ctx(id))).status).toBe(403);
       expect((await runs.POST(u.req('/api/runs', 'POST', { title: 'x', postingMode: 'detailed', source: 'manual' }))).status).toBe(403);
@@ -92,7 +92,7 @@ describe('manual builder API', () => {
   });
 
   it('validates input on create and refuses manual edits to an uploaded run', async () => {
-    const maker = await as('maker@gajian.my.id');
+    const maker = await as('maker@sentfund.my.id');
     expect((await runs.POST(maker.req('/api/runs', 'POST', { title: '', postingMode: 'detailed', source: 'manual' }))).status).toBe(422);
     expect((await runs.POST(maker.req('/api/runs', 'POST', { title: 'x', postingMode: 'weekly', source: 'manual' }))).status).toBe(422);
     const { id } = (await (await runs.POST(maker.req('/api/runs', 'POST', { title: 'Upload run', postingMode: 'detailed', source: 'upload' }))).json()) as { id: string };

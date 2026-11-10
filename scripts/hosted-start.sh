@@ -9,7 +9,7 @@ set -eu
 cd "$(dirname "$0")/.."
 : "${PORT:=8080}"
 : "${HOST:=0.0.0.0}"
-export DATABASE_URL="${DATABASE_URL:-file:/data/gajian.sqlite}"
+export DATABASE_URL="${DATABASE_URL:-file:/data/sentfund.sqlite}"
 export NODE_ENV=production
 
 node scripts/hosted-prepare.ts

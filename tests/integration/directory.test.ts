@@ -22,7 +22,7 @@ import { latestVersion, submitRun } from '@/server/runs/lifecycle';
 import { FakeVault } from '../helpers/fake-vault';
 import { eq } from 'drizzle-orm';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-dir-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-dir-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 const admin = { id: 'usr_admin', role: 'admin' as const };
@@ -57,7 +57,7 @@ describe('seeded directory', () => {
       ['Emma Clark', 'Sales', 'recipient1.gajian-payroll.testnet'], ['Daniel Hall', 'Sales', 'recipient2.gajian-payroll.testnet'], ['Grace Lewis', 'Operations', 'recipient3.gajian-payroll.testnet'],
     ]));
     expect(new Set(all.filter((r) => r.sample).map((r) => r.division))).toEqual(new Set(['Engineering', 'Customer Support', 'Logistics']));
-    for (const f of ['gajian-payroll-sample-1000.csv', 'gajian-payroll-uniform-1000.csv', 'gajian-payroll-sample-1000.txt']) {
+    for (const f of ['sentfund-payroll-sample-1000.csv', 'sentfund-payroll-uniform-1000.csv', 'sentfund-payroll-sample-1000.txt']) {
       const { out } = uploadRun(readFileSync(`public/templates/${f}`), f);
       expect(out.result.ok, f).toBe(true);
     }
@@ -104,7 +104,7 @@ describe('Pay registered recipients only', () => {
     const fake = new FakeVault();
     await submitRun(h.db, fake, maker, id, { expectedRevision: 1, now: NOW });
     const v = latestVersion(h.db, id)!;
-    expect(JSON.parse(v.directoryCheck!)).toEqual({ enforced: true, matched: 2, rows: 2 });
+    expect(JSON.parse(v.directoryCheck!)).toEqual({ enforced: true, matched: 2, rows: 2, identity: { enforced: true, verified: 2 } });
     const rows = [{ accountId: 'recipient1.gajian-payroll.testnet', amount: 50_000n }, { accountId: 'recipient2.gajian-payroll.testnet', amount: 40_000n }];
     expect(directoryDrift(h.db, rows)).toBe(0);
     updateRecipient(h.db, admin, recipientId('recipient2.gajian-payroll.testnet'), { name: 'Daniel Hall', division: 'Sales', email: 'daniel.hall@example.com', mobilePhone: '+44 7700 900102', maxAmount: '0.03' }, CAP, NOW);

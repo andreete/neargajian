@@ -18,7 +18,7 @@ function watchCsp(page: Page) {
 
 test('admin manages the directory: setting on, add, edit, deactivate and reactivate, every change logged', async ({ page }) => {
   const problems = watchCsp(page);
-  await signIn(page, 'admin@gajian.my.id');
+  await signIn(page, 'admin@sentfund.my.id');
   await page.waitForURL(/\/admin$/);
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Recipients' }).click();
   await page.waitForURL(/\/admin\/recipients$/);
@@ -42,7 +42,7 @@ test('admin manages the directory: setting on, add, edit, deactivate and reactiv
   const dialog = page.getByRole('dialog', { name: 'Add recipient' });
   await dialog.getByLabel('Name').fill('Olivia Stone');
   await dialog.getByLabel('Division').fill('sales');
-  await dialog.getByLabel('NEAR account').fill('gajian-e2e-olivia.testnet');
+  await dialog.getByLabel('NEAR account').fill('sentfund-e2e-olivia.testnet');
   await dialog.getByLabel('Email').fill('olivia.stone@example.com');
   await dialog.getByLabel('Phone').fill('+44 7700 900777');
   await dialog.getByLabel('Maximum per payout (tUSDC)').fill('1.5');
@@ -50,7 +50,7 @@ test('admin manages the directory: setting on, add, edit, deactivate and reactiv
   await expect(dialog.getByText("The maximum is above the workflow's per-row cap of 1.00 tUSDC.")).toBeVisible();
   await dialog.getByLabel('Maximum per payout (tUSDC)').fill('0.2');
   await dialog.getByRole('button', { name: 'Add and check on testnet' }).click();
-  await expect(page.getByTestId('directory-notice')).toContainText(/Added Olivia Stone \(gajian-e2e-olivia\.testnet\): (Account not found on NEAR testnet|Could not reach NEAR testnet|Ready to receive tUSDC)/);
+  await expect(page.getByTestId('directory-notice')).toContainText(/Added Olivia Stone \(sentfund-e2e-olivia\.testnet\): (Account not found on NEAR testnet|Could not reach NEAR testnet|Ready to receive tUSDC)/);
 
   // Edit (existing division spelling kept) and deactivate / reactivate; the change log names who and what.
   await filters.getByLabel('Search').fill('olivia');
@@ -90,7 +90,7 @@ test('admin manages the directory: setting on, add, edit, deactivate and reactiv
 
 test('Pay registered recipients only: an upload row outside the directory or above its maximum is rejected with row and column', async ({ page }) => {
   const problems = watchCsp(page);
-  await signIn(page, 'maker@gajian.my.id');
+  await signIn(page, 'maker@sentfund.my.id');
   await page.waitForURL(/\/maker$/);
   await newRun(page, 'Directory check', 'upload');
   await expect(page.getByTestId('directory-rule')).toContainText('Pay registered recipients only is on');
@@ -111,7 +111,7 @@ test('Pay registered recipients only: an upload row outside the directory or abo
 });
 
 test('approvers see that every row matched the directory, and the assistant origin of the run', async ({ page }) => {
-  await signIn(page, 'app1@gajian.my.id');
+  await signIn(page, 'app1@sentfund.my.id');
   await page.waitForURL(/\/approver$/);
   await page.goto(`/runs/${fixture().assistantPending}`);
   await expect(page.getByTestId('directory-check')).toContainText('Every row matched the recipient directory: 2 of 2 rows matched an active recipient');

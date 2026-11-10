@@ -50,7 +50,7 @@ export interface VaultClient {
 }
 
 /** Shown when a chain action is attempted on a copy without signer keys. Nothing is recorded. */
-export const NO_SIGNER_MESSAGE = 'This copy of GAJIAN has no signer keys, so it cannot send transactions to NEAR. Nothing was recorded. The live runs can be verified read-only with npm run judge:verify.';
+export const NO_SIGNER_MESSAGE = 'This copy of SentFund has no signer keys, so it cannot send transactions to NEAR. Nothing was recorded. The live runs can be verified read-only with npm run judge:verify.';
 
 const ENV_KEY: Record<ChainRole, { account: string; key: string }> = {
   maker: { account: 'MAKER_ACCOUNT_ID', key: 'MAKER_SIGNER_PRIVATE_KEY' },

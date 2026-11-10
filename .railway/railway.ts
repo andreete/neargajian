@@ -1,5 +1,5 @@
 /**
- * GAJIAN hosted demo on Railway, as Infrastructure as Code: the documented replacement for
+ * SentFund hosted demo on Railway, as Infrastructure as Code: the documented replacement for
  * railway.json / railway.toml, which NEW services cannot use ("New services cannot opt into
  * Config as Code"; docs.railway.com/infrastructure-as-code and /infrastructure-as-code/reference,
  * checked 10 Nov 2026).
@@ -18,14 +18,14 @@
 import { defineRailway, github, preserve, project, service, volume } from 'railway/iac';
 
 export default defineRailway(() => {
-  const data = volume('gajian-data');
-  const web = service('gajian', {
+  const data = volume('sentfund-data');
+  const web = service('sentfund', {
     source: github('andreete/neargajian', { branch: 'release' }),
     healthcheck: '/api/health',
     healthcheckTimeout: 300,
     replicas: 1, // a service with a volume cannot have replicas
     volumeMounts: { '/data': data },
-    domains: [{ domain: 'gajian.my.id', port: 8080 }], // or app.gajian.my.id (docs/HOSTING.md, step 5)
+    domains: [{ domain: 'sentfund.my.id', port: 8080 }], // apex; www.sentfund.my.id if the DNS cannot point the apex (docs/HOSTING.md, step 5)
     env: {
       NODE_ENV: 'production',
       PORT: '8080',
@@ -34,8 +34,8 @@ export default defineRailway(() => {
       DEMO_MODE: 'true',
       NEAR_NETWORK: 'testnet',
       NEAR_RPC_URL: 'https://rpc.testnet.fastnear.com',
-      APP_BASE_URL: 'https://gajian.my.id',
-      DATABASE_URL: 'file:/data/gajian.sqlite',
+      APP_BASE_URL: 'https://sentfund.my.id',
+      DATABASE_URL: 'file:/data/sentfund.sqlite',
       VAULT_CONTRACT_ID: 'vault2.gajian-payroll.testnet',
       TUSDC_CONTRACT_ID: 'tusdc.gajian-payroll.testnet',
       MAKER_ACCOUNT_ID: 'maker.gajian-payroll.testnet',
@@ -54,5 +54,5 @@ export default defineRailway(() => {
       DEMO_RESET_TOKEN: preserve(),
     },
   });
-  return project('gajian', { resources: [web, data] });
+  return project('sentfund', { resources: [web, data] });
 });

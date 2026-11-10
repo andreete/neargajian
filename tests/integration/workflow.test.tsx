@@ -11,7 +11,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { ChainRole, ChainWorkflow, TxOutcome, VaultClient } from '@/server/chain/vault-client';
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-wf-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-wf-'));
 process.env.DATABASE_URL = `file:${join(dir, 'wf.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -153,13 +153,13 @@ describe('admin workflow API', () => {
   });
 
   it('only the admin can read or change the workflow', async () => {
-    for (const email of ['maker@gajian.my.id', 'app1@gajian.my.id']) {
+    for (const email of ['maker@sentfund.my.id', 'app1@sentfund.my.id']) {
       const c = await cookieFor(email);
       expect((await route.POST(post(c, parallelMaker))).status).toBe(403);
       expect(route.GET(new Request(`${BASE}/api/admin/workflow`, { headers: { cookie: c.cookie } })).status).toBe(403);
     }
     expect(fake.calls).toBe(0);
-    const admin = await cookieFor('admin@gajian.my.id');
+    const admin = await cookieFor('admin@sentfund.my.id');
     expect((await route.POST(post({ ...admin, csrf: 'wrong' }, parallelMaker))).status).toBe(403);
     expect((await route.POST(post(admin, { ...parallelMaker, approverUserIds: ['usr_app2', 'usr_app2'] }))).status).toBe(422);
     const ok = await route.POST(post(admin, parallelMaker));

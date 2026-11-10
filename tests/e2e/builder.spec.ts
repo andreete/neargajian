@@ -3,14 +3,14 @@ import { expect, test } from '@playwright/test';
 async function signInLocal(page: import('@playwright/test').Page, email: string) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
 }
 
 test('maker builds a manual run, sees inline errors and keeps only the valid rows after confirming', async ({ page }) => {
-  await signInLocal(page, 'maker@gajian.my.id');
+  await signInLocal(page, 'maker@sentfund.my.id');
   await page.waitForURL('**/maker');
   await page.getByRole('link', { name: 'New run' }).first().click();
   await page.getByLabel('Run title').fill('E2E manual run');
@@ -43,7 +43,7 @@ test('maker builds a manual run, sees inline errors and keeps only the valid row
 });
 
 test('builder fits the container at 1280x720 and 1440x900: full account IDs, remove buttons inside', async ({ page }) => {
-  await signInLocal(page, 'maker@gajian.my.id');
+  await signInLocal(page, 'maker@sentfund.my.id');
   await page.waitForURL('**/maker');
   await page.goto('/maker/runs/new');
   await page.getByLabel('Run title').fill('Fit check');

@@ -1,8 +1,8 @@
 {
-  "name": "gajian",
+  "name": "sentfund",
   "version": "0.1.0",
   "private": true,
-  "description": "GAJIAN: payroll batches with contract-enforced approvals and NEAR testnet wallet payouts",
+  "description": "SentFund: payroll batches with contract-enforced approvals and NEAR testnet wallet payouts",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -40,6 +40,8 @@
     "demo:reset": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/demo-reset.ts",
     "test:judge-mode": "./scripts/with-tmp.sh playwright test -c playwright.judge.config.ts",
     "live:phase19": "./scripts/with-tmp.sh playwright test -c playwright.live.config.ts tests/live/phase19.spec.ts",
+    "vision:models": "./scripts/with-tmp.sh node scripts/fetch-vision-models.mjs",
+    "vision:selftest": "./scripts/with-tmp.sh node scripts/vision-selftest.ts",
     "test:hosted": "./scripts/with-tmp.sh sh -c 'playwright test -c playwright.hosted.config.ts && playwright test -c playwright.hosted-readonly.config.ts'"
   },
   "dependencies": {
@@ -49,9 +51,11 @@
     "drizzle-orm": "0.45.4",
     "near-api-js": "7.4.0",
     "next": "16.4.3",
+    "onnxruntime-node": "1.31.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "server-only": "0.0.1"
+    "server-only": "0.0.1",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

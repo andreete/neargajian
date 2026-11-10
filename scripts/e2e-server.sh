@@ -7,10 +7,12 @@ root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 rm -rf .tmp/e2e
 mkdir -p .tmp/e2e
-export DATABASE_URL="file:./.tmp/e2e/gajian.sqlite"
+export DATABASE_URL="file:./.tmp/e2e/sentfund.sqlite"
 export DEMO_MODE=true
 # Browser tests use the labelled test stub for the payroll assistant, never the real Claude API.
 export ASSISTANT_STUB=browser-tests
+# ... and the labelled test stub KTP reader for identity checks (the face engine is the real one).
+export IDENTITY_STUB=browser-tests
 node --env-file-if-exists=.env scripts/db.ts seed >/dev/null
 # Test-only runs in every lifecycle state (stand-in vault, no testnet); IDs for the specs.
 node --env-file-if-exists=.env scripts/e2e-fixture.ts > .tmp/e2e/fixture.json

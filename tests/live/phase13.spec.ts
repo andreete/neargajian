@@ -15,7 +15,7 @@ async function session(browser: Browser, email: string) {
   const page = await ctx.newPage();
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -25,7 +25,7 @@ async function session(browser: Browser, email: string) {
 
 test('live testnet payroll through the app', async ({ browser }) => {
   // 1. Maker: upload, detailed posting, review, submit. (RESUME_RUN_ID resumes an already submitted run.)
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   let runId = process.env.RESUME_RUN_ID ?? '';
   if (!runId) {
   await maker.goto('/maker/runs/new');
@@ -52,7 +52,7 @@ test('live testnet payroll through the app', async ({ browser }) => {
   // HISTORY_ONLY=1 resumes after payment (history, exports) for an already paid run.
   if (!process.env.HISTORY_ONLY) {
   // 2. Approver 1: review detail, approve, waiting for chain confirmation.
-  const app1 = await session(browser, 'app1@gajian.my.id');
+  const app1 = await session(browser, 'app1@sentfund.my.id');
   await app1.goto(`/runs/${runId}`);
   await expect(app1.getByRole('heading', { name: 'Your decision (step 1)' })).toBeVisible();
   await shot(app1, '02-approver-review-detail');
@@ -63,7 +63,7 @@ test('live testnet payroll through the app', async ({ browser }) => {
   await expect(app1.locator('.timeline-list')).toContainText('Confirmed on NEAR', { timeout: 90_000 });
 
   // 3. Approver 2 (after step 1 is confirmed).
-  const app2 = await session(browser, 'app2@gajian.my.id');
+  const app2 = await session(browser, 'app2@sentfund.my.id');
   await app2.goto(`/runs/${runId}`);
   await expect(app2.getByRole('heading', { name: 'Your decision (step 2)' })).toBeVisible({ timeout: 60_000 });
   await app2.getByRole('button', { name: 'Approve version 1' }).click();

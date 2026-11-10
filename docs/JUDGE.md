@@ -5,11 +5,12 @@ Everything below runs without any NEAR keys. Expected output is what we got on 1
 ## 1. Fresh checkout and local checks (about 3 minutes plus installs)
 
 ```sh
-git clone https://github.com/andreete/neargajian.git && cd neargajian
+git clone https://github.com/discoverateagency-ops/sentfund.git && cd sentfund
 npm ci
+npm run vision:models     # face models for the identity check (SHA-256 pinned); the tests need them
 npm run lint              # no output from ESLint = pass
 npm run typecheck         # generates route types, then tsc --noEmit: no errors
-npm test                  # Test Files 23 passed (23) · Tests 179 passed (179)
+npm test                  # Test Files 26 passed (26) · Tests 212 passed (212)
 npm run samples:check     # regenerates the four sample files; no git diff (checksums in docs/SAMPLE-DATA.md)
 npm run secret-scan       # secret-scan: clean (working tree + N commits)
 ```
@@ -73,18 +74,19 @@ npm run demo:reset        # fresh database: 4 demo users, the vault's current wo
 npm run build && npm run start          # http://127.0.0.1:8092
 ```
 
-Demo sign-ins (password `12345678`): `maker@gajian.my.id`, `app1@gajian.my.id`, `app2@gajian.my.id`, `admin@gajian.my.id`. Without the signer keys (which never leave our machine) the app shows a "Read-only copy" note: you can sign in, build and upload runs and review them, and Submit answers "This copy of GAJIAN has no signer keys … Nothing was recorded." (`npm run test:judge-mode` checks exactly this). The live flow is verified by step 3, the screenshots (`docs/screenshots/phase-13/`, `docs/screenshots/phase-16/`) and the demo video.
+Demo sign-ins (password `12345678`): `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`. Without the signer keys (which never leave our machine) the app shows a "Read-only copy" note: you can sign in, build and upload runs and review them, and Submit of a run paying the three verified live recipients answers "This copy of SentFund has no signer keys … Nothing was recorded." (the 1,000-row sample is refused earlier by the identity rule; `npm run test:judge-mode` checks both). The live flow is verified by step 3, the screenshots (`docs/screenshots/phase-13/`, `docs/screenshots/phase-16/`) and the demo video.
 
 ## 4b. Recipient directory and payroll assistant (Phase 19): do X, see Y
 
 | Do | See |
 | --- | --- |
-| Sign in as `admin@gajian.my.id`, open **Recipients** | "Pay registered recipients only" **On**; "This guardrail is enforced by the app and the approvers, not by the vault contract"; 1,003 recipients: Emma Clark and Daniel Hall (Sales), Grace Lewis (Operations) with **Ready** (read-only testnet check at `demo:reset`), 1,000 **Sample** employees in Engineering, Customer Support, Logistics |
+| Sign in as `admin@sentfund.my.id`, open **Recipients** | "Pay registered recipients only" **On**; "This guardrail is enforced by the app and the approvers, not by the vault contract"; 1,003 recipients: Emma Clark and Daniel Hall (Sales), Grace Lewis (Operations) with **Ready** (read-only testnet check at `demo:reset`), 1,000 **Sample** employees in Engineering, Customer Support, Logistics |
 | **Add recipient** with maximum `1.5` | "The maximum is above the workflow's per-row cap of 1.00 tUSDC." With `0.2`: added, then "Account not found on NEAR testnet" (or "Ready to receive tUSDC" for an existing, registered account) |
 | **Edit** a recipient, change the maximum; **Deactivate**, **Reactivate** | Change log: "Edited … maximum 0.10 tUSDC → 0.20 tUSDC", "Deactivated …", "Reactivated …", each with "Adam Admin" and the UTC time. There is no delete |
 | Choose directory file with an empty `division` or `amount` above 1 | "File rejected" with file row and column; nothing imported |
-| As `maker@gajian.my.id`, upload a file with `unknown-payee.testnet` on row 3 and Daniel Hall at 0.25 on row 4 | "File rejected: 2 problems": row 3 "NEAR account ID": "No active recipient with this NEAR account in the recipient directory"; row 4 "Amount": "Amount is above this recipient's maximum of 0.10 tUSDC per payout" (`docs/screenshots/phase-19/02-refused-upload-row.png`) |
-| Upload `public/templates/gajian-payroll-sample-1000.csv` | Still accepted: the sample employees are in the directory |
+| As `maker@sentfund.my.id`, upload a file with `unknown-payee.testnet` on row 3 and Daniel Hall at 0.25 on row 4 | "File rejected: 2 problems": row 3 "NEAR account ID": "No active recipient with this NEAR account in the recipient directory"; row 4 "Amount": "Amount is above this recipient's maximum of 0.10 tUSDC per payout" (`docs/screenshots/phase-19/02-refused-upload-row.png`) |
+| Upload `public/templates/sentfund-payroll-sample-1000.csv` | Still accepted: the sample employees are in the directory. **Submit** is refused by "Pay identity-verified recipients only" (Phase 21): the sample employees are never identity-verified; nothing is sent |
+| Admin → **Identity checks** → **Try it on synthetic specimens** (needs `ANTHROPIC_API_KEY` and `npm run vision:models`) | Emma, Daniel, Grace: **Verified**, every check listed; **Impostor**: **Failed** on "Face photo matches the KTP photo" (similarity about 0.09, threshold 0.363) |
 | **New run** without an API key | "The payroll assistant is off on this copy (no API key). Everything else works" |
 | With `ANTHROPIC_API_KEY` in `.env` and the server restarted: "Create a disbursement for the Sales division, 0.05 tUSDC each, called November commissions" | Preview: "Sales division, 2 recipients, 0.05 tUSDC each, total 0.10 tUSDC", rows for Daniel Hall and Emma Clark; **Create draft** opens the draft with "Drafted by the payroll assistant from: …" |
 | "Pay the Sales division, called November bonus" | A follow-up question about the amount, never a guessed amount |

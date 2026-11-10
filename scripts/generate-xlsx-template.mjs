@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates public/templates/gajian-payroll-template.xlsx (macro-free) from the sample CSV:
+// Generates public/templates/sentfund-payroll-template.xlsx (macro-free) from the sample CSV:
 //   "Instructions" sheet + "Payroll" sheet with the six headers and the same 1,000 synthetic rows.
 // near_account_id, amount and mobile_phone are TEXT columns (number format "@") and written
 // as strings, so Excel keeps leading "+", never uses scientific notation and never changes decimals.
@@ -9,23 +9,23 @@ import ExcelJS from 'exceljs';
 import { parse } from 'csv-parse/sync';
 
 const ROOT = new URL('../', import.meta.url);
-const OUT = new URL('public/templates/gajian-payroll-template.xlsx', ROOT);
+const OUT = new URL('public/templates/sentfund-payroll-template.xlsx', ROOT);
 const HEADERS = ['near_account_id', 'receiver_name', 'currency', 'amount', 'mobile_phone', 'email'];
 const TEXT_COLUMNS = new Set(['near_account_id', 'amount', 'mobile_phone']);
-const rows = parse(readFileSync(new URL('public/templates/gajian-payroll-sample-1000.csv', ROOT)), { columns: false }).slice(1);
+const rows = parse(readFileSync(new URL('public/templates/sentfund-payroll-sample-1000.csv', ROOT)), { columns: false }).slice(1);
 const FIXED_DATE = new Date('2026-11-09T00:00:00Z');
 
 const wb = new ExcelJS.Workbook();
-wb.creator = 'GAJIAN';
-wb.lastModifiedBy = 'GAJIAN';
+wb.creator = 'SentFund';
+wb.lastModifiedBy = 'SentFund';
 wb.created = FIXED_DATE;
 wb.modified = FIXED_DATE;
-wb.title = 'GAJIAN payroll template';
+wb.title = 'SentFund payroll template';
 
 const info = wb.addWorksheet('Instructions', { properties: { tabColor: { argb: 'FF0A3C90' } } });
 info.getColumn(1).width = 110;
 const lines = [
-  ['GAJIAN payroll template', { bold: true, size: 16, color: { argb: 'FF0A3C90' } }],
+  ['SentFund payroll template', { bold: true, size: 16, color: { argb: 'FF0A3C90' } }],
   ['NEAR testnet demo · zero-value tUSDC · the sample rows are synthetic and their wallets are not real.', { italic: true }],
   [''],
   ['How to fill it in', { bold: true, size: 12 }],
@@ -38,12 +38,12 @@ const lines = [
   ['7. Up to 1,000 rows and 2 MB per file. Each row is one payment; the same wallet may appear twice and is flagged for review.'],
   [''],
   ['How to save it for upload', { bold: true, size: 12 }],
-  ['Excel: File → Save As → choose "CSV UTF-8 (Comma delimited) (*.csv)" or "Text (Tab delimited) (*.txt)". Upload that file in GAJIAN.'],
-  ['Regional Excel settings: if your Excel saves CSV with semicolons, GAJIAN detects that automatically. Amounts must still use a dot (1500.50, not 1500,50).'],
+  ['Excel: File → Save As → choose "CSV UTF-8 (Comma delimited) (*.csv)" or "Text (Tab delimited) (*.txt)". Upload that file in SentFund.'],
+  ['Regional Excel settings: if your Excel saves CSV with semicolons, SentFund detects that automatically. Amounts must still use a dot (1500.50, not 1500,50).'],
   ['Account, amount and phone columns are formatted as Text so Excel keeps the leading +, never shows amounts in scientific notation and never changes decimals.'],
   [''],
   ['What happens next', { bold: true, size: 12 }],
-  ['GAJIAN checks the whole file before accepting anything. If any row has a problem, nothing is imported and you get a list of every problem with its row and column (also as a downloadable report). Fix the file and upload it again; the previous version stays active until a new file passes.'],
+  ['SentFund checks the whole file before accepting anything. If any row has a problem, nothing is imported and you get a list of every problem with its row and column (also as a downloadable report). Fix the file and upload it again; the previous version stays active until a new file passes.'],
 ];
 lines.forEach(([text, font], i) => {
   const cell = info.getCell(i + 1, 1);
@@ -69,4 +69,4 @@ for (const h of TEXT_COLUMNS) {
 }
 
 await wb.xlsx.writeFile(OUT.pathname);
-console.log(`wrote public/templates/gajian-payroll-template.xlsx (${rows.length} sample rows)`);
+console.log(`wrote public/templates/sentfund-payroll-template.xlsx (${rows.length} sample rows)`);

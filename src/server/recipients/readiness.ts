@@ -22,7 +22,7 @@ const TIMEOUT_MS = 5000;
 async function rpc(url: string, params: Record<string, unknown>): Promise<{ result?: { result?: number[] }; error?: unknown }> {
   const res = await fetch(url, {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'gajian-readiness', method: 'query', params }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'sentfund-readiness', method: 'query', params }),
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`RPC HTTP ${res.status}`);

@@ -26,6 +26,13 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Face models for the identity check (SHA-256 pinned), cached
+        uses: actions/cache@v4
+        with:
+          path: models/vision
+          key: vision-models-${{ hashFiles('scripts/fetch-vision-models.mjs') }}
+      - run: npm run vision:models
+      - run: npm run vision:selftest
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
@@ -52,50 +59,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build the image
-        run: docker build -t gajian-hosted .
+        run: docker build -t sentfund-hosted .
       - name: Boot with HOSTED_DEMO=true and check health, banner and logs
         run: |
           # Throwaway worker key: random, never added to any account, so it can sign nothing.
-          key=$(docker run --rm gajian-hosted node -e "import('near-api-js').then(({KeyPair})=>console.log(KeyPair.fromRandom('ed25519').toString()))")
+          key=$(docker run --rm sentfund-hosted node -e "import('near-api-js').then(({KeyPair})=>console.log(KeyPair.fromRandom('ed25519').toString()))")
           echo "::add-mask::$key"
-          docker volume create gajian-data
-          docker run -d --name gajian -p 127.0.0.1:8080:8080 -v gajian-data:/data \
+          docker volume create sentfund-data
+          docker run -d --name sentfund -p 127.0.0.1:8080:8080 -v sentfund-data:/data \
             -e SESSION_SECRET="$(openssl rand -hex 32)" -e DEMO_MODE=true -e HOSTED_DEMO=true \
             -e APP_BASE_URL=http://127.0.0.1:8080 -e WORKER_ACCOUNT_ID=worker.gajian-payroll.testnet \
-            -e WORKER_SIGNER_PRIVATE_KEY="$key" gajian-hosted
+            -e WORKER_SIGNER_PRIVATE_KEY="$key" sentfund-hosted
           ok=
           for i in $(seq 1 90); do
             if curl -fsS -o health.json http://127.0.0.1:8080/api/health; then ok=1; break; fi
             sleep 2
           done
-          docker logs gajian > boot.log 2>&1
+          docker logs sentfund > boot.log 2>&1
           cat boot.log
           test -n "$ok"
           cat health.json
           grep -q '"db":"ok"' health.json
           grep -q '"hostedDemo":true' health.json
+          grep -q '"faceModels":true' health.json
           curl -fsS -o landing.html http://127.0.0.1:8080/
           grep -q 'data-testid="hosted-banner"' landing.html
           grep -q '"event":"demo_reset_done"' boot.log
           grep -q '"service":"hosted-start","event":"started"' boot.log
       - name: SIGTERM stops both processes cleanly; second boot runs migrations only
         run: |
-          docker stop -t 30 gajian
-          test "$(docker inspect -f '{{.State.ExitCode}}' gajian)" = 0
-          docker start gajian
+          docker stop -t 30 sentfund
+          test "$(docker inspect -f '{{.State.ExitCode}}' sentfund)" = 0
+          docker start sentfund
           for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:8080/api/health && break; sleep 2; done
           curl -fsS -o health.json http://127.0.0.1:8080/api/health
           grep -q '"db":"ok"' health.json
-          docker logs gajian > boot.log 2>&1
+          docker logs sentfund > boot.log 2>&1
           grep -q '"event":"migrations_applied"' boot.log
           test "$(grep -c '"event":"demo_reset_done"' boot.log)" = 1
       - name: If the worker dies, the service stops non-zero
         run: |
-          docker exec gajian sh -c 'for p in /proc/[0-9]*; do grep -qs "src/worker/index[.]ts" "$p/cmdline" && kill -TERM "${p#/proc/}"; done; true'
-          for i in $(seq 1 30); do test "$(docker inspect -f '{{.State.Running}}' gajian)" = false && break; sleep 1; done
-          test "$(docker inspect -f '{{.State.Running}}' gajian)" = false
-          test "$(docker inspect -f '{{.State.ExitCode}}' gajian)" != 0
-          docker logs gajian 2>&1 | tail -n 5
+          docker exec sentfund sh -c 'for p in /proc/[0-9]*; do grep -qs "src/worker/index[.]ts" "$p/cmdline" && kill -TERM "${p#/proc/}"; done; true'
+          for i in $(seq 1 30); do test "$(docker inspect -f '{{.State.Running}}' sentfund)" = false && break; sleep 1; done
+          test "$(docker inspect -f '{{.State.Running}}' sentfund)" = false
+          test "$(docker inspect -f '{{.State.ExitCode}}' sentfund)" != 0
+          docker logs sentfund 2>&1 | tail -n 5
 
   secrets:
     name: Credential scan (working tree + full Git history)

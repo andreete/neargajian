@@ -1,56 +1,54 @@
 # Next steps
 
-Updated: Tue 10 Nov 2026 (WIB), after Phase 19b (live assistant run), Phase 20 (hosting readiness) and 20b (CI image check). Deadline 2026-11-14 23:59 UTC = 2026-11-15 06:59 WIB; **our target: submit by Friday 13 Nov**.
+Updated: Tue 10 Nov 2026, 13:40 WIB, after **Phase 21** (SentFund rebrand + KTP/face identity checks). Deadline 2026-11-14 23:59 UTC = 2026-11-15 06:59 WIB; **our target: submit by Friday 13 Nov**.
 
-## Single next action
+## Where things stand
 
-**Andre: prepare the accounts** in `docs/HOSTING.md` step 1, and **decide the domain**:
-- a Railway Hobby account with a card;
-- GitHub access limited to this repository;
-- a second Anthropic key in its own workspace with a monthly spend limit;
-- the domain: **`app.gajian.my.id` (recommended)** or the apex `gajian.my.id`, which today serves your existing "Gajian — HR & Payroll Modern untuk UMKM Indonesia" site on Vercel and would be replaced.
+- **Phase 21 is done and verified locally** (BUILD-STATE Phase 21): lint, typecheck, 212/212 unit + integration tests, build, e2e 31/31, judge mode, hosted + kill switch, secret scan, `judge:verify`, and the real Claude KTP reader on the four synthetic specimen scenarios (3 verified, impostor failed on the face).
+- The previous session was OOM-killed during `next build`; the cause (Turbopack crawling `contracts/target`) is fixed (D-120). Build under the watchdog (BUILD-STATE Phase 21).
+- Code is on `origin` (`andreete/neargajian`) and on the new private **`discoverateagency-ops/sentfund`** (remote `sentfund`), branch `main`. No `release` branch yet, nothing deployed, nothing on-chain changed in Phase 21.
+- **Hosting decided** (D-121): Railway Hobby runs the app; Cloudflare Free hosts the DNS of `sentfund.my.id` (registered at Sumopod; public resolvers answer SERVFAIL until the nameservers point at Cloudflare).
 
-Also check GitHub → **Actions** for the latest `main` commit (phase-20b): the new job **Hosted image** is the first real build of the Railway image. If it is red, send the agent the failing step's log.
+## Single next action: Andre
 
-Then tell the agent "add the host keys" and "push main to release".
+Follow **`docs/HOSTING.md` section 0** (about 20 minutes):
+1. Cloudflare: add `sentfund.my.id` (Free) → note the two nameservers.
+2. Sumopod: set those two nameservers for `sentfund.my.id`.
+3. Cloudflare API token (template "Edit zone DNS", zone `sentfund.my.id`).
+4. Railway: Hobby plan with a card; connect the GitHub app to `discoverateagency-ops` → only `sentfund`; create an account token.
+5. A second Anthropic key in its own workspace with a monthly spend limit.
+6. Put `RAILWAY_API_TOKEN`, `CLOUDFLARE_API_TOKEN`, `HOSTED_ANTHROPIC_API_KEY` into `.env` yourself (never in chat).
+7. For pushes to `discoverateagency-ops/sentfund` in later sessions: either add a deploy key yourself (GitHub → repo Settings → Deploy keys → Add, **Allow write access**; the agent can generate the key pair and give you only the public key), or give a token at the start of the session. **Revoke the token pasted in chat on 10 Nov** (GitHub → Settings → Developer settings → Fine-grained tokens): it is in the conversation transcript.
+8. Say **"deploy"**.
 
-Running for review on http://127.0.0.1:8092 (this server's database, unchanged by Phase 20; it holds the Phase 19b run), final vault `vault2.gajian-payroll.testnet` (1.94 tUSDC):
+Also: check GitHub → Actions on `discoverateagency-ops/sentfund` for the Phase 21 commit (first run there; the image job now also self-tests the face models). If red, send the agent the failing step's log.
 
-- production server, PID in `.tmp/review-server.pid` → stop: `kill $(cat /home/neargajian/near-gajian/.tmp/review-server.pid)`
-- release worker, PID in `.tmp/worker.pid` → stop: `kill $(cat /home/neargajian/near-gajian/.tmp/worker.pid)`
-- from Andre's laptop (no tunnel; SSH port forwarding he starts himself): `ssh -N -L 8092:127.0.0.1:8092 neardao@andre.tail66ca93.ts.net`, then http://127.0.0.1:8092 (use exactly this address: the app checks the origin)
+## Then the agent ("deploy", with Andre's yes)
 
-## Order of work
+1. `scripts/testnet/hosting-keys.sh add --yes` (host keys; record public keys and tx IDs in `docs/TESTNET.md`; never print private keys).
+2. CI green on `main` → `git push sentfund main:release`.
+3. Railway by API: project from `discoverateagency-ops/sentfund`, branch `release`, Wait for CI, health `/api/health`, 1 replica, volume `/data`, daily backups, variables (HOSTING step 4; `ANTHROPIC_API_KEY` = `HOSTED_ANTHROPIC_API_KEY`, `APP_BASE_URL=https://sentfund.my.id`), custom domain `sentfund.my.id`.
+4. Cloudflare by API: the CNAME (apex, flattened) and TXT that Railway shows; wait for the certificate.
+5. Smoke test (HOSTING step 6) + identity specimen check on the hosted site (dry run); record in `docs/TESTNET.md`; replace `<HOSTED-URL>` in README, SECURITY, VIDEO and X-POST.
 
-1. ~~Hosting readiness~~ (Phase 20, done).
-2. **Andre's accounts** (`docs/HOSTING.md` step 1) and the domain decision.
-3. **Host keys and go live**:
-   - agent, with Andre's yes: `scripts/testnet/hosting-keys.sh add --yes`, then `git push origin main:release`;
-   - Andre: Railway project, volume, backups, variables, domain (steps 3–5);
-   - together: the smoke test (step 6), recorded in `docs/TESTNET.md`.
-4. **Human QA on the hosted site** (`docs/QA-HANDOFF.md`, A01–A11).
-5. **Fixes**, released with Andre's yes (`docs/HOSTING.md` step 7).
-6. **Video** on the hosted site, local as a fallback (`docs/VIDEO.md`); upload to YouTube.
-7. **Repository public** and the `hackathon-submission` tag (no pre-hackathon tag).
-8. **X post** (`docs/X-POST.md`: repository, video and demo links).
-9. **Submission by Friday 13 Nov** (`docs/SUBMISSION.md`; Q-015, a second project, still open).
-10. **Online until at least 25 Nov**; the kill switch `HOSTED_READONLY=true` is ready (step 10).
-11. **Shutdown after 25 Nov** (step 12): host keys deleted on-chain (agent, with your yes), Railway project deleted, DNS records removed, the hosted Anthropic key revoked.
+## Order of work after that
 
-Once the URL is live, replace `<HOSTED-URL>` in README, SECURITY, VIDEO and X-POST.
+1. Human QA on the hosted site (`docs/QA-HANDOFF.md`, A01–A12).
+2. Fixes, released with Andre's yes (`docs/HOSTING.md` step 7).
+3. Video on the hosted site (`docs/VIDEO.md`; add an identity-check scene: specimens → impostor fails), YouTube.
+4. Repository public (Andre confirms which: `discoverateagency-ops/sentfund` is in SUBMISSION and X-POST now) and the `hackathon-submission` tag.
+5. X post, submission by Friday 13 Nov (`docs/SUBMISSION.md`; Q-015 still open).
+6. Online until at least 25 Nov; kill switch `HOSTED_READONLY=true`. Shutdown after 25 Nov (HOSTING step 12).
 
 ## State to know
 
-- Vault2: 1.94 tUSDC after the Phase 19b run. Top up to at most 2: `node scripts/testnet/phase16.ts top-up 2.00` (with Andre's yes).
-- Workflow revision 3 (two in sequence, automatic release). Directory: Sales = Emma Clark + Daniel Hall, Operations = Grace Lewis (max 0.10 each); the 1,000 sample employees are in Engineering, Customer Support and Logistics.
-- `npm run judge:verify` 130/130. The live assistant run is `gjn-6e2922fcf5cd4d0f91f1-v1`.
-- Railway: `railway.json` is not available for new services; the runbook uses the dashboard (D-110).
-
-## Open items
-
-- Push: deploy key works (`main` only).
-- Testnet NEAR: about 9.87 NEAR across our accounts (≈ 0.130 burned); master 0.46 NEAR.
+- Vault2: 1.94 tUSDC. Top up to at most 2: `node scripts/testnet/phase16.ts top-up 2.00` (with Andre's yes).
+- Workflow revision 3 (two in sequence, automatic release). Directory: Sales = Emma Clark + Daniel Hall, Operations = Grace Lewis (max 0.10 each), 1,000 sample employees (never identity-verified, so the 1,000-row sample can no longer be submitted while "Pay identity-verified recipients only" is on).
+- Identity: the three live recipients are seeded as verified ("Demo seed"). Specimen checks on this copy change statuses (the impostor sets Daniel to Failed: re-run Daniel's specimen to verify him again); in hosted mode they are dry runs.
+- `npm run judge:verify` 130/130.
+- Review server for Andre: started after Phase 21 on http://127.0.0.1:8092 if the PID files exist: stop with `kill $(cat /home/neargajian/near-gajian/.tmp/review-server.pid)` and `kill $(cat /home/neargajian/near-gajian/.tmp/worker.pid)`. From the laptop: `ssh -N -L 8092:127.0.0.1:8092 neardao@andre.tail66ca93.ts.net`, then http://127.0.0.1:8092.
+- Scratch from the killed session (face test images, fonts, scripts) is kept in `~/.cache/sentfund-p21-scratch/`; `~/.cache/sentfund-contracts-target-aside` must not exist (it was moved back).
 
 ## Resume prompt
 
-> Read CLAUDE.md, docs/NEXT-STEPS.md, docs/HOSTING.md and docs/BUILD-STATE.md. Andre has prepared the Railway account, GitHub access, a second Anthropic key and chosen the domain (he will say which). With his explicit yes: run `scripts/testnet/hosting-keys.sh add --yes` (record the public keys and tx IDs in docs/TESTNET.md; never print the private keys), then `git push origin main:release`. Guide him through docs/HOSTING.md steps 3–6 and run the smoke test. Then update the docs and stop.
+> Read CLAUDE.md, docs/NEXT-STEPS.md, docs/HOSTING.md (section 0), docs/BUILD-STATE.md (Phase 21) and docs/DECISIONS.md (D-116 to D-122). Check that RAILWAY_API_TOKEN, CLOUDFLARE_API_TOKEN and HOSTED_ANTHROPIC_API_KEY exist in .env (names only, never values) and that `dig +short NS sentfund.my.id @1.1.1.1` shows Cloudflare. If Andre said "deploy": do the agent steps in NEXT-STEPS "Then the agent", run the smoke test, update the docs, commit and push to origin and sentfund. Otherwise tell Andre exactly which item of HOSTING section 0 is missing.

@@ -80,7 +80,7 @@ export const DRAFT_TOOL: Anthropic.Tool = {
 
 export function systemPrompt(divisions: string[]): string {
   return [
-    'You turn a payroll maker\'s request into a structured draft request for GAJIAN, a payroll prototype that pays the test token tUSDC on NEAR testnet.',
+    'You turn a payroll maker\'s request into a structured draft request for SentFund, a payroll prototype that pays the test token tUSDC on NEAR testnet.',
     `Always answer by calling the ${TOOL_NAME} tool exactly once. Do not answer in prose.`,
     '',
     'Rules:',

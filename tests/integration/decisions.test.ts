@@ -9,7 +9,7 @@ import { cancelVersion, decide, latestVersion, reconcileVersion, runDetail, subm
 import { approverQueue } from '@/server/dashboard/queries';
 import { FakeVault } from '../helpers/fake-vault';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-dec-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-dec-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 const app1 = { id: 'usr_app1', role: 'approver' as const };

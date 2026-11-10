@@ -1,5 +1,5 @@
 /**
- * GAJIAN database schema (SQLite via better-sqlite3 + Drizzle; PostgreSQL-portable shapes).
+ * SentFund database schema (SQLite via better-sqlite3 + Drizzle; PostgreSQL-portable shapes).
  *
  * Money: tUSDC base units stored as canonical decimal TEXT (never floats, never JS numbers).
  * Time: integer milliseconds since the epoch.
@@ -7,7 +7,7 @@
  * by triggers and partial indexes in db/migrations/0001_integrity.sql.
  */
 import { sql } from 'drizzle-orm';
-import { check, customType, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { check, customType, index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /** Base units as canonical decimal text ↔ bigint. */
 export const units = customType<{ data: bigint; driverData: string }>({
@@ -349,6 +349,9 @@ export const testnetRunEvents = sqliteTable('testnet_run_events', {
  * Never deleted (deactivated instead, trigger), so history stays readable. Every change is
  * logged in recipient_events with who and when.
  */
+export const IDENTITY_STATUSES = ['unverified', 'verified', 'needs_review', 'failed'] as const;
+export type IdentityStatus = (typeof IDENTITY_STATUSES)[number];
+
 export const RECIPIENT_READINESS = ['unchecked', 'ready', 'no_account', 'not_registered', 'check_failed'] as const;
 export type RecipientReadiness = (typeof RECIPIENT_READINESS)[number];
 
@@ -367,6 +370,13 @@ export const recipients = sqliteTable('recipients', {
   /** Read-only testnet check: account exists and is registered with tUSDC. */
   readiness: text('readiness', { enum: RECIPIENT_READINESS }).notNull().default('unchecked'),
   readinessCheckedAt: ms('readiness_checked_at'),
+  /** Identity check (Phase 21): KTP read + face match. Set only by identity_checks (service). */
+  identityStatus: text('identity_status', { enum: IDENTITY_STATUSES }).notNull().default('unverified'),
+  identityCheckedAt: ms('identity_checked_at'),
+  identityCheckId: text('identity_check_id'),
+  /** Masked NIK (first 4 + last 4 digits) and its keyed hash, from the latest check; never the NIK. */
+  nikMasked: text('nik_masked'),
+  nikHash: text('nik_hash'),
   createdByUserId: text('created_by_user_id').notNull().references(() => users.id),
   createdAt: ms('created_at').notNull(),
   updatedByUserId: text('updated_by_user_id').notNull().references(() => users.id),
@@ -376,6 +386,8 @@ export const recipients = sqliteTable('recipients', {
   index('recipients_division_ix').on(t.division),
   check('recipients_account_lower_ck', sql`near_account_id = lower(near_account_id)`),
   check('recipients_readiness_ck', inList('readiness', RECIPIENT_READINESS)),
+  check('recipients_identity_status_ck', inList('identity_status', IDENTITY_STATUSES)),
+  index('recipients_nik_hash_ix').on(t.nikHash),
 ]);
 
 export const RECIPIENT_EVENT_ACTIONS = ['created', 'updated', 'deactivated', 'reactivated', 'readiness_checked'] as const;
@@ -430,4 +442,40 @@ export const assistantRequests = sqliteTable('assistant_requests', {
   index('assistant_requests_user_ix').on(t.userId, t.createdAt),
   uniqueIndex('assistant_requests_run_uq').on(t.runId),
   check('assistant_requests_outcome_ck', inList('outcome', ASSISTANT_OUTCOMES)),
+]);
+
+export const IDENTITY_OUTCOMES = ['verified', 'needs_review', 'failed'] as const;
+export type IdentityOutcome = (typeof IDENTITY_OUTCOMES)[number];
+export const IDENTITY_SOURCES = ['upload', 'specimen', 'seed', 'manual_review'] as const;
+export type IdentitySource = (typeof IDENTITY_SOURCES)[number];
+
+/**
+ * Identity checks (Phase 21): one row per check, append-only (trigger). Results only: the KTP and
+ * face images are processed in memory and discarded; the NIK is kept masked plus a keyed hash.
+ * dry_run = 1: a public-demo check on the synthetic specimens that did not change the recipient.
+ */
+export const identityChecks = sqliteTable('identity_checks', {
+  id: text('id').primaryKey(),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  actorUserId: text('actor_user_id').notNull().references(() => users.id),
+  at: ms('at').notNull(),
+  source: text('source', { enum: IDENTITY_SOURCES }).notNull(),
+  dryRun: integer('dry_run', { mode: 'boolean' }).notNull().default(false),
+  outcome: text('outcome', { enum: IDENTITY_OUTCOMES }).notNull(),
+  nikMasked: text('nik_masked'),
+  nikHash: text('nik_hash'),
+  /** Cosine similarity of the KTP photo and the face photo (SFace), when both faces were found. */
+  faceScore: real('face_score'),
+  /** JSON array of { key, label, status: pass | review | fail, detail }. */
+  checks: text('checks').notNull(),
+  /** KTP reader (model ID, "test-stub") and face engine used; null for seed / manual review. */
+  reader: text('reader'),
+  faceEngine: text('face_engine'),
+  /** Manual review: the admin's reason. Scenario name for specimen checks. */
+  note: text('note'),
+}, (t) => [
+  index('identity_checks_recipient_ix').on(t.recipientId, t.at),
+  index('identity_checks_at_ix').on(t.at),
+  check('identity_checks_outcome_ck', inList('outcome', IDENTITY_OUTCOMES)),
+  check('identity_checks_source_ck', inList('source', IDENTITY_SOURCES)),
 ]);

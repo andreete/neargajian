@@ -8,7 +8,7 @@ import { LoginDialogProvider, SignInButton } from '@/components/login-dialog';
 import { Chip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
 import { homeFor } from '@/server/auth/policy';
-import { DEMO_PASSWORD, demoUsers } from '@/server/db/seed';
+import { DEMO_PASSWORD, demoUsers } from '@/server/db/demo-users';
 import { samplePreview, testnetFacts } from '@/server/landing';
 import { currentSession } from '@/server/web/page-auth';
 import { displayAmount } from '@/lib/format';
@@ -140,7 +140,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
               <div className="section-head">
                 <span className="eyebrow">Upload</span>
                 <h2 id="upload-title">Drop in a 1,000-row file. Nothing is accepted until every row passes.</h2>
-                <p>Use our Excel template or your own CSV or tab-delimited TXT. GAJIAN checks the whole file, keeps your row order and shows every problem with its row and column.</p>
+                <p>Use our Excel template or your own CSV or tab-delimited TXT. SentFund checks the whole file, keeps your row order and shows every problem with its row and column.</p>
               </div>
               <ul className="check-list">
                 <li><CheckIcon size={18} /><div><strong>Exact money, no rounding</strong><span>Six decimals, totals computed on the server.</span></div></li>
@@ -295,7 +295,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
 
       <footer className="site-footer">
         <div className="container">
-          <span>GAJIAN · NEAR testnet prototype · synthetic data, zero-value tUSDC · times in UTC</span>
+          <span>SentFund · NEAR testnet prototype · synthetic data, zero-value tUSDC · times in UTC</span>
           <span>Built for NEAR HACKATHON (Real-World Money) · MIT licence · AI-assisted</span>
         </div>
       </footer>

@@ -15,6 +15,7 @@ import {
 } from '../db/schema.ts';
 import { NOT_IN_DIRECTORY } from '../payroll/validate.ts';
 import { directoryCheckFor, hostedSubmitProblem, registeredOnly } from '../recipients/directory.ts';
+import { identitySubmitProblem } from '../identity/service.ts';
 import { hostedMode } from '../hosted.ts';
 import { activeSnapshot } from '../workflow/service.ts';
 import { toRaw, validateDraft } from './draft-service.ts';
@@ -121,6 +122,8 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
     const problem = hostedSubmitProblem(db, rows);
     if (problem) throw new DomainError('invalid', problem);
   }
+  const identityProblem = identitySubmitProblem(db, rows);
+  if (identityProblem) throw new DomainError('invalid', identityProblem);
   const snapshot = activeSnapshot(db);
   if (!snapshot) throw new DomainError('invalid', 'No active approval workflow. Ask the admin to set one.');
   if (!client.canSign('maker')) throw new DomainError('conflict', NO_SIGNER_MESSAGE);

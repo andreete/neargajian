@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Prints public NEAR balances (and tUSDC balances once the token is deployed) for the
-// GAJIAN testnet accounts. Read-only RPC queries; no keys involved.
+// SentFund testnet accounts. Read-only RPC queries; no keys involved.
 // Usage: node scripts/testnet/balances.mjs [master-account]
 const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
@@ -12,7 +12,7 @@ async function rpc(method, params) {
   const res = await fetch(RPC, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'gajian', method, params }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'sentfund', method, params }),
   });
   const body = await res.json();
   if (body.error) throw new Error(JSON.stringify(body.error));

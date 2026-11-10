@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GAJIAN release worker: a separate long-running process (not inside the web server).
+ * SentFund release worker: a separate long-running process (not inside the web server).
  * Every few seconds it reconciles live versions with the vault, releases approved runs in
  * automatic mode, and pays releasing runs one row per transaction. All state is durable in
  * SQLite (payout_actions), so it resumes safely after a crash or restart.

@@ -1,6 +1,8 @@
 # Hosting the public demo on Railway: runbook
 
-Status: **ready, not live.** Decided 10 Nov 2026 (D-109): GAJIAN goes online at submission and stays up until at least **25 Nov 2026**. Nothing has been created, deployed or added on-chain yet. Each step below says who does it: **Andre** (needs your accounts, card or DNS) or **agent** (only after your explicit yes).
+Status: **ready, not live.** Decided 10 Nov 2026 (D-109): SentFund goes online at submission and stays up until at least **25 Nov 2026**. Nothing has been created, deployed or added on-chain yet.
+
+**Phase 21 update (10 Nov 2026, D-121):** the product is **SentFund**, the repository Railway deploys from is the private **`discoverateagency-ops/sentfund`**, the domain **`sentfund.my.id`** is registered at **Sumopod**, and its DNS moves to **Cloudflare (free)**. Vercel, Cloudflare Pages/Workers and Supabase cannot host this app: it needs an always-on Node server plus the release worker, a SQLite file on a persistent disk, and native modules (better-sqlite3, onnxruntime, sharp). Railway Hobby (about $5 per month) runs it; Cloudflare only answers DNS. **Section 0** is the short path where Andre creates the accounts and the agent does the rest by API. Each step below says who does it: **Andre** (needs your accounts, card or DNS) or **agent** (only after your explicit yes).
 
 Railway details were checked against Railway's official documentation on **10 Nov 2026** (sources at the end). Railway changes its dashboard often: if a label differs, look for the same word nearby.
 
@@ -18,20 +20,42 @@ Railway details were checked against Railway's official documentation on **10 No
 
 ---
 
+## 0. Short path (Phase 21): Andre makes accounts, the agent does the rest
+
+**Andre (about 20 minutes, once):**
+1. **Cloudflare (free):** https://dash.cloudflare.com → sign up → **Add a domain** → `sentfund.my.id` → plan **Free**. Cloudflare shows **two nameservers** (like `xxx.ns.cloudflare.com`).
+2. **Sumopod:** your domain `sentfund.my.id` → **Nameservers** (or "DNS / Name Server") → choose custom nameservers → replace the existing ones with **exactly those two Cloudflare nameservers** → save. It takes minutes to a few hours; Cloudflare emails you when the site is **Active**. Do not add any DNS record yourself.
+3. **Cloudflare API token:** My Profile → **API Tokens** → **Create Token** → template **Edit zone DNS** → Zone Resources: *Include → Specific zone → sentfund.my.id* → Create. Copy it.
+4. **Railway:** https://railway.com → **Login with GitHub** → **Hobby** plan with a card (step 1.1 below). Then connect GitHub: in Railway, **New Project → Deploy from GitHub repo → Configure GitHub App**, choose the org **discoverateagency-ops** and **Only select repositories → `sentfund`**, then close the dialog without deploying (the agent creates the project). Then **https://railway.com/account/tokens** → **Create token** (your personal workspace). Copy it.
+5. **A second Anthropic key** with a monthly spend limit (step 1.3 below). Copy it.
+6. On this server, add the three values to `.env` yourself (never in chat; the agent never prints them):
+   ```sh
+   nano /home/neargajian/near-gajian/.env
+   # add at the end:
+   RAILWAY_API_TOKEN=...
+   CLOUDFLARE_API_TOKEN=...
+   HOSTED_ANTHROPIC_API_KEY=...
+   ```
+7. Tell the agent: **"deploy"**.
+
+**Agent (by script/API, after "deploy"):** add the host keys on testnet (step 2), push `main` to `release` on `discoverateagency-ops/sentfund` after a green CI, create the Railway project, service (branch `release`, Wait for CI, health `/api/health`, 1 replica), volume `/data`, daily backups and the variables (step 4), add the custom domain `sentfund.my.id` and write its **CNAME** (flattened at the apex) and **TXT** records into Cloudflare by API, wait for the certificate, run the smoke test (step 6) and record it in `docs/TESTNET.md`.
+
+**Afterwards (continuous deployment):** every release is `git push sentfund main:release` after CI is green on `main`; Railway builds and deploys it by itself (Wait for CI). Nothing else to click.
+
 ## 1. What Andre prepares (before anything else)
 
 1. **Railway account, Hobby plan, with a card.** Go to https://railway.com → **Login** → sign in with GitHub. Then open **Account → Plans** (or **Billing**), choose **Hobby** and add a card.
    - Hobby is $5 per month. It includes $5 of usage and needs a post-paid card; prepaid credit is no longer accepted.
    - The trial plan is too small (0.5 GB volume, 1 GB RAM) and allows only 1 custom domain.
-2. **GitHub access limited to this repository.** When Railway asks to install its GitHub app, choose **Only select repositories** → `andreete/neargajian`. You can check or change this later at https://github.com/settings/installations → **Railway** → **Configure**.
+2. **GitHub access limited to this repository.** When Railway asks to install its GitHub app, choose **Only select repositories** → `discoverateagency-ops/sentfund` (the org's installation; Phase 21). You can check or change this later at https://github.com/settings/installations → **Railway** → **Configure**.
 3. **A second Anthropic API key with a monthly spend limit** (not the one in this server's `.env`):
-   - At https://console.anthropic.com create a separate **Workspace**, for example `gajian-hosted`.
+   - At https://console.anthropic.com create a separate **Workspace**, for example `sentfund-hosted`.
    - Set that workspace's **monthly spend limit**, for example $20. The 200-requests-per-day cap bounds the use too: about $0.02 per request with `claude-opus-5-5`, so at most about $4 per day.
    - Create an **API key inside that workspace**. Keep it in your password manager. You will paste it into Railway only (step 4), never into chat.
-4. **Where the DNS for gajian.my.id is managed.** Checked on 10 Nov: the nameservers are `ns1.vercel-dns.com` and `ns2.vercel-dns.com`, so the records are in **your Vercel dashboard → Domains → gajian.my.id**.
-   - **The apex `gajian.my.id` already serves a live site there** ("Gajian — HR & Payroll Modern untuk UMKM Indonesia").
-   - `app.gajian.my.id` is free; it answers 404 through Vercel's wildcard.
-   - Decide now: **(A, recommended) `app.gajian.my.id`**, which leaves the existing site alone, or **(B) the apex `gajian.my.id`**, which replaces the existing site. Step 5 has both.
+4. **The domain `sentfund.my.id`, with working DNS.** Registered at **Sumopod** (Andre, 10 Nov). Checked at 06:00 UTC on 10 Nov 2026: public resolvers (8.8.8.8, 1.1.1.1) answer **SERVFAIL**, so the domain is delegated to nameservers that do not answer yet. Setting the Cloudflare nameservers at Sumopod (section 0) fixes this. Before step 5:
+   - register `sentfund.my.id` at a `.my.id` registrar (PANDI-accredited), or finish the registration if it is pending;
+   - pick where its DNS lives. **Recommended: Cloudflare (free plan)**: add the site in Cloudflare, then set the two Cloudflare nameservers at your registrar. Cloudflare allows a CNAME at the apex (CNAME flattening), which Railway needs for `sentfund.my.id` itself. Vercel DNS works too (ALIAS at the apex).
+   - When `dig +short NS sentfund.my.id` on any machine prints the nameservers you chose, the domain is ready for step 5.
 
 ## 2. Agent's on-chain step: the host keys (only with Andre's yes)
 
@@ -66,7 +90,7 @@ Copy each value straight into Railway (step 4). Close the terminal afterwards.
 Railway deploys **only from the `release` branch**. `main` stays the working branch. Nothing is pushed to `release` without Andre's explicit yes.
 
 1. The agent (with your yes) creates the branch from the tested `main`: `git push origin main:release`. First check GitHub → **Actions**: the latest `main` run is green, including the job **Hosted image**, which builds this Dockerfile on GitHub's runner and boots it in hosted demo mode (health, banner, first-boot reset, clean stop, migrations-only second boot, service stops when the worker dies).
-2. In Railway: **New Project** → **Deploy from GitHub repo** → `andreete/neargajian`. Railway finds the root `Dockerfile` and builds with it automatically.
+2. In Railway: **New Project** → **Deploy from GitHub repo** → `discoverateagency-ops/sentfund`. Railway finds the root `Dockerfile` and builds with it automatically.
 3. Open the new service → **Settings**:
    - **Source → Branch**: choose `release`. Railway calls this the trigger branch.
    - **Wait for CI**: turn it **on** if offered. The commit on `release` is the same commit that CI already tested on `main`; a failed CI run skips the deploy.
@@ -75,7 +99,7 @@ Railway deploys **only from the `release` branch**. `main` stays the working bra
    - **Deploy → Replicas**: 1. A service with a volume cannot have replicas.
    - Leave **Custom Start Command** and **Custom Build Command** empty: the Dockerfile's `CMD` (`sh scripts/hosted-start.sh`) is used.
    - If you see **Serverless** or **App sleeping**: keep it **off**. The worker must keep running.
-4. **Volume**: right-click on the project canvas (or press `⌘K` / `Ctrl+K`) → create a **Volume** → attach it to the `gajian` service → **Mount path `/data`**.
+4. **Volume**: right-click on the project canvas (or press `⌘K` / `Ctrl+K`) → create a **Volume** → attach it to the `sentfund` service → **Mount path `/data`**.
    - The default size of 5 GB is plenty: the database is about 1 MB.
    - Volumes are mounted when the container starts, not during the build. That is why migrations run in the start script, not in a pre-deploy command.
    - The image runs as root, so `RAILWAY_RUN_UID` is not needed.
@@ -94,8 +118,8 @@ HOSTED_READONLY=false
 DEMO_MODE=true
 NEAR_NETWORK=testnet
 NEAR_RPC_URL=https://rpc.testnet.fastnear.com
-APP_BASE_URL=https://app.gajian.my.id
-DATABASE_URL=file:/data/gajian.sqlite
+APP_BASE_URL=https://sentfund.my.id
+DATABASE_URL=file:/data/sentfund.sqlite
 VAULT_CONTRACT_ID=vault2.gajian-payroll.testnet
 TUSDC_CONTRACT_ID=tusdc.gajian-payroll.testnet
 MAKER_ACCOUNT_ID=maker.gajian-payroll.testnet
@@ -107,7 +131,7 @@ ASSISTANT_MODEL=claude-opus-5-5
 DEMO_RESET_TOKEN=2026-11-13
 ```
 
-(`APP_BASE_URL` is `https://gajian.my.id` if you chose B in step 1.4.)
+(`APP_BASE_URL` is `https://www.sentfund.my.id` only if your DNS cannot point the apex, step 5.)
 
 The secrets, one per line, each value from where the table says:
 
@@ -136,44 +160,29 @@ Railway: service → **Settings** → **Networking / Public Networking** → **+
 - Railway shows two records, a **CNAME** (target like `xxxxxx.up.railway.app`) and a **TXT** for verification. **Both are required**; without the TXT the domain answers 404.
 - Hobby allows 2 custom domains per service.
 
-At Vercel (your DNS): Vercel dashboard → **Domains** → `gajian.my.id` → DNS records → **Add**. In the **Name** field enter only the part before `.gajian.my.id`.
+The demo runs at the apex **`sentfund.my.id`**. A plain CNAME is not allowed at an apex, so the record type depends on where the DNS lives (step 1.4):
 
-**(A, recommended) `app.gajian.my.id`**:
-
-| Type | Name | Value |
+| Where the DNS is | Record for `sentfund.my.id` | Verification |
 | --- | --- | --- |
-| CNAME | `app` | the target Railway shows (`xxxxxx.up.railway.app`) |
-| TXT | the name Railway shows, without `.gajian.my.id` | the value Railway shows |
-
-**(B) the apex `gajian.my.id`.** This replaces the current site.
-- A CNAME is not allowed at the apex. Railway supports CNAME flattening and **ALIAS** records, and Vercel DNS supports **ALIAS** at the apex.
-- First remove `gajian.my.id` from the Vercel **project** that serves the current site (Project → Settings → Domains), and remove any apex `A` records.
-- Then add:
-
-| Type | Name | Value |
-| --- | --- | --- |
-| ALIAS | *(empty, the apex)* | the target Railway shows |
-| TXT | the name Railway shows | the value Railway shows |
-
-**If the DNS were elsewhere** (for reference):
-- **Cloudflare**: a CNAME with name `@` works at the apex (CNAME flattening); the proxy (orange cloud) can stay on; set **SSL/TLS → Full**, not "Full (strict)".
-- **A typical registrar panel** (GoDaddy, Hostinger, NameSilo, Route 53 and others listed by Railway) has no flattening or ALIAS. Use a subdomain (`app`), or move the nameservers to Cloudflare.
+| **Cloudflare (recommended)** | **CNAME**, name `@`, target the value Railway shows (`xxxxxx.up.railway.app`). Cloudflare flattens it. The proxy (orange cloud) can stay on; then set **SSL/TLS → Full**, not "Full (strict)" | **TXT**, the name and value Railway shows |
+| **Vercel DNS** | **ALIAS**, name empty (the apex), the target Railway shows | **TXT**, name and value Railway shows (enter only the part before `.sentfund.my.id`) |
+| **A registrar panel without ALIAS/flattening** (GoDaddy, Hostinger, NameSilo and others listed by Railway) | not possible at the apex: move the nameservers to Cloudflare, or use `www.sentfund.my.id` (a normal CNAME `www`) and set `APP_BASE_URL` to that | **TXT** as Railway shows |
 
 Railway issues the Let's Encrypt certificate, usually within an hour of the records resolving; DNS can take up to 72 hours worldwide. Done when the domain shows a green check. Then make sure `APP_BASE_URL` matches the domain exactly (https, no trailing slash) and **Deploy**.
 
 ## 6. Smoke test (Andre, about 10 minutes)
 
-1. `curl -s https://app.gajian.my.id/api/health` returns `{"status":"ok", … "db":"ok","hostedDemo":true,"readOnly":false}`.
+1. `curl -s https://sentfund.my.id/api/health` returns `{"status":"ok", … "db":"ok","hostedDemo":true,"readOnly":false}`.
 2. Open the site: the purple "Public demo on NEAR testnet" banner is on the landing page.
 3. **Each role signs in** (password `12345678`), each in its own browser window (README "Try it online"). Expect:
-   - `maker@gajian.my.id` → "My runs" with the testnet runs;
+   - `maker@sentfund.my.id` → "My runs" with the testnet runs;
    - `app1@` and `app2@` → "Review queue";
    - `admin@` → workflow page "Read-only on this copy", Recipients read-only.
 4. **One 0.01 run to Paid**:
    - Maker: **New run** → title `Hosted smoke test` → Upload a file → `docs/hosting/smoke-test-0.01.csv` (Emma Clark, 0.01) → Continue to review → **Submit 0.01 tUSDC for approval**.
    - Approver 1, then approver 2: **Approve**.
    - Within a minute the run shows **Paid 1 of 1**. Click the payout link: NearBlocks shows `pay_row` signed by `worker.gajian-payroll.testnet` and 0.01 tUSDC to `recipient1`.
-5. Negative check: upload `public/templates/gajian-payroll-sample-1000.csv` → review → Submit is refused with "Public demo: a run can only pay recipients … Nothing was sent."
+5. Negative check: upload `public/templates/sentfund-payroll-sample-1000.csv` → review → Submit is refused with "Public demo: a run can only pay recipients … Nothing was sent."
 6. On this server: `npm run judge:verify` still ends with `All testnet evidence checks passed.` The agent adds the smoke run's transactions to `docs/TESTNET.md`.
 
 ## 7. Releasing an update (with Andre's yes)
@@ -205,7 +214,7 @@ At 0.01–0.10 tUSDC per payout, 2 tUSDC covers 20–200 payouts.
 ## 10. Kill switch
 
 Railway → Variables → `HOSTED_READONLY=true` → **Deploy**.
-- Every page shows "Read-only: the GAJIAN team has paused this demo".
+- Every page shows "Read-only: the SentFund team has paused this demo".
 - Sign-in and browsing still work; every change is refused, and the worker sends nothing.
 - Set it back to `false` → **Deploy** to resume.
 - Faster in an emergency: service → **Settings** → remove the custom domain, or stop the deployment.
@@ -223,8 +232,8 @@ Railway → Variables → `HOSTED_READONLY=true` → **Deploy**.
 1. Kill switch on (step 10), or stop the deployment.
 2. **Agent, with your yes:** `scripts/testnet/hosting-keys.sh delete --yes`. It deletes exactly the four host keys on testnet, removes the private file, and keeps the public list. Then `hosting-keys.sh status` shows only this server's keys, and the agent records the transactions in `docs/TESTNET.md`.
 3. Railway: project → **Settings** → **Delete project**. This removes the service, the volume and its backups; make a last manual backup first only if you want one.
-4. Vercel DNS: delete the `app` CNAME (or the apex ALIAS) and the Railway TXT record. If you used B, restore the previous site's apex records.
-5. Anthropic: delete the hosted key, or the `gajian-hosted` workspace.
+4. DNS (Cloudflare or wherever `sentfund.my.id` lives): delete the apex record pointing at Railway and the Railway TXT record.
+5. Anthropic: delete the hosted key, or the `sentfund-hosted` workspace.
 6. GitHub: https://github.com/settings/installations → Railway → remove access to the repository (or uninstall).
 7. Railway: cancel the Hobby plan if nothing else uses it.
 8. Remove the `release` branch if you like: `git push origin --delete release` (agent, with your yes).
@@ -243,3 +252,4 @@ Railway → Variables → `HOSTED_READONLY=true` → **Deploy**.
 - Custom domains (CNAME + TXT, apex via CNAME flattening/ALIAS, Cloudflare Full, 2 per service on Hobby, certificates): https://docs.railway.com/networking/domains/working-with-domains
 - Pricing (Hobby $5 including $5 usage, resource prices, card required): https://docs.railway.com/pricing/plans
 - Vercel DNS (ALIAS valid at the apex, CNAME not): https://vercel.com/docs/domains/managing-dns-records
+- Cloudflare CNAME flattening at the apex: https://developers.cloudflare.com/dns/cname-flattening/

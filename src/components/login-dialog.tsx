@@ -99,7 +99,7 @@ export function LoginDialogProvider({ children, demo, autoOpen = false, notice }
     if (pending) return;
     const next: typeof errors = {};
     if (!email.trim()) next.email = 'Enter your email address.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = 'Enter a valid email address, e.g. maker@gajian.my.id.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = 'Enter a valid email address, e.g. maker@sentfund.my.id.';
     if (!password) next.password = 'Enter your password.';
     setErrors(next);
     if (next.email) return document.getElementById('login-email')?.focus();
@@ -131,7 +131,7 @@ export function LoginDialogProvider({ children, demo, autoOpen = false, notice }
       <dialog ref={dialogRef} className="modal" aria-labelledby={titleId} aria-describedby={descId}>
         <div className="modal-head">
           <div>
-            <h2 id={titleId}>Sign in to GAJIAN</h2>
+            <h2 id={titleId}>Sign in to SentFund</h2>
             <p id={descId}>Use your work email and password. We open the dashboard for your role.</p>
           </div>
           <button type="button" className="icon-btn" onClick={close} aria-label="Close sign-in dialog"><XIcon size={18} /></button>

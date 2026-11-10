@@ -12,7 +12,7 @@ import { companyCsv, historyFor, recipientCsv } from '@/server/reports/history';
 import { FakeVault } from '../helpers/fake-vault';
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-rep-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-rep-'));
 process.env.DATABASE_URL = `file:${join(dir, 'rep.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -43,9 +43,9 @@ beforeAll(async () => {
   db = (await import('@/server/db/client')).getDb();
   await (await import('@/server/db/seed')).seedDemo(db);
   (await import('@/server/chain/vault-client')).setVaultClientForTests(fake);
-  await paidRun('=HYPERLINK("http://evil","Uniform consolidated")', 'consolidated', 'gajian-payroll-uniform-1000.csv');
-  await paidRun('Uniform detailed', 'detailed', 'gajian-payroll-uniform-1000.csv');
-  await paidRun('Still paying', 'detailed', 'gajian-payroll-uniform-1000.csv', false);
+  await paidRun('=HYPERLINK("http://evil","Uniform consolidated")', 'consolidated', 'sentfund-payroll-uniform-1000.csv');
+  await paidRun('Uniform detailed', 'detailed', 'sentfund-payroll-uniform-1000.csv');
+  await paidRun('Still paying', 'detailed', 'sentfund-payroll-uniform-1000.csv', false);
 }, 120_000);
 afterAll(async () => {
   (await import('@/server/chain/vault-client')).setVaultClientForTests(undefined);
@@ -91,7 +91,7 @@ describe('history and exports', () => {
     expect(recipientCsv(db, admin, 'x')).not.toContain('gjn-emp-0001');
     const route = (await import('@/app/api/reports/recipients/route')) as unknown as { GET: (r: Request) => Response };
     const login = (await import('@/app/api/auth/login/route')) as unknown as { POST: (r: Request) => Promise<Response> };
-    const res = await login.POST(new Request(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE, 'x-forwarded-for': '10.6.0.1' }, body: JSON.stringify({ email: 'admin@gajian.my.id', password: '12345678' }) }));
+    const res = await login.POST(new Request(`${BASE}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', origin: BASE, 'x-forwarded-for': '10.6.0.1' }, body: JSON.stringify({ email: 'admin@sentfund.my.id', password: '12345678' }) }));
     const cookie = (res.headers.get('set-cookie') ?? '').split(';')[0] ?? '';
     expect(route.GET(new Request(`${BASE}/api/reports/recipients`, { headers: { cookie } })).status).toBe(403);
     expect(route.GET(new Request(`${BASE}/api/reports/recipients`)).status).toBe(401);

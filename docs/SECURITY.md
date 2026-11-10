@@ -24,7 +24,7 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 
 ## Sessions
 
-- Random 256-bit token in the `gajian_session` cookie: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` when `APP_BASE_URL` is https. The database stores only SHA-256(token).
+- Random 256-bit token in the `sentfund_session` cookie: `HttpOnly`, `SameSite=Lax`, `Path=/`, `Secure` when `APP_BASE_URL` is https. The database stores only SHA-256(token).
 - 8 h absolute lifetime, 2 h idle timeout; logout deletes the server session and clears the cookie.
 - Dashboard after login is chosen by the server from the session role (`homeFor`).
 
@@ -57,7 +57,18 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 - Maker only (`assistant.use`), same-origin + CSRF like every mutation. It can only **create a draft owned by the signed-in maker** from the maker's own preview (once, within 30 minutes; the directory is resolved again at creation). The assistant module has no access to submit, approve, release, the workflow or directory changes; the boundary tests call its two routes as every other role (403) and check that no chain call happens.
 - The model (Claude API, official SDK) receives only the maker's messages and the list of division names. Never NEAR accounts, emails, phones, maximums or other directory data. The app, not the model, picks the recipients (active directory entries by division or exact name), checks that the amount was typed by the maker (never guessed), is tUSDC, and is within the per-row cap, each recipient's maximum and the run cap. Requests containing a NEAR account or another currency are refused before the model is called; a model answer naming someone outside the directory is refused (prompt-injection tests with a deliberately fooled stub).
 - `ANTHROPIC_API_KEY` is read from `.env` on the server only, never logged, returned to a browser or committed; without it the assistant is off. Requests: 20 s timeout, one retry, at most 20 per maker per hour (counted in `assistant_requests`, which stores the maker's text and the model's structured answer, no directory data).
-- Voice input uses the browser's own speech recognition: the audio goes from the browser to the browser vendor's service, not to GAJIAN. `Permissions-Policy: microphone=(self)` allows it on our pages only.
+- Voice input uses the browser's own speech recognition: the audio goes from the browser to the browser vendor's service, not to SentFund. `Permissions-Policy: microphone=(self)` allows it on our pages only.
+
+## Identity checks: KTP + face (Phase 21)
+
+KTP numbers and face images are specific personal data under Indonesia's UU PDP (Law 27/2022). Decided with Andre on 10 Nov 2026 (D-117):
+- **Admin only** (`requireMutation(…, ['admin'])` on all three routes; same-origin + CSRF). The boundary tests call each route as maker and approver (403, no state change).
+- **Retention: results only.** Images are decoded in memory (sharp, ≤ 8 MB each, ≤ 50 megapixels, EXIF rotation) and discarded after the check. Stored: every check's result (`identity_checks`, append-only by trigger), the NIK **masked** (first and last four digits) and an HMAC-SHA-256 of it keyed with `SESSION_SECRET` (duplicate detection only; a new secret makes old hashes unmatched, never wrong). Never the NIK, the KTP image or the face photo. Audit events hold IDs and the outcome only.
+- **Faces never leave the server.** Before the KTP goes to the KTP reader (Claude API), every face the detector finds is covered with a solid block. The reader sees the card's text: NIK, name, date and place of birth, sex, address. For a real employee that is a transfer of personal data to Anthropic as a processor: the operator of a private copy needs a lawful basis (for example the employee's consent) and should use an API key under an organisation agreement. Face comparison runs only on this server (OpenCV YuNet + SFace, ONNX Runtime, CPU).
+- **Public demo: synthetic specimens only.** In hosted mode the upload and review routes answer 403 `hosted_read_only`; the specimen route runs as a **dry run** (logged, status unchanged), at most 100 reader calls a day. Specimen cards are marked SPECIMEN, use the non-existent kecamatan code 99, and the faces are AI-generated public-domain images (Wikimedia Commons, sources in `public/specimens/manifest.json`).
+- **Caps:** 30 checks per admin per hour; reader timeout 45 s, one retry; the KTP text is data, never an instruction (system prompt + a strict tool schema; the app re-validates every field).
+- **Gate:** "Pay identity-verified recipients only" (on in the demo) refuses a submit that pays anyone not verified, re-checked on the server at submit and frozen into the version (`directory_check.identity`). App and approver guardrail, not a vault rule (the vault cannot change).
+- **Limits:** not a Dukcapil registry check, not liveness detection (a printed photo of the right person can pass), and the reader's remarks about tampering are a visual opinion, not forensics. "Needs review" puts a person in the loop; a manual approval needs a reason and is refused if the NIK is already verified for someone else.
 
 ## Hosted demo mode (Phase 20)
 

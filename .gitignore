@@ -52,3 +52,6 @@ npm-debug.log*
 
 # Hosted demo signer keys (scripts/testnet/hosting-keys.sh): never commit
 .hosting/
+
+# Face models for the identity check (npm run vision:models; SHA-256 pinned)
+/models/

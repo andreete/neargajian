@@ -529,3 +529,40 @@ Andre verified the key transactions and balances independently on testnet.
 - New CI job **Hosted image** (`.github/workflows/ci.yml`): `docker build` of the root Dockerfile on GitHub's runner, then boots it with `HOSTED_DEMO=true`, a volume at `/data` and a throwaway random worker key (never added to any account, masked in the log). It checks health (`db ok`, `hostedDemo true`), the banner on the landing page, the first-boot reset, a clean SIGTERM stop (exit 0), a migrations-only second boot, and that the service stops non-zero when the worker dies. Nothing is pushed to a registry or deployed.
 - The app job now also runs `npm run test:judge-mode` and `npm run test:hosted`.
 - The runbook asks for a green Actions run (including **Hosted image**) before every `git push origin main:release`. This keeps the rule "never run Docker on this server"; GitHub's runner is not this server.
+
+## Phase 21 · SentFund rebrand and KTP + face identity checks (10 Nov 2026)
+
+### D-116 · Rebrand GAJIAN → SentFund (`sentfund.my.id`), on-chain names unchanged
+- Andre (10 Nov): "domain change to sentfund.my.id, change all the branding … from gajian to sentfund". Done across UI, logo (`public/brand/sentfund-logo.png`, new mark in the same navy/sky palette), templates (`public/templates/sentfund-payroll-*`, byte-identical content, same SHA-256), docs, scripts, image, CI and demo sign-ins (`maker@sentfund.my.id` …; migration 0009 renames existing users' emails).
+- **Kept on purpose:** every on-chain identifier (`gajian-payroll.testnet` and its sub-accounts, `vault2.gajian-payroll.testnet`, `tusdc.gajian-payroll.testnet`): accounts cannot be renamed and vault2 cannot be redeployed (D-051). Also kept: the payout reference prefix `GJN-` (part of committed history and evidence), the old repository name and paths on this server (`/home/neargajian/near-gajian`), and historic text in DECISIONS/BUILD-STATE.
+
+### D-117 · Identity check: privacy decisions (asked and answered 10 Nov 2026)
+Asked before building because KTP numbers and face images are specific personal data under UU PDP. Andre chose all three recommended options:
+1. **Public demo: synthetic specimens only.** Upload and review routes answer 403 in hosted mode; specimen checks are dry runs (logged, status unchanged). Real checks only on a private copy.
+2. **Retention: results only.** Images are processed in memory and discarded. Kept: every check (append-only), masked NIK, HMAC of the NIK keyed with `SESSION_SECRET` for duplicate detection, face score, who and when.
+3. **Payout gate: setting, default on.** "Pay identity-verified recipients only", re-checked at submit like the directory rule and frozen into the version; the three live recipients are seeded as verified (labelled "Demo seed", no fake check results).
+
+### D-118 · Identity pipeline: local face models + Claude vision for the card text only
+- **Faces stay on the server:** OpenCV Zoo YuNet 2023mar (detector, MIT) and SFace 2021dec (recognizer, Apache-2.0) on ONNX Runtime (`onnxruntime-node` 1.31.1, CPU) with `sharp` 0.35.5 for decoding. 5-point alignment to 112×112, cosine similarity; ≥ 0.363 (OpenCV's SFace threshold) = same person, 0.28–0.363 = Needs review, below = Failed. Models are git-ignored, downloaded by `npm run vision:models` against pinned SHA-256 (the Git LFS IDs in opencv_zoo); `npm run vision:selftest` proves they load and separate the specimens.
+- **The card text:** Claude (`ASSISTANT_MODEL`, default `claude-opus-5-5`) through one strict tool `record_ktp`; every detected face is **covered with a solid block** first (a blur was not enough: the detector still found the face). The model's fields are re-validated; the NIK, date and sex logic runs offline in `nik.ts`.
+- Rejected: sending both images to a vision model to "compare faces" (sends biometric data to a third party and an LLM is not a calibrated face matcher); cloud face APIs (same problem, plus accounts); Dukcapil (needs an official partnership). Not liveness detection; said in the UI and docs.
+
+### D-119 · Synthetic specimens
+- Four scenarios in `public/specimens/` built by `scripts/make-identity-specimens.ts`: KTP-style cards marked SPECIMEN with the non-existent kecamatan code 99 (`3174 99 …`), faces from public-domain AI-generated images on Wikimedia Commons (sources in `manifest.json`), plus an impostor face. Each card's photo and the face photo come from the same generated image, so same-person scores (0.91–0.96) are higher than real photos would give; documented in README and the page.
+- The test-only stub KTP reader (`IDENTITY_STUB=browser-tests`, database under `.tmp/` only) knows the specimen cards by SHA-256 and is labelled "Test stub reader" in the UI.
+
+### D-120 · Build fix: Turbopack crawled the whole project (OOM on this host)
+- Symptom: `next build` reached 4.3 GB RSS in 6 s and was OOM-killed (this killed the previous session). Bisected with clean copies: the code built fine anywhere without `contracts/target` (4.2 GB of Rust output).
+- Cause: file reads with an unknown directory and a fixed file name (`existsSync(join(dir, DETECTOR_FILE))`, `readFileSync(join(SPECIMEN_DIR, 'manifest.json'))`) make Turbopack trace a project-wide glob. Fix: `/* turbopackIgnore: true */` on each such path (as `landing.ts` already did), `onnxruntime-node` and `sharp` in `serverExternalPackages`, and onnxruntime's CUDA/TensorRT providers excluded from tracing (and deleted in the image: CPU only). Build peak back to normal (lowest MemAvailable 3.6–4.0 GB during the build).
+- Also: the landing page imported `seed.ts` for the demo passwords, which now pulled in the identity engine; the demo users moved to `src/server/db/demo-users.ts`.
+- Builds on this host now run under a watchdog that kills the build if MemAvailable drops below 1.2 GB (`.tmp/guarded-build.sh`; recreate from BUILD-STATE Phase 21 if `.tmp` was cleaned).
+
+### D-121 · Hosting: Railway + Cloudflare DNS; repository `discoverateagency-ops/sentfund`
+- Andre (10 Nov): push to the private `discoverateagency-ops/sentfund`; the domain `sentfund.my.id` is bought at Sumopod; "determine for us" between Supabase, Cloudflare and Vercel; make deployment automatic on the agent's side.
+- Decision: **Railway Hobby** runs the app (unchanged from D-109/D-110: always-on web + worker, volume for SQLite, native modules, CI-tested image). **Cloudflare Free** hosts the DNS (nameservers set at Sumopod; CNAME flattening at the apex). Vercel and Cloudflare Pages/Workers are serverless (no persistent disk, no background worker, no native onnxruntime at this size); Supabase is a database, not app hosting, and would mean rewriting the data layer before the deadline.
+- Andre creates the accounts and puts `RAILWAY_API_TOKEN`, `CLOUDFLARE_API_TOKEN` and `HOSTED_ANTHROPIC_API_KEY` in `.env` himself; the agent does the rest by API (`docs/HOSTING.md` section 0). Continuous deployment: Railway builds `release` with "Wait for CI".
+- Remote `sentfund` = `https://github.com/discoverateagency-ops/sentfund.git` (private, verified by API on 10 Nov). The first push used Andre's fine-grained token once, from an environment variable, never stored in git config, files or logs. Registering a deploy key for later pushes was **refused by the permission system** (a persistent access grant not explicitly asked for): Andre either adds a deploy key himself or gives a token for each push session.
+
+### D-122 · e2e fixture and judge test with the identity gate
+- The e2e fixture builds history dated before the gate (5 Nov), including a paid 1,000-row run of sample employees who are never identity-verified: it turns the gate off while building that history and back on (the demo default) afterwards.
+- `tests/judge/read-only.spec.ts` now checks both refusals: the 1,000-row sample by the identity rule ("Nothing was sent"), then the three verified live recipients by the missing signer keys ("Nothing was recorded").

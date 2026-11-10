@@ -14,7 +14,7 @@ export async function HostedBanner() {
     <div className="hosted-banners">
       {mode.readOnly ? (
         <div className="hosted-banner is-paused" role="status" data-testid="readonly-banner">
-          <AlertIcon size={16} /><span><strong>Read-only:</strong> the GAJIAN team has paused this demo. You can sign in and look around; nothing can be changed and no payouts are sent.</span>
+          <AlertIcon size={16} /><span><strong>Read-only:</strong> the SentFund team has paused this demo. You can sign in and look around; nothing can be changed and no payouts are sent.</span>
         </div>
       ) : null}
       {mode.demo ? (

@@ -27,7 +27,7 @@ let cached: AppConfig | undefined;
 export function loadConfig(env: Readonly<Record<string, string | undefined>> = process.env): AppConfig {
   assertHostedKeys(env);
   const network = env.NEAR_NETWORK ?? 'testnet';
-  if (network !== 'testnet') throw new Error('GAJIAN runs on NEAR testnet only (NEAR_NETWORK must be "testnet").');
+  if (network !== 'testnet') throw new Error('SentFund runs on NEAR testnet only (NEAR_NETWORK must be "testnet").');
   const baseUrl = new URL(env.APP_BASE_URL ?? 'http://127.0.0.1:8092');
   const production = env.NODE_ENV === 'production';
   const sessionSecret = env.SESSION_SECRET ?? '';
@@ -37,7 +37,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
     baseUrl,
     demoMode: env.DEMO_MODE === 'true',
     // Development/test fallback only; production refuses to start without a real secret.
-    sessionSecret: weakSecret ? 'gajian-development-only-session-secret-0000' : sessionSecret,
+    sessionSecret: weakSecret ? 'sentfund-development-only-session-secret-0000' : sessionSecret,
     secureCookies: baseUrl.protocol === 'https:',
     network: 'testnet',
     explorerTxUrl: env.NEAR_EXPLORER_TX_URL ?? 'https://testnet.nearblocks.io/txns/',

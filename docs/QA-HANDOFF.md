@@ -1,6 +1,6 @@
-# QA handoff (Phase 18, updated for Phase 20)
+# QA handoff (Phase 18, updated for Phases 20 and 21)
 
-For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built GAJIAN. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11).
+For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built SentFund. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11); Phase 21 the SentFund rebrand and the KTP + face identity check (A12).
 
 ## 0. Your role and rules
 
@@ -15,8 +15,8 @@ For the team's **human QA pass** after Phase 19, and for an independent reviewer
 
 | Item | Value |
 | --- | --- |
-| Project | GAJIAN: payroll batches with approvals enforced by a NEAR vault contract; payouts in a test stablecoin on NEAR testnet (NEAR HACKATHON, Real-World Money track) |
-| Repository | `https://github.com/andreete/neargajian` (**private until submission**: Andre grants read access or sends a `git bundle`) |
+| Project | SentFund (formerly GAJIAN): payroll batches with approvals enforced by a NEAR vault contract; payouts in a test stablecoin on NEAR testnet (NEAR HACKATHON, Real-World Money track) |
+| Repository | `https://github.com/discoverateagency-ops/sentfund` (**private until submission**: Andre grants read access or sends a `git bundle`; the older `andreete/neargajian` holds the same history up to Phase 21) |
 | Release candidate | the **`phase-19: recipient directory and payroll assistant`** commit on `main` (`git log --oneline -1`). The previous candidate was `7483f51` (Phase 17). |
 | Final vault (live) | `vault2.gajian-payroll.testnet`: release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, on-chain `code_hash` `4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP`, no access keys |
 | Token | `tusdc.gajian-payroll.testnet` (NEP-141, 6 decimals, zero value, admin can mint) |
@@ -37,7 +37,7 @@ How the product works (short):
 Prerequisites: Linux or macOS, Node.js **26.13.0** and npm 11 (`.nvmrc`), git, internet access to `https://rpc.testnet.fastnear.com`. Optional for contracts: Rust **1.95.0** (via rustup; `contracts/rust-toolchain.toml` pins it) and cargo-near **0.23.0**.
 
 ```sh
-git clone https://github.com/andreete/neargajian.git gajian && cd gajian
+git clone https://github.com/discoverateagency-ops/sentfund.git sentfund && cd sentfund
 git checkout main   # the phase-19 commit
 npm ci
 cp .env.example .env
@@ -63,7 +63,7 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm run judge:deployment` (after the build) | `PASS deployed code_hash equals the locally built Wasm`, `PASS no full-access key on vault2.gajian-payroll.testnet (0 keys in total)` |
 | `npm run contracts:lint`, `npm run contracts:test` | pass; 3 + 49 unit tests and a sandbox flow (downloads nearcore 2.14.0 on first run) |
 
-Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@gajian.my.id`, `app1@gajian.my.id`, `app2@gajian.my.id`, `admin@gajian.my.id`, password `12345678`. Use separate browser profiles for different roles. All times are UTC.
+Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, password `12345678`. Use separate browser profiles for different roles. All times are UTC.
 
 ## 3. What to test (acceptance checks with expected results)
 
@@ -82,7 +82,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 - Reference tests: `decisions.test.ts`, `regression.test.ts`, `workflow.test.tsx`; contract tests. Live: Phase 04 refusals and Phase 16 maker-release run (section 4).
 
 **A03: import**
-- `public/templates/gajian-payroll-sample-1000.csv` and the `.txt` version are accepted: 1,000 rows, exact total **56.69086 tUSDC**.
+- `public/templates/sentfund-payroll-sample-1000.csv` and the `.txt` version are accepted: 1,000 rows, exact total **56.69086 tUSDC**.
 - The first 50 rows show in file order, with the File row column starting at 2.
 - A file with 1,001 rows is rejected. One invalid row after row 50 rejects the whole file, naming its file row and column, and the previous draft is kept.
 - Manual entry: keeping only the valid rows needs an explicit confirmation.
@@ -149,8 +149,20 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 - A run with only Emma Clark, Daniel Hall and Grace Lewis (all "Ready") submits and pays. The 1,000-row sample uploads and previews; the review page warns and Submit is refused: "Public demo: a run can only pay recipients that are in the directory and "Ready to receive tUSDC" … Nothing was sent."
 - Admin: workflow page "Read-only on this copy: it has no admin signer key", Save disabled. Recipients: read-only note, switch disabled, no Add/Edit/import.
 - Failing the password 5 times from one browser locks only that browser for 15 minutes; others can still sign in with the same demo account.
-- Kill switch (`HOSTED_READONLY=true`): a "Read-only: the GAJIAN team has paused this demo" banner; sign-in and browsing work; creating a run answers "The hosted demo is read-only right now"; the worker logs `paused`.
+- Kill switch (`HOSTED_READONLY=true`): a "Read-only: the SentFund team has paused this demo" banner; sign-in and browsing work; creating a run answers "The hosted demo is read-only right now"; the worker logs `paused`.
 - `/api/health`: `"db":"ok","hostedDemo":true`.
+
+**A12: identity checks, KTP + face (admin only; Phase 21)**
+- Setup: `npm run vision:models` (face models, SHA-256 pinned) and, for the real KTP reader, `ANTHROPIC_API_KEY` in `.env` (restart). Without the models or the key the page says which engine is off and the buttons are disabled.
+- Do: admin → **Identity checks**. See: "Pay identity-verified recipients only" **On**; Verified 3 (Emma Clark, Daniel Hall, Grace Lewis, check log says "Demo seed"), Not checked 1,000; "How the check works" with the privacy and limits note.
+- Do: **Try it on synthetic specimens → Run check** for Emma, Daniel, Grace. See (about 5 s each): **Verified**, eight checks passed (document, NIK well-formed, NIK agrees with the card, no duplicate NIK, name, KTP face found, one clear face, face match ≈ 0.91–0.96 vs threshold 0.363).
+- Do: **Impostor** (Daniel's KTP, someone else's face). See: **Failed** on "Face photo matches the KTP photo" (similarity ≈ 0.09); Daniel becomes **Failed** locally (in the public demo specimen checks are dry runs).
+- Do: **Check** on a recipient with your own test images (a photo that is not a KTP; a KTP-style card; a face photo with two faces). See: "not an identity document" → Failed; two faces or a blurry/dark photo → Needs review. Non-images are refused before anything is recorded.
+- Do: **Review** a "Needs review" recipient with a reason (5–300 characters) → Verified or Failed; **Withdraw** a verified one → Failed. Each is in the check log with who and when; nothing can be edited or deleted.
+- Do: as maker, submit a run that pays Daniel after the impostor check. See: "Pay identity-verified recipients only: 1 of N rows … Nothing was sent." Switch the setting **Off** (admin): it submits. The approver's run page shows the identity result frozen at submission.
+- Privacy: the database holds the NIK only masked (`3174********0002`) plus a keyed hash, never an image (`identity_checks`, `recipients`). The KTP reader receives the card with the face covered.
+- Hosted demo: uploads and reviews answer "The public demo checks identities only on the built-in synthetic specimens …"; specimen checks are dry runs.
+- Reference: `tests/unit/identity.test.ts` (13), `tests/integration/identity.test.ts` (13, real face models + stub reader), `tests/integration/boundaries.test.ts` (identity routes refused for maker and approver), `tests/e2e/identity.spec.ts` (2). Live: the four specimen scenarios through the real Claude KTP reader (BUILD-STATE Phase 21).
 
 **Also check:**
 - Layout at 1280x720 and 1440x900, desktop first: no horizontal page scroll; references, accounts and amounts on one line; run page actions top right in every state. Covered by `tests/e2e/pages.spec.ts`.

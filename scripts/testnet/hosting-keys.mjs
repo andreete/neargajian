@@ -31,7 +31,7 @@ if (!VAULT.endsWith('.testnet')) throw new Error('testnet only');
 if (cmd === 'gen') {
   if (existsSync(PRIVATE) || existsSync(PUBLIC)) throw new Error(`refused: ${DIR} already holds host keys. Delete them on-chain first (hosting-keys.sh delete --yes).`);
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
-  const lines = ['# GAJIAN hosted demo signer keys (vault2, function-call only). Paste each value into Railway', '# Variables. Never commit, print or share. Delete on-chain after the event: hosting-keys.sh delete --yes'];
+  const lines = ['# SentFund hosted demo signer keys (vault2, function-call only). Paste each value into Railway', '# Variables. Never commit, print or share. Delete on-chain after the event: hosting-keys.sh delete --yes'];
   const pub = {};
   for (const [role, h] of Object.entries(HOSTED)) {
     const kp = KeyPair.fromRandom('ed25519');

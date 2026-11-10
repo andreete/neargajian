@@ -9,7 +9,7 @@ import { expect, test, type Page } from '@playwright/test';
 async function signIn(page: Page, email: string, home: RegExp) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -23,7 +23,7 @@ test('banner on the landing page and on every app page; paid testnet runs with e
   await page.goto('/');
   await expect(page.getByTestId('hosted-banner')).toHaveText(BANNER);
   await expect(page.getByTestId('readonly-banner')).toHaveCount(0);
-  await signIn(page, 'maker@gajian.my.id', /\/maker$/);
+  await signIn(page, 'maker@sentfund.my.id', /\/maker$/);
   await expect(page.getByTestId('hosted-banner')).toBeVisible();
   const testnetRun = page.getByRole('row').filter({ hasText: 'Testnet run' }).filter({ hasText: 'Paid' }).first();
   await expect(testnetRun).toBeVisible();
@@ -34,14 +34,14 @@ test('banner on the landing page and on every app page; paid testnet runs with e
 });
 
 test('the 1,000-row sample uploads and previews; submitting it is refused with a clear message', async ({ page }) => {
-  await signIn(page, 'maker@gajian.my.id', /\/maker$/);
+  await signIn(page, 'maker@sentfund.my.id', /\/maker$/);
   await page.goto('/maker/runs/new');
   await page.getByLabel('Run title').fill('Hosted sample check');
   await page.getByText('Upload a file').click();
   await page.getByRole('button', { name: 'Create draft run' }).click();
   await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
   const runId = page.url().split('/').pop()!;
-  await page.getByLabel('Choose a payroll file').setInputFiles({ name: 'gajian-payroll-sample-1000.csv', mimeType: 'text/csv', buffer: readFileSync('public/templates/gajian-payroll-sample-1000.csv') });
+  await page.getByLabel('Choose a payroll file').setInputFiles({ name: 'sentfund-payroll-sample-1000.csv', mimeType: 'text/csv', buffer: readFileSync('public/templates/sentfund-payroll-sample-1000.csv') });
   await expect(page.getByText(/Accepted .*1,000 rows, exact total 56\.69086 tUSDC/)).toBeVisible();
   await page.getByRole('link', { name: 'Continue to review' }).click();
   await page.waitForURL(/\/review$/);
@@ -56,7 +56,7 @@ test('the 1,000-row sample uploads and previews; submitting it is refused with a
 });
 
 test('without the admin key the workflow is read-only, and the directory is read-only for everyone', async ({ page }) => {
-  await signIn(page, 'admin@gajian.my.id', /\/admin$/);
+  await signIn(page, 'admin@sentfund.my.id', /\/admin$/);
   await expect(page.getByTestId('workflow-read-only')).toContainText('it has no admin signer key');
   await expect(page.getByRole('button', { name: 'Save workflow' })).toBeDisabled();
   await page.goto('/admin/recipients');

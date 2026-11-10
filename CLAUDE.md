@@ -1,6 +1,6 @@
-# GAJIAN: standing rules for Claude sessions
+# SentFund (formerly GAJIAN): standing rules for Claude sessions
 
-GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory**; "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo on Railway (`HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) is prepared for submission and kept online until 25 Nov 2026.
+SentFund is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory** and runs **identity checks** (KTP read by Claude vision with the face covered, NIK rules offline, face match on this server with OpenCV YuNet + SFace; Phase 21, `docs/SECURITY.md`); "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo on Railway (`HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) is prepared for submission and kept online until 25 Nov 2026.
 
 ## Start every session here
 
@@ -23,12 +23,13 @@ GAJIAN is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team 
 
 ## Resource rules (shared host: 4 cores, ~3 GB free RAM, swap in use)
 
+- **`next build` once OOM-killed this host** when Turbopack crawled `contracts/target` (D-120): any `fs` path built from an unknown directory needs `/* turbopackIgnore: true */`. Run builds under the watchdog in `docs/BUILD-STATE.md` Phase 21.
 - Every heavy command (cargo builds/tests, `npm install`, test suites, `next build`, Playwright) runs with `nice -n 19`.
 - Rust: `CARGO_BUILD_JOBS=2` (also set as `build.jobs = 2` in `contracts/.cargo/config.toml`). Node: `NODE_OPTIONS=--max-old-space-size=1536` for builds if needed.
 - **Never run a Rust build and a Node install/build/test at the same time.** Heavy steps run one after another.
 - No heavy work Saturday or Sunday 07:00–14:00 WIB (production batch window).
 - Do not leave dev servers, sandboxes or watchers running.
-- **Temp files go to the repo's git-ignored `.tmp/`, never `/tmp`** (a 3.5 GB RAM-backed tmpfs shared with other users). Every npm script runs through `scripts/with-tmp.sh`, which sets `TMPDIR`/`TMP`/`TEMP` to `<repo>/.tmp`; `contracts/.cargo/config.toml` forces the same `TMPDIR` for rustc, build scripts and test binaries. For any command outside an npm script (`npm ci`, `near …`, ad-hoc `cargo`), prefix `TMPDIR=$PWD/.tmp` or use `./scripts/with-tmp.sh <cmd>`. Throwaway builds use `CARGO_TARGET_DIR=~/.cache/gajian-fresh-target`, deleted afterwards. `npm run clean:tmp` empties `.tmp/`.
+- **Temp files go to the repo's git-ignored `.tmp/`, never `/tmp`** (a 3.5 GB RAM-backed tmpfs shared with other users). Every npm script runs through `scripts/with-tmp.sh`, which sets `TMPDIR`/`TMP`/`TEMP` to `<repo>/.tmp`; `contracts/.cargo/config.toml` forces the same `TMPDIR` for rustc, build scripts and test binaries. For any command outside an npm script (`npm ci`, `near …`, ad-hoc `cargo`), prefix `TMPDIR=$PWD/.tmp` or use `./scripts/with-tmp.sh <cmd>`. Throwaway builds use `CARGO_TARGET_DIR=~/.cache/sentfund-fresh-target`, deleted afterwards. `npm run clean:tmp` empties `.tmp/`.
 
 ## Engineering rules (production-grade prototype)
 
@@ -63,6 +64,8 @@ If `cargo` is not on PATH in a non-login shell: `. ~/.cargo/env`.
 ```sh
 # App (repo root)
 ./scripts/with-tmp.sh nice -n 19 npm ci
+npm run vision:models            # face models (git-ignored, SHA-256 pinned); needed by the tests and the identity check
+npm run vision:selftest          # loads them and matches the synthetic specimens
 npm run lint && npm run typecheck && nice -n 19 npm test
 npm run samples:check            # regenerates sample files; must produce no git diff
 nice -n 19 npm run build
@@ -76,7 +79,7 @@ nice -n 19 npm run live:phase16  # LIVE Phase 16 rehearsal (one step at a time w
 nice -n 19 npm run live:phase19 -- --grep p19-directory   # Phase 19 screenshots (no key); p19-assistant / p19-live-run need ANTHROPIC_API_KEY (p19-live-run: real transactions)
 node --env-file=.env scripts/testnet/record-run-evidence.ts <runId> <phase> "<label>"   # add a paid app run to judge:verify
 npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
-npm run demo:reset               # move data/gajian.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)
+npm run demo:reset               # move data/sentfund.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)
 nice -n 19 npm run test:judge-mode  # Playwright: fresh demo DB and no signer keys (read-only copy)
 npm run judge:deployment         # read-only: vault2 code_hash = local release Wasm, no full-access key
 npm run secret-scan              # credential scan: worktree + full Git history (--staged before commits)
@@ -109,4 +112,4 @@ Commit message: `phase-NN: summary`. Before every commit, secret-scan the staged
 git diff --cached | grep -nE 'ed25519:|secp256k1:|PRIVATE KEY|seed phrase' ; git diff --cached --name-only | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$'
 ```
 
-Both must print nothing (except rule text in docs). Then `git push -u origin main` (origin = `git@github.com:andreete/neargajian.git`, deploy key `~/.ssh/gajian_deploy` via repo-local `core.sshCommand`). If auth fails, note it in `docs/NEXT-STEPS.md` and retry at the next phase end. Never force-push, never change repo visibility.
+Both must print nothing (except rule text in docs). Then `git push -u origin main` (origin = `git@github.com:andreete/neargajian.git`, deploy key `~/.ssh/gajian_deploy` via repo-local `core.sshCommand`) **and** push `main` to the remote `sentfund` = `https://github.com/discoverateagency-ops/sentfund.git` (private; the repository Railway deploys from, D-121). That push needs a credential from Andre (a token he gives per session, used from an environment variable and never stored, or a deploy key he adds himself); without one, note it in `docs/NEXT-STEPS.md`. If auth fails, note it in `docs/NEXT-STEPS.md` and retry at the next phase end. Never force-push, never change repo visibility.

@@ -12,6 +12,6 @@ export function GET(request: Request): Response {
   const csv = recipientCsv(getDb(), guarded.session.user, getConfig().explorerTxUrl);
   return new Response(csv, { headers: {
     'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
-    'Content-Disposition': `attachment; filename="gajian-recipient-detail-${new Date().toISOString().slice(0, 10)}.csv"`,
+    'Content-Disposition': `attachment; filename="sentfund-recipient-detail-${new Date().toISOString().slice(0, 10)}.csv"`,
   } });
 }

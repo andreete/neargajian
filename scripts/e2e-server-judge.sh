@@ -7,7 +7,7 @@ root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 rm -rf .tmp/e2e-judge
 mkdir -p .tmp/e2e-judge
-export DATABASE_URL="file:./.tmp/e2e-judge/gajian.sqlite"
+export DATABASE_URL="file:./.tmp/e2e-judge/sentfund.sqlite"
 export DEMO_MODE=true
 export MAKER_SIGNER_PRIVATE_KEY= APPROVER1_SIGNER_PRIVATE_KEY= APPROVER2_SIGNER_PRIVATE_KEY= WORKER_SIGNER_PRIVATE_KEY= ADMIN_SIGNER_PRIVATE_KEY=
 # No Anthropic key either: the payroll assistant shows "off on this copy (no API key)".

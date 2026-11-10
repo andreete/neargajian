@@ -1,9 +1,10 @@
-# GAJIAN hosted demo image. Railway builds it in its own cloud from the `release` branch;
+# SentFund hosted demo image. Railway builds it in its own cloud from the `release` branch;
 # it is never built on the development server (no Docker there). docs/HOSTING.md has the runbook.
 #
 # Node 26.13.0 pinned by tag AND digest (node:26.13.0-bookworm-slim, Docker Hub, checked 10 Nov 2026).
 # better-sqlite3 is compiled from source in the build stage for this image's Node and glibc
 # (its shipped prebuilds are removed), then checked by opening an in-memory database.
+# The face models (identity check) are downloaded and self-tested in the build stage.
 # One service runs both processes: scripts/hosted-start.sh (migrations, web app, release worker).
 
 FROM node:26.13.0-bookworm-slim@sha256:add5c17c14752c54d2f3d519ec46a3815684d41c33f198bcb09fb998f7dcbf68 AS build
@@ -20,6 +21,12 @@ RUN cd node_modules/better-sqlite3 \
  && cd /app \
  && node -e "const D=require('better-sqlite3'); const v=new D(':memory:').prepare('select sqlite_version() v').get().v; console.log('better-sqlite3 built from source, SQLite', v)"
 COPY . .
+# Face models for the identity check (git-ignored; SHA-256 pinned), then a self-test that loads
+# them with onnxruntime-node + sharp in this image and matches the synthetic specimens.
+# onnxruntime's CUDA/TensorRT providers (~500 MB) are removed: inference runs on the CPU only.
+RUN rm -f node_modules/onnxruntime-node/bin/napi-v*/linux/*/libonnxruntime_providers_cuda.so \
+          node_modules/onnxruntime-node/bin/napi-v*/linux/*/libonnxruntime_providers_tensorrt.so \
+ && node scripts/fetch-vision-models.mjs && node scripts/vision-selftest.ts
 RUN node node_modules/next/dist/bin/next build
 
 FROM node:26.13.0-bookworm-slim@sha256:add5c17c14752c54d2f3d519ec46a3815684d41c33f198bcb09fb998f7dcbf68
@@ -28,7 +35,7 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=8080 \
     HOST=0.0.0.0 \
-    DATABASE_URL=file:/data/gajian.sqlite
+    DATABASE_URL=file:/data/sentfund.sqlite
 COPY --from=build /app /app
 # /data is the Railway volume (mounted at start, not at build). Volumes are mounted as root and
 # the image runs as root, so no RAILWAY_RUN_UID is needed.

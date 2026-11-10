@@ -19,10 +19,10 @@ describe('sample payroll files', () => {
 
   it('documents exactly four checksums', () => {
     expect([...expected.keys()].sort()).toEqual([
-      'gajian-payroll-sample-1000.csv',
-      'gajian-payroll-sample-1000.txt',
-      'gajian-payroll-template-blank.csv',
-      'gajian-payroll-uniform-1000.csv',
+      'sentfund-payroll-sample-1000.csv',
+      'sentfund-payroll-sample-1000.txt',
+      'sentfund-payroll-template-blank.csv',
+      'sentfund-payroll-uniform-1000.csv',
     ]);
   });
 
@@ -32,7 +32,7 @@ describe('sample payroll files', () => {
   });
 
   it('blank template has exactly the canonical header row', () => {
-    const blank = readFileSync(join(ROOT, 'public', 'templates', 'gajian-payroll-template-blank.csv'), 'utf8');
+    const blank = readFileSync(join(ROOT, 'public', 'templates', 'sentfund-payroll-template-blank.csv'), 'utf8');
     expect(blank).toBe('near_account_id,receiver_name,currency,amount,mobile_phone,email\r\n');
   });
 });

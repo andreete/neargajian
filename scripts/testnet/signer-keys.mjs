@@ -7,9 +7,9 @@ import { join } from 'node:path';
 
 export const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
-export const MASTER = process.env.GAJIAN_MASTER ?? 'gajian-payroll.testnet';
+export const MASTER = process.env.SentFund_MASTER ?? 'gajian-payroll.testnet';
 /** The final vault (Phase 16): deployed from the release commit, no full-access key. */
-export const VAULT = process.env.GAJIAN_VAULT ?? `vault2.${MASTER}`;
+export const VAULT = process.env.SentFund_VAULT ?? `vault2.${MASTER}`;
 /** The Phase 04 vault: kept readable; its funds moved to VAULT through an approved run. */
 export const LEGACY_VAULT = `vault.${MASTER}`;
 export const TOKEN = `tusdc.${MASTER}`;
@@ -25,7 +25,7 @@ export async function rpc(method, params) {
   const res = await fetch(RPC, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'gajian', method, params }),
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'sentfund', method, params }),
   });
   const body = await res.json();
   if (body.error) throw new Error(JSON.stringify(body.error));

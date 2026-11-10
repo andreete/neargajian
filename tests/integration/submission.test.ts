@@ -11,7 +11,7 @@ import { cancelVersion, latestVersion, reconcileVersion, submitRun } from '@/ser
 import { saveManualDraft, uploadToDraft } from '@/server/runs/draft-service';
 import { FakeVault } from '../helpers/fake-vault';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-sub-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-sub-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 let h: DatabaseHandle;

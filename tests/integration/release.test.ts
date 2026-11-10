@@ -13,7 +13,7 @@ import { requestRelease, workerTick, MAX_ROW_ATTEMPTS } from '@/server/payouts/r
 import { claimPayoutAction } from '@/server/payouts/actions';
 import { FakeVault } from '../helpers/fake-vault';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-rel-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-rel-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 let h: DatabaseHandle;

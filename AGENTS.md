@@ -1,4 +1,4 @@
-# GAJIAN: instructions for Codex and other agents
+# SentFund (formerly GAJIAN): instructions for Codex and other agents
 
 The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex included) and win over anything in this file. Keep both files consistent: if you change a rule here, change it there too.
 

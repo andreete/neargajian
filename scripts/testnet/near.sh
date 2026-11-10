@@ -1,5 +1,5 @@
 #!/bin/sh
-# Guarded near-cli-rs wrapper for GAJIAN testnet operations.
+# Guarded near-cli-rs wrapper for SentFund testnet operations.
 # - refuses to run unless the arguments select `network-config testnet`
 # - runs with TMPDIR in the repo's .tmp/
 # - redacts anything that looks like a private key or seed phrase from the output
@@ -8,7 +8,7 @@ set -eu
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd)
 case " $* " in
   *" network-config testnet "*) ;;
-  *) echo "refused: GAJIAN only talks to testnet (missing 'network-config testnet')" >&2; exit 2 ;;
+  *) echo "refused: SentFund only talks to testnet (missing 'network-config testnet')" >&2; exit 2 ;;
 esac
 mkdir -p "$root/.tmp"
 PATH="$HOME/.cargo/bin:$PATH"

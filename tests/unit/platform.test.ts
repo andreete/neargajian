@@ -25,7 +25,7 @@ describe('platform', () => {
   it('reports testnet in the health payload', () => {
     expect(healthReport(new Date('2026-11-09T00:00:00Z'))).toEqual({
       status: 'ok',
-      service: 'gajian',
+      service: 'sentfund',
       network: 'testnet',
       time: '2026-11-09T00:00:00.000Z',
     });

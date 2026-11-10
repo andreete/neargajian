@@ -8,7 +8,7 @@ import { seedDemo } from '@/server/db/seed';
 import { allTestnetRuns, makerTestnetRuns, operationsTransfers, testnetTotals } from '@/server/dashboard/queries';
 import { testnetFacts } from '@/server/landing';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-hist-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-hist-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe('imported testnet history', () => {

@@ -1,0 +1,47 @@
+{
+  "note": "SYNTHETIC identity specimens for SentFund tests and the public demo. Not real people, not real KTPs. Faces: AI-generated, public domain (Wikimedia Commons, see faceSource). NIKs use kecamatan code 99, which does not exist in 3174 (Kota Jakarta Selatan).",
+  "people": [
+    {
+      "key": "emma",
+      "account": "recipient1.gajian-payroll.testnet",
+      "nameOnKtp": "EMMA CLARK",
+      "nik": "3174995203940001",
+      "birthPlace": "JAKARTA",
+      "birthDate": "1994-03-12",
+      "gender": "PEREMPUAN",
+      "faceSource": "https://commons.wikimedia.org/wiki/File:Woman_1.jpg"
+    },
+    {
+      "key": "daniel",
+      "account": "recipient2.gajian-payroll.testnet",
+      "nameOnKtp": "DANIEL HALL",
+      "nik": "3174992507900002",
+      "birthPlace": "BANDUNG",
+      "birthDate": "1990-07-25",
+      "gender": "LAKI-LAKI",
+      "faceSource": "https://commons.wikimedia.org/wiki/File:Man_2.jpg"
+    },
+    {
+      "key": "grace",
+      "account": "recipient3.gajian-payroll.testnet",
+      "nameOnKtp": "GRACE LEWIS",
+      "nik": "3174994411880003",
+      "birthPlace": "SURABAYA",
+      "birthDate": "1988-11-04",
+      "gender": "PEREMPUAN",
+      "faceSource": "https://commons.wikimedia.org/wiki/File:This_Person_Does_Not_Exist_example.jpg"
+    }
+  ],
+  "impostor": {
+    "faceSource": "https://commons.wikimedia.org/wiki/File:GAN_Mensch_StyleGAN2.png"
+  },
+  "sha256": {
+    "emma-ktp.jpg": "a37dfb4dbd409ccef6a9b90439d00af25e8b1e2aadb9ece7a7184969e6f4f7fa",
+    "emma-selfie.jpg": "8643356feee88170a3db477b9b1ad95f5137789c43f52319cffb1bcf897e9c48",
+    "daniel-ktp.jpg": "534657f4c88ff8dec784d05d1d93f97ae16c591f046df4e76016e6cfbdd68edc",
+    "daniel-selfie.jpg": "f0c3f68768fe3b77c0fb23819e9ae2f7e6d5fca89b4910972779baa569a245d4",
+    "grace-ktp.jpg": "eb3d901fb4f2ab848e5686f666e534df42d9d46f017bf44379964ac7abe5ac44",
+    "grace-selfie.jpg": "872a817f55ae3b3844d041fca867b369d9ce3044cff165658fd484ef7fe4a63e",
+    "impostor-selfie.jpg": "ab551ed9cce06396bf92a06bed86bee7f3589aa95cc8e2fe602bf0b232bbe815"
+  }
+}

@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const BASE = 'http://127.0.0.1:8092';
-const dir = mkdtempSync(join(tmpdir(), 'gajian-api-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-api-'));
 process.env.DATABASE_URL = `file:${join(dir, 'api.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
@@ -61,15 +61,15 @@ async function csrfFor(cookie: string): Promise<string> {
 
 describe('login', () => {
   it.each([
-    ['maker@gajian.my.id', '/maker'],
-    ['app1@gajian.my.id', '/approver'],
-    ['app2@gajian.my.id', '/approver'],
-    ['admin@gajian.my.id', '/admin'],
+    ['maker@sentfund.my.id', '/maker'],
+    ['app1@sentfund.my.id', '/approver'],
+    ['app2@sentfund.my.id', '/approver'],
+    ['admin@sentfund.my.id', '/admin'],
   ])('%s lands on %s with a hardened session cookie', async (email, home) => {
     const { res, setCookie, cookie, body } = await signIn(email);
     expect(res.status).toBe(200);
     expect(body.redirectTo).toBe(home);
-    expect(setCookie).toMatch(/^gajian_session=[A-Za-z0-9_-]{43};/);
+    expect(setCookie).toMatch(/^sentfund_session=[A-Za-z0-9_-]{43};/);
     expect(setCookie).toContain('HttpOnly');
     expect(setCookie).toContain('SameSite=Lax');
     const me = await meRoute.GET!(req('/api/me', { cookie }));
@@ -78,17 +78,17 @@ describe('login', () => {
   });
 
   it('accepts mixed-case email and gives one generic error for wrong password and unknown user', async () => {
-    expect((await signIn('Maker@Gajian.my.id', '12345678', '198.51.100.1')).res.status).toBe(200);
-    const wrong = await signIn('maker@gajian.my.id', 'wrong-password', '198.51.100.2');
-    const unknown = await signIn('nobody@gajian.my.id', '12345678', '198.51.100.3');
+    expect((await signIn('Maker@SentFund.my.id', '12345678', '198.51.100.1')).res.status).toBe(200);
+    const wrong = await signIn('maker@sentfund.my.id', 'wrong-password', '198.51.100.2');
+    const unknown = await signIn('nobody@sentfund.my.id', '12345678', '198.51.100.3');
     expect([wrong.res.status, unknown.res.status]).toEqual([401, 401]);
     expect(wrong.body.error?.message).toBe('Email or password is incorrect.');
     expect(unknown.body.error?.message).toBe(wrong.body.error?.message);
   });
 
   it('locks an email after 5 failures in 15 minutes, even with the right password', async () => {
-    for (let i = 0; i < 5; i++) expect((await signIn('app2@gajian.my.id', `bad-${i}`, `192.0.2.${i}`)).res.status).toBe(401);
-    const blocked = await signIn('app2@gajian.my.id', '12345678', '192.0.2.99');
+    for (let i = 0; i < 5; i++) expect((await signIn('app2@sentfund.my.id', `bad-${i}`, `192.0.2.${i}`)).res.status).toBe(401);
+    const blocked = await signIn('app2@sentfund.my.id', '12345678', '192.0.2.99');
     expect(blocked.res.status).toBe(429);
     expect(blocked.res.headers.get('retry-after')).toBe('900');
   });
@@ -96,7 +96,7 @@ describe('login', () => {
   it('refuses cross-site and non-JSON login requests', async () => {
     const cross = await loginRoute.POST!(new Request(`${BASE}/api/auth/login`, {
       method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
-      body: JSON.stringify({ email: 'maker@gajian.my.id', password: '12345678' }),
+      body: JSON.stringify({ email: 'maker@sentfund.my.id', password: '12345678' }),
     }));
     expect(cross.status).toBe(403);
     const form = await loginRoute.POST!(req('/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'email=a' }));
@@ -107,13 +107,13 @@ describe('login', () => {
 describe('direct API access is authorized on the server', () => {
   it('rejects requests without a session or with a forged token', async () => {
     for (const route of [meRoute, runsRoute, auditRoute]) expect((await route.GET!(req('/api'))).status).toBe(401);
-    expect((await meRoute.GET!(req('/api/me', { cookie: 'gajian_session=forged-token-value' }))).status).toBe(401);
+    expect((await meRoute.GET!(req('/api/me', { cookie: 'sentfund_session=forged-token-value' }))).status).toBe(401);
   });
 
   it('scopes the run list by role and refuses admins', async () => {
-    const maker = await signIn('maker@gajian.my.id', '12345678', '10.0.0.1');
-    const admin = await signIn('admin@gajian.my.id', '12345678', '10.0.0.2');
-    const app1 = await signIn('app1@gajian.my.id', '12345678', '10.0.0.3');
+    const maker = await signIn('maker@sentfund.my.id', '12345678', '10.0.0.1');
+    const admin = await signIn('admin@sentfund.my.id', '12345678', '10.0.0.2');
+    const app1 = await signIn('app1@sentfund.my.id', '12345678', '10.0.0.3');
     const makerRuns = (await (await runsRoute.GET!(req('/api/runs', { cookie: maker.cookie }))).json()) as { runs: { id: string; total: string }[] };
     expect(makerRuns.runs).toEqual([expect.objectContaining({ id: 'run_demo_november', total: '0.150000' })]);
     expect((await runsRoute.GET!(req('/api/runs', { cookie: admin.cookie }))).status).toBe(403);
@@ -123,9 +123,9 @@ describe('direct API access is authorized on the server', () => {
 
   it('only the maker and assigned approvers can read recipient details', async () => {
     const ctx = { params: Promise.resolve({ runId: 'run_demo_november' }) };
-    const maker = await signIn('maker@gajian.my.id', '12345678', '10.0.1.1');
-    const app1 = await signIn('app1@gajian.my.id', '12345678', '10.0.1.2');
-    const admin = await signIn('admin@gajian.my.id', '12345678', '10.0.1.3');
+    const maker = await signIn('maker@sentfund.my.id', '12345678', '10.0.1.1');
+    const app1 = await signIn('app1@sentfund.my.id', '12345678', '10.0.1.2');
+    const admin = await signIn('admin@sentfund.my.id', '12345678', '10.0.1.3');
     const own = await runRoute.GET!(req('/api/runs/run_demo_november', { cookie: maker.cookie }), ctx);
     expect(own.status).toBe(200);
     expect(((await own.json()) as { draftRows: unknown[] }).draftRows).toHaveLength(3);
@@ -150,20 +150,20 @@ describe('direct API access is authorized on the server', () => {
   });
 
   it('admin-only endpoints refuse other roles', async () => {
-    const maker = await signIn('maker@gajian.my.id', '12345678', '10.0.2.1');
-    const admin = await signIn('admin@gajian.my.id', '12345678', '10.0.2.2');
+    const maker = await signIn('maker@sentfund.my.id', '12345678', '10.0.2.1');
+    const admin = await signIn('admin@sentfund.my.id', '12345678', '10.0.2.2');
     expect((await auditRoute.GET!(req('/api/admin/audit', { cookie: maker.cookie }))).status).toBe(403);
     const ok = await auditRoute.GET!(req('/api/admin/audit', { cookie: admin.cookie }));
     expect(ok.status).toBe(200);
     const text = JSON.stringify(await ok.json());
-    expect(text).not.toContain('maker@gajian.my.id'); // audit events carry no PII
+    expect(text).not.toContain('maker@sentfund.my.id'); // audit events carry no PII
     expect(text).not.toContain('12345678');
   });
 });
 
 describe('logout', () => {
   it('requires same origin and the CSRF token, then destroys the session', async () => {
-    const { cookie } = await signIn('admin@gajian.my.id', '12345678', '10.0.3.1');
+    const { cookie } = await signIn('admin@sentfund.my.id', '12345678', '10.0.3.1');
     const csrf = await csrfFor(cookie);
     expect((await logoutRoute.POST!(req('/api/auth/logout', { method: 'POST', cookie }))).status).toBe(403);
     expect((await logoutRoute.POST!(req('/api/auth/logout', { method: 'POST', cookie, csrf: 'wrong' }))).status).toBe(403);

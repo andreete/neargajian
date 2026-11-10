@@ -7,10 +7,10 @@ Fill in two links before posting: `<VIDEO>` (the demo video on YouTube; or attac
 ## Main post (≤ 280 characters; X counts each link as 23)
 
 ```
-Built at NEAR HACKATHON: GAJIAN, payroll where a NEAR contract enforces the approvals and pays each wallet, and the books get matching CSVs. On testnet.
+Built at NEAR HACKATHON: SentFund, payroll where a NEAR contract enforces the approvals and pays each wallet, and the books get matching CSVs. On testnet.
 
 @NEARProtocol #NEARHackathon
-https://github.com/andreete/neargajian
+https://github.com/discoverateagency-ops/sentfund
 
 What would your finance team need to trust a contract with payroll?
 ```

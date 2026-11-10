@@ -16,7 +16,7 @@ import { companyCsv, historyFor, recipientCsv } from '@/server/reports/history';
 import { rowStates } from '@/server/runs/view';
 import { FakeVault } from '../helpers/fake-vault';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-paid-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-paid-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 const APP_NOW = new Date('2026-11-10T08:00:00Z'); // the app/worker clock: four hours before the chain clock

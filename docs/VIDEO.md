@@ -21,11 +21,11 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 ## Pre-recording checklist
 
 1. [ ] **Stop** the app and the worker if they run (`kill $(cat .tmp/review-server.pid)`, `kill $(cat .tmp/worker.pid)`).
-2. [ ] **Clean database:** `npm run demo:reset`. The current database is moved to `data/backups/` and never deleted. Expect: `recipient check on testnet: Ready to receive tUSDC; Ready to receive tUSDC; Ready to receive tUSDC`, `fresh database …: maker@gajian.my.id, app1@gajian.my.id, app2@gajian.my.id, admin@gajian.my.id, workflow revision 3, recipient directory (3 testnet recipients + 1000 sample employees), "Pay registered recipients only" on` and `workflow mirrors vault2.gajian-payroll.testnet revision 3: two in sequence …, automatic release`.
+2. [ ] **Clean database:** `npm run demo:reset`. The current database is moved to `data/backups/` and never deleted. Expect: `recipient check on testnet: Ready to receive tUSDC; Ready to receive tUSDC; Ready to receive tUSDC`, `fresh database …: maker@sentfund.my.id, app1@sentfund.my.id, app2@sentfund.my.id, admin@sentfund.my.id, workflow revision 3, recipient directory (3 testnet recipients + 1000 sample employees), "Pay registered recipients only" on` and `workflow mirrors vault2.gajian-payroll.testnet revision 3: two in sequence …, automatic release`.
 2b. [ ] **Payroll assistant on:** `ANTHROPIC_API_KEY` is set in `.env` (the New run page shows "Payroll assistant" with "Model: claude-opus-5-5", not "off on this copy"). Without a key, skip the 2:30 segment. For voice, use Chrome or Edge and allow the microphone once; Chrome sends the audio to Google's speech service.
 3. [ ] **Vault balance:** `node scripts/testnet/balances.mjs` → the `vault2.gajian-payroll.testnet` line shows at least **0.200000 tUSDC** per planned take. To top up (the admin mints test tUSDC and funds the vault; needs the operator keys on this machine): `node scripts/testnet/phase16.ts fund 0.60`.
 4. [ ] **App and worker running:** `npm run build && npm run start` (http://127.0.0.1:8092) and, in a second terminal, `npm run worker`. The worker log shows `"event":"started" … "vault":"vault2.gajian-payroll.testnet"`. `curl -s http://127.0.0.1:8092/api/health` returns `"status":"ok"`.
-5. [ ] **Three separate browser sessions** (sign-ins are per browser profile): Chrome profile A for the maker, profile B for approver 1 (`app1@gajian.my.id`), profile C for approver 2 (`app2@gajian.my.id`). Sign in to B and C beforehand and leave them on **Review queue**. Leave A on the landing page, signed out.
+5. [ ] **Three separate browser sessions** (sign-ins are per browser profile): Chrome profile A for the maker, profile B for approver 1 (`app1@sentfund.my.id`), profile C for approver 2 (`app2@sentfund.my.id`). Sign in to B and C beforehand and leave them on **Review queue**. Leave A on the landing page, signed out.
 6. [ ] **Window size 1440x900**, zoom 100%, bookmarks bar hidden, notifications and extensions off. For example: `google-chrome --profile-directory="Profile 1" --window-size=1440,900 http://127.0.0.1:8092`.
 7. [ ] **NearBlocks** testnet (https://testnet.nearblocks.io) reachable in profile A; the explorer link opens in a new tab.
 8. [ ] The CSV file `docs/video/november-2026-contractors.csv` is ready in the file picker's folder.
@@ -35,8 +35,8 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 
 | Time | Window | Click / action | What appears on screen | Voice-over (suggested) |
 | --- | --- | --- | --- | --- |
-| 0:00 | A | Landing page, scroll a little | GAJIAN headline, "NEAR testnet" badge, proof strip | "GAJIAN: payroll with approvals that a NEAR contract enforces. Everything here runs on NEAR testnet with our test token tUSDC." |
-| 0:10 | A | **Try the demo** → `maker@gajian.my.id` / `12345678` → **Sign in** | "My runs", empty | "I'm the maker in the finance team." |
+| 0:00 | A | Landing page, scroll a little | SentFund headline, "NEAR testnet" badge, proof strip | "GAJIAN: payroll with approvals that a NEAR contract enforces. Everything here runs on NEAR testnet with our test token tUSDC." |
+| 0:10 | A | **Try the demo** → `maker@sentfund.my.id` / `12345678` → **Sign in** | "My runs", empty | "I'm the maker in the finance team." |
 | 0:18 | A | **New run** → title `November 2026 contractors` → **Upload a file** → **Detailed** → **Create draft run** | Draft page with the drop zone and templates | |
 | 0:28 | A | **Choose a payroll file** → `november-2026-contractors.csv` | "Accepted … 3 rows, exact total 0.20 tUSDC", review table with file rows 2–4 | "Every row is validated; one bad row would reject the whole file." |
 | 0:40 | A | **Continue to review** | Exact total, approval path (Alex Approver → Riley Reviewer → automatic release), detailed posting preview | "The approval path is snapshotted with the run." |

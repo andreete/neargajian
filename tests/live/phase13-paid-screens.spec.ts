@@ -12,8 +12,8 @@ test('paid run screenshots (read-only)', async ({ browser }) => {
   const page = await ctx.newPage();
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
-  await dialog.getByLabel('Email').fill('maker@gajian.my.id');
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
+  await dialog.getByLabel('Email').fill('maker@sentfund.my.id');
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL(/\/maker$/);

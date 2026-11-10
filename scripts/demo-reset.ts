@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Clean demo database for the video and for hosting. Never deletes data:
 //   1. refuses while the app (127.0.0.1:8092) or the release worker is running;
-//   2. MOVES the current database file into data/backups/gajian-<UTC time>.sqlite (after a WAL
+//   2. MOVES the current database file into data/backups/sentfund-<UTC time>.sqlite (after a WAL
 //      checkpoint) and checks that the moved copy opens with the same row counts;
 //   3. creates a fresh database: migrations, the four demo users, the final vault's CURRENT
 //      workflow read from the chain (read-only), and the recipient directory (3 live testnet
@@ -49,7 +49,7 @@ if (existsSync(file)) {
   src.pragma('wal_checkpoint(TRUNCATE)');
   before = counts(src);
   src.close();
-  backup = join(backups, `gajian-${stamp}.sqlite`);
+  backup = join(backups, `sentfund-${stamp}.sqlite`);
   renameSync(file, backup);
   for (const ext of ['-wal', '-shm']) if (existsSync(file + ext)) renameSync(file + ext, backup + ext);
   const check = new Database(backup, { readonly: true });

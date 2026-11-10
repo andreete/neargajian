@@ -19,7 +19,7 @@ async function settle(page: Page) {
 }
 
 test('admin workflow editor: sequence and parallel', async ({ page }) => {
-  await signIn(page, 'admin@gajian.my.id');
+  await signIn(page, 'admin@sentfund.my.id');
   await page.waitForURL('**/admin');
   await settle(page);
   await page.screenshot({ path: `${OUT}/01-workflow-editor-sequence.png` });
@@ -30,7 +30,7 @@ test('admin workflow editor: sequence and parallel', async ({ page }) => {
 });
 
 test('manual builder with one invalid row', async ({ page }) => {
-  await signIn(page, 'maker@gajian.my.id');
+  await signIn(page, 'maker@sentfund.my.id');
   await page.waitForURL('**/maker');
   await newRun(page, 'January contractors', 'manual');
   const rows = [
@@ -50,7 +50,7 @@ test('manual builder with one invalid row', async ({ page }) => {
 });
 
 test('upload: drop zone, rejected file, accepted 1,000 rows, posting preview', async ({ page }) => {
-  await signIn(page, 'maker@gajian.my.id');
+  await signIn(page, 'maker@sentfund.my.id');
   await page.waitForURL('**/maker');
   await newRun(page, 'December payroll', 'upload', 'Consolidated');
   await settle(page);
@@ -64,7 +64,7 @@ test('upload: drop zone, rejected file, accepted 1,000 rows, posting preview', a
   await settle(page);
   await page.screenshot({ path: `${OUT}/05-rejected-file-error-panel.png` });
 
-  await input.setInputFiles({ name: 'gajian-payroll-sample-1000.csv', mimeType: 'text/csv', buffer: sampleCsv() });
+  await input.setInputFiles({ name: 'sentfund-payroll-sample-1000.csv', mimeType: 'text/csv', buffer: sampleCsv() });
   await page.getByTestId('review-table').waitFor();
   await page.getByRole('heading', { name: /^Review \(1,000 rows/ }).scrollIntoViewIfNeeded();
   await page.evaluate(() => window.scrollBy(0, -16));

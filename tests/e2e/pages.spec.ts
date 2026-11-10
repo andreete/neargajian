@@ -13,7 +13,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const fixture = () => JSON.parse(readFileSync('.tmp/e2e/fixture.json', 'utf8')) as Record<'paidDetailed' | 'paidConsolidated' | 'releasing' | 'awaitingFunding' | 'pending' | 'rejected' | 'longTitle' | 'assistantPending', string>;
 const SIZES = [[1280, 720], [1440, 900]] as const;
-const EMAIL = { maker: 'maker@gajian.my.id', approver: 'app1@gajian.my.id', admin: 'admin@gajian.my.id' } as const;
+const EMAIL = { maker: 'maker@sentfund.my.id', approver: 'app1@sentfund.my.id', admin: 'admin@sentfund.my.id' } as const;
 
 function watch(page: Page) {
   const problems: string[] = [];
@@ -25,7 +25,7 @@ function watch(page: Page) {
 async function signIn(page: Page, role: keyof typeof EMAIL) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(EMAIL[role]);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -122,6 +122,7 @@ test('approver and admin pages fit at 1280x720 and 1440x900', async ({ page, bro
   await sweep(admin, 'admin-setup', '/admin');
   await sweep(admin, 'admin-recipients', '/admin/recipients');
   await sweep(admin, 'admin-recipients-p2', '/admin/recipients?page=2');
+  await sweep(admin, 'admin-identity', '/admin/identity');
   await sweep(admin, 'admin-history-consolidated', '/history?view=consolidated');
   await sweep(admin, 'admin-history-detailed', '/history?view=detailed');
   expect(problems).toEqual([]);

@@ -7,7 +7,7 @@ import { HostedBanner } from '@/components/hosted-banner';
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: { default: 'GAJIAN · Payroll with a clear approval trail', template: '%s · GAJIAN' },
+  title: { default: 'SentFund · Payroll with a clear approval trail', template: '%s · SentFund' },
   description: 'Prepare a payroll batch, route it to the right reviewers, and verify wallet payouts on NEAR testnet.',
   robots: { index: false, follow: false },
 };

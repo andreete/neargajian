@@ -19,7 +19,7 @@ import { createDraftFromPreview, interpretRequest, OFF_MESSAGE, RATE_LIMIT_PER_H
 import { setRecipientActive } from '@/server/recipients/directory';
 import { draftView } from '@/server/runs/draft-service';
 
-const dir = mkdtempSync(join(tmpdir(), 'gajian-asst-'));
+const dir = mkdtempSync(join(tmpdir(), 'sentfund-asst-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 const maker = { id: 'usr_maker', role: 'maker' as const };
 const NOW = new Date('2026-11-10T06:00:00Z');
@@ -107,8 +107,8 @@ describe('payroll assistant', () => {
     expect(assistantModelFrom({ ANTHROPIC_API_KEY: 'test-key-not-real' })?.id).toBe(DEFAULT_ASSISTANT_MODEL);
     expect(DEFAULT_ASSISTANT_MODEL).toBe('claude-opus-5-5');
     expect(assistantModelFrom({ ANTHROPIC_API_KEY: 'test-key-not-real', ASSISTANT_MODEL: 'claude-haiku-5-5' })?.id).toBe('claude-haiku-5-5');
-    expect(() => assistantModelFrom({ ASSISTANT_STUB: 'browser-tests', DATABASE_URL: 'file:./data/gajian.sqlite' })).toThrow(/browser tests/);
-    expect(assistantModelFrom({ ASSISTANT_STUB: 'browser-tests', DATABASE_URL: 'file:./.tmp/e2e/gajian.sqlite' })?.stub).toBe(true);
+    expect(() => assistantModelFrom({ ASSISTANT_STUB: 'browser-tests', DATABASE_URL: 'file:./data/sentfund.sqlite' })).toThrow(/browser tests/);
+    expect(assistantModelFrom({ ASSISTANT_STUB: 'browser-tests', DATABASE_URL: 'file:./.tmp/e2e/sentfund.sqlite' })?.stub).toBe(true);
     await expect(interpretRequest(h.db, stubModel(), { id: 'usr_admin', role: 'admin' }, say(EXAMPLE), NOW)).rejects.toThrow(/Only a maker/);
   });
 

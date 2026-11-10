@@ -22,6 +22,7 @@ export function navFor(role: SessionUser['role']): NavItem[] {
       return [
         { href: '/admin', label: 'Workflow settings', icon: 'workflow' },
         { href: '/admin/recipients', label: 'Recipients', icon: 'users' },
+        { href: '/admin/identity', label: 'Identity checks', icon: 'shield' },
         { href: '/history', label: 'Company reports', icon: 'reports' },
       ];
   }

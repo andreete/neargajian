@@ -32,10 +32,10 @@ const ROWS = [
 
 let dir: string;
 let h: DatabaseHandle;
-const open = () => openDatabase(join(dir, 'gajian.sqlite'));
+const open = () => openDatabase(join(dir, 'sentfund.sqlite'));
 
 beforeEach(async () => {
-  dir = mkdtempSync(join(tmpdir(), 'gajian-db-'));
+  dir = mkdtempSync(join(tmpdir(), 'sentfund-db-'));
   h = open();
   await seedDemo(h.db, { now: NOW, env: ENV });
 });
@@ -57,7 +57,7 @@ describe('migrations and seed', () => {
   });
 
   it('stores argon2id hashes, never the demo password', async () => {
-    const maker = h.db.select().from(users).where(eq(users.email, 'maker@gajian.my.id')).get();
+    const maker = h.db.select().from(users).where(eq(users.email, 'maker@sentfund.my.id')).get();
     expect(maker?.passwordHash).toMatch(/^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
     expect(maker?.passwordHash).not.toContain('12345678');
     expect(await verifyPassword('12345678', maker?.passwordHash ?? '')).toBe(true);
@@ -72,9 +72,9 @@ describe('migrations and seed', () => {
 describe('uniqueness and constraints', () => {
   it('rejects duplicate or non-lowercase emails and duplicate chain accounts', () => {
     const base = { displayName: 'X', role: 'maker' as const, passwordHash: 'x', createdAt: NOW };
-    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u1', email: 'maker@gajian.my.id' }).run(), /UNIQUE/);
-    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u2', email: 'Upper@gajian.my.id' }).run(), /CHECK/);
-    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u3', email: 'x@gajian.my.id', chainAccountId: 'maker.gajian-payroll.testnet' }).run(), /UNIQUE/);
+    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u1', email: 'maker@sentfund.my.id' }).run(), /UNIQUE/);
+    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u2', email: 'Upper@sentfund.my.id' }).run(), /CHECK/);
+    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u3', email: 'x@sentfund.my.id', chainAccountId: 'maker.gajian-payroll.testnet' }).run(), /UNIQUE/);
   });
 
   it('enforces workflow shape and a single active revision', () => {

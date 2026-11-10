@@ -77,7 +77,7 @@ async function migrate() {
   const runId = `p16-migrate-${new Date().toISOString().slice(0, 16).replace(/\D/g, '')}`;
   const leaves: PayoutLeaf[] = [{ index: 0, accountId: ROLES.admin, amount }];
   const tree = buildPayoutTree(leaves);
-  const digest = reviewDigest(newReviewSalt(), 'consolidated', [{ accountId: ROLES.admin, receiverName: 'GAJIAN admin (treasury)', currency: 'tUSDC', amount, mobilePhone: '+447700900000', email: 'treasury@example.com' }]);
+  const digest = reviewDigest(newReviewSalt(), 'consolidated', [{ accountId: ROLES.admin, receiverName: 'SentFund admin (treasury)', currency: 'tUSDC', amount, mobilePhone: '+447700900000', email: 'treasury@example.com' }]);
   console.log(`migrate ${formatAmount(amount)} tUSDC: ${LEGACY_VAULT} → ${ROLES.admin} (approved run ${runId}) → ${VAULT}`);
   await vaultCall(LEGACY_VAULT, 'migration run: create (maker)', 'maker', 'create_run', { run_id: runId, workflow_revision: wf.revision, row_count: 1, total: amount.toString(), payout_root: toHex(tree.root), review_digest: toHex(digest), supersedes: null });
   await vaultCall(LEGACY_VAULT, 'migration run: approve (approver 1)', 'approver1', 'approve', { run_id: runId });

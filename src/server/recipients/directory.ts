@@ -14,12 +14,13 @@ import type { Principal } from '../auth/policy.ts';
 import type { Db, Queryable } from '../db/client.ts';
 import {
   appSettings, auditEvents, recipientEvents, recipients, users,
-  type RecipientEventAction, type RecipientReadiness,
+  type IdentityStatus, type RecipientEventAction, type RecipientReadiness,
 } from '../db/schema.ts';
 import { formatAmountShort } from '../money.ts';
 import { CURRENCY, validateRow, type DirectoryEntry, type RecipientRule } from '../payroll/validate.ts';
 import { DomainError } from '../runs/repository.ts';
 import { READINESS_LABEL, type CheckedReadiness, type ReadinessChecker } from './readiness.ts';
+import { identityVerifiedOnly, unverifiedRows } from '../identity/service.ts';
 
 export type Recipient = typeof recipients.$inferSelect;
 
@@ -74,13 +75,18 @@ export function activeDirectoryMap(db: Queryable): Record<string, string> | null
 }
 
 /** Frozen into a version at submission: did every row match an active recipient within its maximum? */
-export interface DirectoryCheck { enforced: boolean; matched: number; rows: number }
+export interface DirectoryCheck {
+  enforced: boolean; matched: number; rows: number;
+  /** Phase 21: identity check at submission (absent on older versions). */
+  identity?: { enforced: boolean; verified: number };
+}
 
 export function directoryCheckFor(db: Queryable, rows: { accountId: string; amount: bigint }[]): DirectoryCheck {
   const on = registeredOnly(db);
   const rule = directoryRule(db);
   const matched = rows.filter((r) => { const e = rule.lookup(r.accountId); return e?.active && r.amount <= e.maxAmount; }).length;
-  return { enforced: on, matched, rows: rows.length };
+  const verified = rows.length - unverifiedRows(db, rows).length;
+  return { enforced: on, matched, rows: rows.length, identity: { enforced: identityVerifiedOnly(db), verified } };
 }
 
 /** Rows of a submitted version that no longer match the directory today (shown to approvers). */
@@ -296,7 +302,7 @@ export function applyImport(db: Db, actor: Principal, rows: CleanRecipient[], no
 
 // ------------------------------------------------------------------ queries
 
-export interface DirectoryQuery { q?: string; division?: string; status?: 'active' | 'inactive' | 'all'; page?: number; pageSize?: number }
+export interface DirectoryQuery { q?: string; division?: string; status?: 'active' | 'inactive' | 'all'; identity?: IdentityStatus; page?: number; pageSize?: number }
 
 export function listRecipients(db: Queryable, query: DirectoryQuery = {}) {
   const pageSize = query.pageSize ?? 50;
@@ -309,6 +315,7 @@ export function listRecipients(db: Queryable, query: DirectoryQuery = {}) {
   if (query.division) conds.push(eq(recipients.division, query.division));
   if (query.status === 'active') conds.push(eq(recipients.active, true));
   if (query.status === 'inactive') conds.push(eq(recipients.active, false));
+  if (query.identity) conds.push(eq(recipients.identityStatus, query.identity));
   const where = conds.length ? and(...conds) : undefined;
   const total = db.select({ n: sql<number>`count(*)` }).from(recipients).where(where).get()?.n ?? 0;
   const pages = Math.max(1, Math.ceil(total / pageSize));
@@ -382,5 +389,5 @@ export function hostedSubmitProblem(db: Queryable, rows: { accountId: string; am
   const ready = [...byAccount.values()].filter((r) => r.active && r.readiness === 'ready').map((r) => r.name);
   const samples = bad.some((r) => byAccount.get(r.accountId)?.sample);
   const who = ready.length ? ` (here: ${ready.slice(0, 5).join(', ')}${ready.length > 5 ? ', …' : ''})` : '';
-  return `Public demo: a run can only pay recipients that are in the directory and "Ready to receive tUSDC" on testnet${who}. ${bad.length.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} rows are not${samples ? ' (the sample employees’ accounts do not exist on testnet)' : ''}, so this run cannot be submitted here. Nothing was sent. Upload and review still work; run GAJIAN locally to submit other recipients.`;
+  return `Public demo: a run can only pay recipients that are in the directory and "Ready to receive tUSDC" on testnet${who}. ${bad.length.toLocaleString('en-US')} of ${rows.length.toLocaleString('en-US')} rows are not${samples ? ' (the sample employees’ accounts do not exist on testnet)' : ''}, so this run cannot be submitted here. Nothing was sent. Upload and review still work; run SentFund locally to submit other recipients.`;
 }

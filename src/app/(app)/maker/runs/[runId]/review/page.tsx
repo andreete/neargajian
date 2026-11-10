@@ -10,6 +10,7 @@ import { AlertIcon, CheckIcon } from '@/components/icons';
 import { AssistantNote } from '@/components/assistant-note';
 import { hostedSubmitProblem, registeredOnly } from '@/server/recipients/directory';
 import { hostedMode } from '@/server/hosted';
+import { identitySubmitProblem, identityVerifiedOnly } from '@/server/identity/service';
 import { getDb } from '@/server/db/client';
 import { activeWorkflow } from '@/server/dashboard/queries';
 import { draftLock, draftView } from '@/server/runs/draft-service';
@@ -39,6 +40,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
   const ready = !lock && s.invalidCount === 0 && s.runErrors.length === 0 && s.validCount > 0 && wf;
   const amounts = s.rows.flatMap((r) => (r.valid ? [r.valid.amount] : []));
   const hostedProblem = ready && hostedMode().demo ? hostedSubmitProblem(db, s.rows.flatMap((r) => (r.valid ? [{ accountId: r.valid.accountId, amount: r.valid.amount }] : []))) : null;
+  const validRows = s.rows.flatMap((r) => (r.valid ? [{ accountId: r.valid.accountId }] : []));
+  const identityProblem = ready ? identitySubmitProblem(db, validRows) : null;
   const names = wf?.approvers.map((a) => a.displayName) ?? [];
   const approvalSummary = wf ? `${KIND_LABEL[wf.kind]} (${names.join(wf.kind === 'two_sequential' ? ' then ' : ' and ')}), ${RELEASE_LABEL[wf.releaseMode].toLowerCase()}` : 'No active workflow';
 
@@ -51,6 +54,8 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
       </div>
       {view.run.assistantRequestText ? <AssistantNote text={view.run.assistantRequestText} /> : null}
       {hostedProblem ? <div className="callout callout-warn" role="note" data-testid="hosted-submit-note"><AlertIcon size={18} /><span>{hostedProblem}</span></div> : null}
+      {identityProblem ? <div className="callout callout-warn" role="note" data-testid="identity-submit-note"><AlertIcon size={18} /><span>{identityProblem}</span></div> : null}
+      {ready && !identityProblem && identityVerifiedOnly(db) ? <div className="callout callout-ok" role="note" data-testid="identity-check"><CheckIcon size={18} /><span>Every recipient passed the identity check (KTP + face). The server checks again when you submit.</span></div> : null}
       {ready && registeredOnly(db) ? <div className="callout callout-ok" role="note" data-testid="directory-check"><CheckIcon size={18} /><span>Every row matches an active recipient in the directory within that recipient&apos;s maximum. The server checks again when you submit.</span></div> : null}
       {!ready ? (
         <div className="callout" role="note"><AlertIcon size={18} /><span>{lock ?? (s.validCount === 0 ? 'Add at least one row first.' : s.invalidCount ? `${s.invalidCount} row${s.invalidCount === 1 ? ' has' : 's have'} errors. Fix them or keep only the valid rows before submitting.` : 'An admin must activate an approval workflow first.')}</span></div>

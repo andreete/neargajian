@@ -7,7 +7,7 @@ const [hash, signer] = process.argv.slice(2);
 const res = await fetch(RPC, {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ jsonrpc: '2.0', id: 'gajian', method: 'EXPERIMENTAL_tx_status',
+  body: JSON.stringify({ jsonrpc: '2.0', id: 'sentfund', method: 'EXPERIMENTAL_tx_status',
     params: { tx_hash: hash, sender_account_id: signer, wait_until: 'FINAL' } }),
 });
 const { result, error } = await res.json();

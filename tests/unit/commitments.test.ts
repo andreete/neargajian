@@ -158,7 +158,7 @@ function readSampleCsv(path: URL): string[][] {
 
 describe('1,000-row sample file', () => {
   it('builds a tree, generates and verifies all 1,000 proofs', () => {
-    const [header, ...data] = readSampleCsv(new URL('../../public/templates/gajian-payroll-sample-1000.csv', import.meta.url));
+    const [header, ...data] = readSampleCsv(new URL('../../public/templates/sentfund-payroll-sample-1000.csv', import.meta.url));
     expect(header).toEqual(['near_account_id', 'receiver_name', 'currency', 'amount', 'mobile_phone', 'email']);
     expect(data).toHaveLength(1000);
     const leaves = data.map(([account, , , amount], index) => {

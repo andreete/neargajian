@@ -21,10 +21,10 @@ interface Rejected { accepted: false; filename: string; errorCount: number; summ
 interface Accepted { accepted: true; filename: string; rowCount: number; total: string; delimiter: string; duplicateWallets: { accountId: string; lines: number[] }[] }
 
 const DOWNLOADS = [
-  { href: '/templates/gajian-payroll-template-blank.csv', name: 'Blank CSV template', meta: 'Header row only' },
-  { href: '/templates/gajian-payroll-template.xlsx', name: 'Excel template with sample rows', meta: '.xlsx, no macros, 1,000 sample rows' },
-  { href: '/templates/gajian-payroll-sample-1000.csv', name: 'Sample CSV', meta: '1,000 rows · 56.69086 tUSDC' },
-  { href: '/templates/gajian-payroll-sample-1000.txt', name: 'Sample TXT', meta: 'Tab-delimited, same 1,000 rows' },
+  { href: '/templates/sentfund-payroll-template-blank.csv', name: 'Blank CSV template', meta: 'Header row only' },
+  { href: '/templates/sentfund-payroll-template.xlsx', name: 'Excel template with sample rows', meta: '.xlsx, no macros, 1,000 sample rows' },
+  { href: '/templates/sentfund-payroll-sample-1000.csv', name: 'Sample CSV', meta: '1,000 rows · 56.69086 tUSDC' },
+  { href: '/templates/sentfund-payroll-sample-1000.txt', name: 'Sample TXT', meta: 'Tab-delimited, same 1,000 rows' },
 ];
 const PAGE = 50;
 

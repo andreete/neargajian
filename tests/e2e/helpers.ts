@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 export async function signIn(page: Page, email: string) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -19,7 +19,7 @@ export async function newRun(page: Page, title: string, source: 'upload' | 'manu
   await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
 }
 
-export const sampleCsv = () => readFileSync('public/templates/gajian-payroll-sample-1000.csv');
+export const sampleCsv = () => readFileSync('public/templates/sentfund-payroll-sample-1000.csv');
 
 /** The sample file with two real problems: row 61 has an invalid account, row 205 a comma decimal. */
 export function brokenSample(): Buffer {

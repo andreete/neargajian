@@ -22,3 +22,23 @@ export function DirectoryCheckNote({ check, driftNow }: { check: { enforced: boo
     </div>
   );
 }
+
+/**
+ * What approvers see about the identity check (Phase 21): the result frozen at submission (how
+ * many rows paid an identity-verified recipient), plus a warning when that changed since.
+ */
+export function IdentityCheckNote({ check, rows, unverifiedNow }: { check: { enforced: boolean; verified: number } | null | undefined; rows: number; unverifiedNow: number }) {
+  if (!check) return null;
+  if (!check.enforced) {
+    return <div className="callout" role="note" data-testid="identity-check"><InfoIcon size={18} /><span>&ldquo;Pay identity-verified recipients only&rdquo; was off when this version was submitted: {check.verified} of {rows} rows paid an identity-verified recipient.{unverifiedNow ? ` ${unverifiedNow} row${unverifiedNow === 1 ? '' : 's'} pay someone not verified today.` : ''}</span></div>;
+  }
+  return (
+    <div className={`callout ${unverifiedNow ? 'callout-warn' : 'callout-ok'}`} role="note" data-testid="identity-check">
+      {unverifiedNow ? <AlertIcon size={18} /> : <CheckIcon size={18} />}
+      <span>
+        <strong>Every recipient passed the identity check:</strong> {check.verified} of {rows} rows pay a recipient whose KTP and face photo were verified, checked by the server at submission.
+        {unverifiedNow ? <> <strong>Changed since:</strong> {unverifiedNow} row{unverifiedNow === 1 ? ' pays' : 's pay'} someone whose verification was withdrawn or failed a new check. Check before approving.</> : null}
+      </span>
+    </div>
+  );
+}

@@ -24,7 +24,7 @@ async function session(browser: Browser, email: string) {
   const page = await ctx.newPage();
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -47,14 +47,14 @@ async function ask(page: Page, text: string) {
 test.describe.configure({ mode: 'serial' });
 
 test('p19-directory: the directory and a refused upload row', async ({ browser }) => {
-  const admin = await session(browser, 'admin@gajian.my.id');
+  const admin = await session(browser, 'admin@sentfund.my.id');
   await admin.goto('/admin/recipients');
   await expect(admin.getByRole('switch', { name: 'Pay registered recipients only' })).toHaveAttribute('aria-checked', 'true');
   await expect(admin.getByRole('region', { name: 'Directory' }).getByRole('row', { name: /Emma Clark/ })).toBeVisible();
   await shot(admin, '01-recipient-directory');
   await admin.context().close();
 
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   await maker.goto('/maker/runs/new');
   await maker.getByLabel('Run title').fill('Phase 19 check: refused upload row (not submitted)');
   await maker.getByText('Upload a file').click();
@@ -74,7 +74,7 @@ test('p19-directory: the directory and a refused upload row', async ({ browser }
 });
 
 test('p19-assistant: a follow-up question and a refusal (real model)', async ({ browser }) => {
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   test.skip(!(await assistantOn(maker)), 'no ANTHROPIC_API_KEY on this copy');
   await ask(maker, 'Pay the Sales division, called November commissions');
   await expect(maker.getByTestId('assistant-question')).toBeVisible();
@@ -88,7 +88,7 @@ test('p19-assistant: a follow-up question and a refusal (real model)', async ({ 
 
 test('p19-live-run: drafted by the assistant, approved by both in the browser, paid on testnet', async ({ browser }) => {
   test.setTimeout(900_000);
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   test.skip(!(await assistantOn(maker)), 'no ANTHROPIC_API_KEY on this copy');
   await ask(maker, LIVE_REQUEST);
   const preview = maker.getByTestId('assistant-preview');
@@ -106,7 +106,7 @@ test('p19-live-run: drafted by the assistant, approved by both in the browser, p
   const chainRunId = (await maker.locator('.run-sub .mono').first().textContent())!.trim();
   writeFileSync('.tmp/live-exports/p19-assistant-run.json', JSON.stringify({ runId, chainRunId, request: LIVE_REQUEST }, null, 2));
 
-  for (const [email, step] of [['app1@gajian.my.id', 1], ['app2@gajian.my.id', 2]] as const) {
+  for (const [email, step] of [['app1@sentfund.my.id', 1], ['app2@sentfund.my.id', 2]] as const) {
     const ap = await session(browser, email);
     await ap.goto(`/runs/${runId}`);
     await expect(ap.getByTestId('assistant-note')).toContainText('Drafted by the payroll assistant from:');

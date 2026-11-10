@@ -31,8 +31,53 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 19b Live assistant run | Done | **Yes**: assistant-drafted Sales run approved in the browser and paid (`gjn-6e2922fcf5cd4d0f91f1-v1`), `judge:verify` 130/130 |
 | 20 Hosting readiness (Railway) | Done: ready, **not live** (no account, deploy, `release` branch or host key yet) | none (read-only checks only) |
 | 20b CI image check and doc gaps | Done; **CI result not checked from here** (no GitHub CLI): Andre checks the Actions tab | none |
+| 21 SentFund rebrand + KTP/face identity checks | Done locally, all suites green; pushed to `origin` and the new `discoverateagency-ops/sentfund` (see NEXT-STEPS for the push result) | none on-chain; **real Claude KTP reader** on the 4 synthetic specimen scenarios (throwaway DB) |
 
 ---
+
+## Phase 21 · SentFund rebrand and KTP + face identity checks (10 Nov 2026)
+
+Andre's request (04:59 UTC): rebrand everything to SentFund / `sentfund.my.id`, and add an admin feature that checks every employee's KTP (Indonesian ID) and face photo with vision technology, "cooked without mistake". The first session built most of it and was OOM-killed during `next build` (05:30 UTC); this session resumed from the uncommitted tree, found and fixed the cause, closed the gaps and verified everything. Decisions D-116 to D-122.
+
+### Built
+- **Rebrand** (D-116): UI, logo, templates (renamed, same bytes), docs, scripts, Dockerfile, CI, package name, health `service: "sentfund"`, demo sign-ins `…@sentfund.my.id` (migration 0009 renames existing users). On-chain names and the `GJN-` reference prefix unchanged.
+- **Identity check** (D-117, D-118): `src/server/identity/` (`face.ts` YuNet + SFace on ONNX Runtime; `ktp-reader.ts` Claude strict tool + labelled test stub; `nik.ts` NIK rules, masking, keyed hash, name matching; `service.ts` pipeline, decision, review, specimens, seed, submit gate; `deps.ts`, `http.ts`). Routes `POST /api/admin/identity/{check,specimen,review}` (admin, CSRF; uploads and reviews 403 in hosted mode; specimen checks dry runs there). Page **Admin → Identity checks** (`src/app/(app)/admin/identity/page.tsx`, `src/components/identity-checks.tsx`): setting switch, counts, how it works + privacy/limits, specimen demo, bulk check by file name, filterable table, check and review dialogs, camera capture (`Permissions-Policy: camera=(self)`), check log. Approver note with the frozen identity result (`directory-check-note.tsx`), submit gate in `runs/lifecycle.ts`, setting in `api/admin/settings`.
+- **Database** `0009_phase21_identity_sentfund.sql` (hand-written: drizzle-kit wanted to rebuild `recipients` and drop the Phase 19 triggers): `identity_checks` (append-only triggers), `recipients.identity_status / identity_checked_at / identity_check_id / nik_masked / nik_hash`, a trigger that a status points only at a non-dry-run check of the same recipient.
+- **Models and deployment:** `scripts/fetch-vision-models.mjs` (`npm run vision:models`, SHA-256 pinned, `models/vision/` git-ignored), `scripts/vision-selftest.ts` (`npm run vision:selftest`). Dockerfile: deletes onnxruntime's CUDA/TensorRT providers, fetches the models and runs the self-test at build time. CI: caches and fetches the models, runs the self-test; the image job also checks `"faceModels":true` in `/api/health` (new informational field).
+- **Specimens** (D-119): `public/specimens/` (3 people + impostor, manifest with sources and hashes), `scripts/make-identity-specimens.ts`.
+- **Fixes this session:** Turbopack OOM (D-120: `turbopackIgnore` on dynamic paths, externals, tracing excludes); landing page no longer imports the seed (`src/server/db/demo-users.ts`); Identity table used a raw account cell that overflowed at 1280 px (now `CopyValue` like Recipients); specimen tiles overflowed their card (fluid images with aspect ratios); e2e fixture and judge test adapted to the gate (D-122); `package.json` description; README, JUDGE, SECURITY, QA-HANDOFF (A12), ACCEPTANCE (A12), HOSTING (section 0), CLAUDE.md, AGENTS.md.
+
+### Evidence (this server, 10 Nov 2026, 12:40–13:30 WIB)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **26 files, 212 tests passed** (identity: 13 unit, 13 integration with the real face models) |
+| `npm run vision:selftest` | `same person 0.912, impostor 0.090 (threshold 0.363): ok` |
+| `nice -n 19 npm run build` (watchdog) | pass; lowest MemAvailable 3.6–4.0 GB (before the fix: OOM-killed at 4.3 GB RSS in 6 s) |
+| `nice -n 19 npm run test:e2e` | **31 passed** (incl. `identity.spec.ts` 2 and the 1280/1440 layout sweep of `/admin/identity`) |
+| `nice -n 19 npm run test:judge-mode` | **1 passed** (identity refusal for the sample, then no-signer refusal) |
+| `nice -n 19 npm run test:hosted` | **3 passed + 1 passed** (hosted, kill switch) |
+| `npm run samples:check` | no diff once the renamed files are staged (hashes unchanged) |
+| `npm run secret-scan` | clean (working tree + 30 commits) |
+| `npm run judge:verify` | `All testnet evidence checks passed.` |
+| `npm audit --audit-level=high` | passes (13 moderate, all from pre-existing dependencies: drizzle-kit → esbuild, typescript-eslint → minimatch, exceljs → uuid; none from onnxruntime-node or sharp) |
+| **Real KTP reader** (`claude-opus-5-5`, synthetic specimens, throwaway DB `.tmp/idlive/`) | Emma **Verified** (face 0.932, NIK `3174********0001`, 5.4 s); Daniel **Verified** (0.912, 5.0 s); Grace **Verified** (0.955, 6.3 s); Impostor **Failed** on the face match (0.090, 4.5 s). Every card read correctly with the photo covered. |
+
+Not run: contracts (unchanged, frozen); live testnet flows (no on-chain change in this phase); the CI image job (runs on GitHub after the push).
+
+### Build watchdog (recreate as `.tmp/guarded-build.sh` if needed)
+```sh
+#!/bin/sh
+cd /home/neargajian/near-gajian
+NODE_OPTIONS=--max-old-space-size=1536 setsid nice -n 19 npm run -s build > .tmp/build.log 2>&1 &
+pid=$!; low=999999
+while kill -0 $pid 2>/dev/null; do
+  a=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo); [ "$a" -lt "$low" ] && low=$a
+  if [ "$a" -lt 1200 ]; then kill -TERM -$pid; sleep 2; kill -KILL -$pid 2>/dev/null; echo "WATCHDOG: killed build"; fi
+  sleep 1
+done
+wait $pid; echo "exit=$? lowest MemAvailable=${low} MB"
+```
 
 ## Phase 20b · CI image check and doc gaps (10 Nov 2026)
 

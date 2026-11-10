@@ -11,6 +11,6 @@ export function GET(request: Request): Response {
   const csv = companyCsv(getDb(), guarded.session.user);
   return new Response(csv, { headers: {
     'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
-    'Content-Disposition': `attachment; filename="gajian-company-entries-${new Date().toISOString().slice(0, 10)}.csv"`,
+    'Content-Disposition': `attachment; filename="sentfund-company-entries-${new Date().toISOString().slice(0, 10)}.csv"`,
   } });
 }

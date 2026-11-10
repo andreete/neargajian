@@ -7,7 +7,7 @@ export default function Forbidden() {
         <div className="code">403</div>
         <h1>You don&apos;t have access to this page</h1>
         <p>Your role can&apos;t open this area. Go back to your own dashboard.</p>
-        <Link className="btn btn-primary" href="/">Back to GAJIAN</Link>
+        <Link className="btn btn-primary" href="/">Back to SentFund</Link>
       </div>
     </main>
   );

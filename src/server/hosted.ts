@@ -1,7 +1,7 @@
 /**
  * Hosted demo mode (Phase 20), read from the environment on every call (no cache, so tests and
  * a redeploy with new variables both see the current value).
- * - HOSTED_DEMO=true: the public demo at gajian.my.id. Anyone can sign in with the public demo
+ * - HOSTED_DEMO=true: the public demo at sentfund.my.id. Anyone can sign in with the public demo
  *   passwords, so: banner on every page; no admin key (workflow read-only); the recipient
  *   directory read-only; a run can be submitted only when every recipient is in the directory and
  *   "Ready to receive tUSDC"; the payroll assistant has a global daily cap.
@@ -19,8 +19,8 @@ export function hostedMode(env: Env = process.env): HostedMode {
 /** The payroll assistant's global cap in hosted mode (all makers together, rolling 24 hours). */
 export const HOSTED_ASSISTANT_DAILY_CAP = 200;
 
-export const READ_ONLY_MESSAGE = 'The hosted demo is read-only right now (paused by the GAJIAN team). Nothing was changed. You can still sign in and look around.';
-export const HOSTED_DIRECTORY_MESSAGE = 'The recipient directory is read-only in the public demo, so nobody can add payees. Run GAJIAN locally (README) to manage the directory.';
+export const READ_ONLY_MESSAGE = 'The hosted demo is read-only right now (paused by the SentFund team). Nothing was changed. You can still sign in and look around.';
+export const HOSTED_DIRECTORY_MESSAGE = 'The recipient directory is read-only in the public demo, so nobody can add payees. Run SentFund locally (README) to manage the directory.';
 
 /**
  * The hosted copy must never hold the admin key (workflow changes, recovery). Refuse to start

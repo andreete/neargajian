@@ -10,12 +10,12 @@ function watchConsole(page: Page) {
   return problems;
 }
 
-const EMAIL = { Maker: 'maker@gajian.my.id', 'Approver 1': 'app1@gajian.my.id', 'Approver 2': 'app2@gajian.my.id', Admin: 'admin@gajian.my.id' } as const;
+const EMAIL = { Maker: 'maker@sentfund.my.id', 'Approver 1': 'app1@sentfund.my.id', 'Approver 2': 'app2@sentfund.my.id', Admin: 'admin@sentfund.my.id' } as const;
 
 async function signInAs(page: Page, role: keyof typeof EMAIL) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(EMAIL[role]);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -39,7 +39,7 @@ test('login dialog: focus moves in, Tab is trapped, Escape closes and restores f
   await page.goto('/');
   const trigger = page.getByRole('button', { name: 'Try the demo' }).first();
   await trigger.click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('Email')).toBeFocused();
   await expect(dialog.getByRole('radio')).toHaveCount(0); // no role picker: the server decides the role
@@ -58,11 +58,11 @@ test('login dialog: focus moves in, Tab is trapped, Escape closes and restores f
 test('login dialog shows field errors and a generic credential error', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Sign in' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByRole('button', { name: 'Sign in' }).click();
   await expect(dialog.getByText('Enter your email address.')).toBeVisible();
   await expect(dialog.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true');
-  await dialog.getByLabel('Email').fill('maker@gajian.my.id');
+  await dialog.getByLabel('Email').fill('maker@sentfund.my.id');
   await dialog.getByLabel('Password').fill('not-the-password');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
   await expect(dialog.getByRole('alert')).toHaveText('Email or password is incorrect.');
@@ -98,7 +98,7 @@ test('unauthenticated page requests redirect to sign-in and open the dialog', as
     await page.goto(path);
     expect(page.url()).toBe('http://127.0.0.1:8092/?signin=required');
   }
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('alert')).toHaveText('Please sign in to continue.');
 });

@@ -1,4 +1,4 @@
-/* GAJIAN design tokens (docs/build/02-DESIGN-SYSTEM.md + kickoff §5 logo palette).
+/* SentFund design tokens (docs/build/02-DESIGN-SYSTEM.md + kickoff §5 logo palette).
    Contrast of every text/background pair is checked in tests/unit/contrast.test.ts. */
 :root {
   --navy: #0a3c90;
@@ -851,3 +851,41 @@ table.data.directory .copy-value.cv-md { max-width: 180px; }
 .hosted-banner { display: flex; gap: 10px; align-items: center; justify-content: center; padding: 8px 20px; font-size: 13.5px; background: #f2f0ff; color: #2d1a80; border-bottom: 1px solid #ddd6fb; text-align: center; }
 .hosted-banner svg { flex: none; }
 .hosted-banner.is-paused { background: var(--warning-bg); color: var(--warning); border-bottom-color: #f3d9a6; }
+
+/* ------------------------------------------------ identity checks (Phase 21) */
+.how-it-works .panel-h { display: flex; gap: 8px; align-items: center; }
+.how-list { margin: 8px 0 14px; padding-left: 20px; display: grid; gap: 8px; color: var(--muted); font-size: 14.5px; }
+.how-list strong { color: var(--ink); }
+.specimen-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0 4px; }
+.specimen { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--canvas); }
+.specimen { min-width: 0; }
+/* Card (≈1.58:1) and face (1:1) side by side at the same height, always inside the tile. */
+.specimen-imgs { display: grid; grid-template-columns: minmax(0, 1.58fr) minmax(0, 1fr); gap: 8px; align-items: start; }
+.specimen-imgs img { display: block; width: 100%; height: auto; border-radius: 6px; border: 1px solid var(--border); object-fit: cover; background: var(--surface); }
+.specimen-imgs img:first-child { aspect-ratio: 1.58 / 1; }
+.specimen-imgs img:last-child { aspect-ratio: 1 / 1; }
+.specimen-text { display: grid; }
+.specimen .btn { justify-self: start; }
+.id-result { margin-top: 12px; }
+.id-result > .hint { display: flex; gap: 6px; align-items: center; margin-top: 10px; }
+.id-checks { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+.id-checks li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.id-checks .id-mark { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px; }
+.id-checks .is-pass .id-mark { background: var(--success-bg); color: var(--success); }
+.id-checks .is-review .id-mark { background: var(--warning-bg); color: var(--warning); }
+.id-checks .is-fail .id-mark { background: var(--danger-bg); color: var(--danger); }
+.id-checks .sub { overflow-wrap: anywhere; }
+.id-preview { display: block; max-width: 100%; max-height: 160px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--border); }
+.camera { display: grid; gap: 8px; justify-items: start; margin-top: 6px; }
+.camera-video { width: 100%; max-height: 240px; border-radius: 8px; background: #000; }
+.camera-video.is-hidden { display: none; }
+.radio { display: flex; gap: 8px; align-items: center; font-weight: 500; font-size: 14.5px; margin-top: 6px; }
+fieldset.field { border: 0; padding: 0; }
+fieldset.field legend { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.toolbar-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.bulk-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; max-height: 280px; overflow: auto; font-size: 13.5px; }
+.bulk-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 6px; background: var(--canvas); }
+.bulk-list li .mono { overflow-wrap: anywhere; }
+.bulk-list .is-done { background: var(--success-bg); }
+.bulk-list .is-error, .bulk-list .is-skipped { background: var(--warning-bg); }
+@media (max-width: 1023px) { .specimen-grid { grid-template-columns: minmax(0, 1fr); } }

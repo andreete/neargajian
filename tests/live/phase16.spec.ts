@@ -26,7 +26,7 @@ async function session(browser: Browser, email: string) {
   const page = await ctx.newPage();
   await page.goto('/');
   await page.getByRole('button', { name: 'Try the demo' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Sign in to GAJIAN' });
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
   await dialog.getByLabel('Email').fill(email);
   await dialog.getByLabel('Password').fill('12345678');
   await dialog.getByRole('button', { name: 'Sign in' }).click();
@@ -64,7 +64,7 @@ async function createAndSubmit(maker: Page, title: string, posting: 'Detailed' |
 }
 
 async function approveBoth(browser: Browser, runId: string, total: string) {
-  for (const [email, step] of [['app1@gajian.my.id', 1], ['app2@gajian.my.id', 2]] as const) {
+  for (const [email, step] of [['app1@sentfund.my.id', 1], ['app2@sentfund.my.id', 2]] as const) {
     const ap = await session(browser, email);
     await ap.goto(`/runs/${runId}`);
     await expect(ap.getByRole('heading', { name: `Your decision (step ${step})` })).toBeVisible({ timeout: 90_000 });
@@ -89,7 +89,7 @@ async function waitPaid(page: Page, runId: string) {
 }
 
 async function setRelease(browser: Browser, mode: 'Maker releases' | 'Automatic release', revision: number, screenshot?: string) {
-  const admin = await session(browser, 'admin@gajian.my.id');
+  const admin = await session(browser, 'admin@sentfund.my.id');
   if (!(await admin.getByText(`Revision ${revision}`).first().isVisible())) { // idempotent on resume
     await admin.getByText(mode, { exact: true }).click();
     await admin.getByRole('button', { name: 'Save workflow' }).click();
@@ -103,7 +103,7 @@ test.describe.configure({ mode: 'serial' });
 
 test('16e full demo through the app: automatic release, history, both exports', async ({ browser }) => {
   test.setTimeout(900_000);
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   const r = await createAndSubmit(maker, 'Phase 16 rehearsal: November contractors', 'Detailed', 'tests/live/p16-demo.csv', '0.12');
   log('demo', r);
   await approveBoth(browser, r.runId, '0.12');
@@ -127,7 +127,7 @@ test('16e full demo through the app: automatic release, history, both exports', 
 test('16c maker release through the app, with 16b duplicate pay_row refused on-chain', async ({ browser }) => {
   test.setTimeout(900_000);
   await setRelease(browser, 'Maker releases', 2, process.env.P16_RESUME_DRAFT ? undefined : '04-admin-maker-releases');
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   const r = await createAndSubmit(maker, 'Phase 16 rehearsal: maker release', 'Consolidated', 'tests/live/p16-maker-release.csv', '0.09', process.env.P16_RESUME_DRAFT);
   log('maker-release', r);
   await approveBoth(browser, r.runId, '0.09');
@@ -151,7 +151,7 @@ test('16c maker release through the app, with 16b duplicate pay_row refused on-c
 
 test('16d Awaiting funding: shown in the app, funded by the admin, then paid automatically', async ({ browser }) => {
   test.setTimeout(900_000);
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   const r = await createAndSubmit(maker, 'Phase 16 rehearsal: November bonuses', 'Detailed', 'tests/live/p16-awaiting-funding.csv', '0.75');
   log('awaiting-funding', r);
   await approveBoth(browser, r.runId, '0.75');
@@ -168,14 +168,14 @@ test('16d Awaiting funding: shown in the app, funded by the admin, then paid aut
 });
 
 test('1000-row import check (draft only, not submitted)', async ({ browser }) => {
-  const maker = await session(browser, 'maker@gajian.my.id');
+  const maker = await session(browser, 'maker@sentfund.my.id');
   await maker.goto('/maker/runs/new');
   await maker.getByLabel('Run title').fill('Phase 16 import check: 1,000 rows (not submitted)');
   await maker.getByText('Upload a file').click();
   await maker.getByText('Consolidated', { exact: true }).click();
   await maker.getByRole('button', { name: 'Create draft run' }).click();
   await maker.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
-  await maker.getByLabel('Choose a payroll file').setInputFiles({ name: 'gajian-payroll-uniform-1000.csv', mimeType: 'text/csv', buffer: readFileSync('public/templates/gajian-payroll-uniform-1000.csv') });
+  await maker.getByLabel('Choose a payroll file').setInputFiles({ name: 'sentfund-payroll-uniform-1000.csv', mimeType: 'text/csv', buffer: readFileSync('public/templates/sentfund-payroll-uniform-1000.csv') });
   await expect(maker.getByText(/Accepted .*1,000 rows, exact total 10\.00 tUSDC/)).toBeVisible();
   await expect(maker.getByTestId('review-table').locator('tbody tr')).toHaveCount(50);
   await shot(maker, '11-import-1000-rows');

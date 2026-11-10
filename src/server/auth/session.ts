@@ -8,7 +8,7 @@ import { and, eq, gt, lt } from 'drizzle-orm';
 import type { Queryable } from '../db/client.ts';
 import { sessions, users, type Role } from '../db/schema.ts';
 
-export const SESSION_COOKIE = 'gajian_session';
+export const SESSION_COOKIE = 'sentfund_session';
 /** Absolute lifetime and idle timeout. */
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 export const SESSION_IDLE_MS = 2 * 60 * 60 * 1000;

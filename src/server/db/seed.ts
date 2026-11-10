@@ -7,7 +7,7 @@
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../auth/password.ts';
 import type { Db } from './client.ts';
-import { payrollRuns, users, workflowConfigs, type Role } from './schema.ts';
+import { payrollRuns, users, workflowConfigs } from './schema.ts';
 import { createRun, replaceDraft } from '../runs/repository.ts';
 import { importTestnetHistory, readTestnetHistory } from './testnet-history.ts';
 import { currentVaultId } from '../workflow/vault.ts';
@@ -16,22 +16,13 @@ import { resolve } from 'node:path';
 import { importPayrollFile } from '../payroll/import.ts';
 import { applyImport, setRegisteredOnly, type CleanRecipient } from '../recipients/directory.ts';
 import { recipients } from './schema.ts';
+import { seedIdentity } from '../identity/service.ts';
+import { loadConfig } from '../config.ts';
 
-export type SeedEnv = Readonly<Record<string, string | undefined>>;
-
-export const DEMO_PASSWORD = '12345678';
-const MASTER = 'gajian-payroll.testnet';
-
-export interface DemoUser { id: string; email: string; displayName: string; role: Role; chainAccountId: string }
-
-export function demoUsers(env: SeedEnv = process.env): DemoUser[] {
-  return [
-    { id: 'usr_maker', email: 'maker@gajian.my.id', displayName: 'Maya Maker', role: 'maker', chainAccountId: env.MAKER_ACCOUNT_ID ?? `maker.${MASTER}` },
-    { id: 'usr_app1', email: 'app1@gajian.my.id', displayName: 'Alex Approver', role: 'approver', chainAccountId: env.APPROVER1_ACCOUNT_ID ?? `approver1.${MASTER}` },
-    { id: 'usr_app2', email: 'app2@gajian.my.id', displayName: 'Riley Reviewer', role: 'approver', chainAccountId: env.APPROVER2_ACCOUNT_ID ?? `approver2.${MASTER}` },
-    { id: 'usr_admin', email: 'admin@gajian.my.id', displayName: 'Adam Admin', role: 'admin', chainAccountId: env.ADMIN_SIGNER_ACCOUNT_ID ?? `admin.${MASTER}` },
-  ];
-}
+// The demo sign-ins live in their own small module so the public landing page does not import the
+// seed (and through it the identity engine).
+export { DEMO_PASSWORD, demoUsers, type DemoUser, type SeedEnv } from './demo-users.ts';
+import { DEMO_PASSWORD, MASTER, demoUsers, type SeedEnv } from './demo-users.ts';
 
 export const DEMO_DRAFT_RUN_ID = 'run_demo_november';
 
@@ -59,13 +50,13 @@ export const LIVE_RECIPIENTS: CleanRecipient[] = [
 ];
 /** The 1,000 synthetic sample employees (accounts not on testnet) are spread over these. */
 export const SAMPLE_DIVISIONS = ['Engineering', 'Customer Support', 'Logistics'] as const;
-export const SAMPLE_FILE = 'public/templates/gajian-payroll-sample-1000.csv';
+export const SAMPLE_FILE = 'public/templates/sentfund-payroll-sample-1000.csv';
 
 /** Directory seed: live recipients + the sample employees (max 0.10 tUSDC each), setting on. */
 export function seedRecipientDirectory(db: Db, now: Date): string[] {
   if (db.select({ id: recipients.id }).from(recipients).limit(1).get()) return [];
   const admin = { id: 'usr_admin', role: 'admin' as const };
-  const sample = importPayrollFile({ filename: 'gajian-payroll-sample-1000.csv', bytes: readFileSync(resolve(process.cwd(), SAMPLE_FILE)), limits: { maxRowAmount: 1_000_000n, maxRunTotal: 10n ** 30n } });
+  const sample = importPayrollFile({ filename: 'sentfund-payroll-sample-1000.csv', bytes: readFileSync(resolve(process.cwd(), SAMPLE_FILE)), limits: { maxRowAmount: 1_000_000n, maxRunTotal: 10n ** 30n } });
   if (!sample.ok) throw new Error('the sample payroll file does not validate');
   const employees: CleanRecipient[] = sample.rows.map((r, i) => ({
     nearAccountId: r.valid.accountId, name: r.valid.receiverName, division: SAMPLE_DIVISIONS[i % SAMPLE_DIVISIONS.length]!,
@@ -74,7 +65,8 @@ export function seedRecipientDirectory(db: Db, now: Date): string[] {
   applyImport(db, admin, LIVE_RECIPIENTS, now, { source: 'seed' });
   applyImport(db, admin, employees, now, { source: 'seed', sample: true });
   setRegisteredOnly(db, admin, true, now);
-  return [`recipient directory (${LIVE_RECIPIENTS.length} testnet recipients + ${employees.length} sample employees), "Pay registered recipients only" on`];
+  return [`recipient directory (${LIVE_RECIPIENTS.length} testnet recipients + ${employees.length} sample employees), "Pay registered recipients only" on`,
+    seedIdentity(db, admin, loadConfig().sessionSecret, now)];
 }
 
 export async function seedDemo(db: Db, options: SeedOptions = {}) {

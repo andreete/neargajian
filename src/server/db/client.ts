@@ -17,7 +17,7 @@ export type Queryable = Db | Tx;
 export interface DatabaseHandle { db: Db; sqlite: Database.Database; file: string }
 
 export function databaseFileFromUrl(url: string | undefined): string {
-  const value = url ?? 'file:./data/gajian.sqlite';
+  const value = url ?? 'file:./data/sentfund.sqlite';
   if (value === ':memory:') return value;
   if (!value.startsWith('file:')) throw new Error('DATABASE_URL must be file:<path> (SQLite)');
   const path = value.slice('file:'.length);
@@ -37,12 +37,12 @@ export function openDatabase(file: string, options: { migrationsFolder?: string 
   return { db, sqlite, file };
 }
 
-const globalForDb = globalThis as unknown as { gajianDb?: DatabaseHandle };
+const globalForDb = globalThis as unknown as { sentfundDb?: DatabaseHandle };
 
 /** Process-wide connection from DATABASE_URL (reused across Next.js hot reloads). */
 export function getDatabase(): DatabaseHandle {
-  globalForDb.gajianDb ??= openDatabase(databaseFileFromUrl(process.env.DATABASE_URL));
-  return globalForDb.gajianDb;
+  globalForDb.sentfundDb ??= openDatabase(databaseFileFromUrl(process.env.DATABASE_URL));
+  return globalForDb.sentfundDb;
 }
 
 export function getDb(): Db {
@@ -50,6 +50,6 @@ export function getDb(): Db {
 }
 
 export function closeDatabase(): void {
-  globalForDb.gajianDb?.sqlite.close();
-  delete globalForDb.gajianDb;
+  globalForDb.sentfundDb?.sqlite.close();
+  delete globalForDb.sentfundDb;
 }

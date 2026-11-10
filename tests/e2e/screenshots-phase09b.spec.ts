@@ -8,7 +8,7 @@ mkdirSync(OUT, { recursive: true });
 
 test('09b fixes', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await signIn(page, 'maker@gajian.my.id');
+  await signIn(page, 'maker@sentfund.my.id');
   await page.waitForURL('**/maker');
   await page.evaluate(() => document.fonts.ready);
   await page.locator('#ops-title').scrollIntoViewIfNeeded();
@@ -26,7 +26,7 @@ test('09b fixes', async ({ page }) => {
   await page.screenshot({ path: `${OUT}/03-builder-1280x720.png` });
   await page.setViewportSize({ width: 1440, height: 900 });
   await newRun(page, 'File row check', 'upload');
-  await page.getByLabel('Choose a payroll file').setInputFiles({ name: 'gajian-payroll-sample-1000.csv', mimeType: 'text/csv', buffer: sampleCsv() });
+  await page.getByLabel('Choose a payroll file').setInputFiles({ name: 'sentfund-payroll-sample-1000.csv', mimeType: 'text/csv', buffer: sampleCsv() });
   await page.getByTestId('review-table').waitFor();
   await page.getByRole('heading', { name: /^Review \(1,000 rows/ }).scrollIntoViewIfNeeded();
   await page.mouse.move(0, 0);

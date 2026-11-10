@@ -9,8 +9,10 @@ root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 rm -rf .tmp/e2e-hosted
 mkdir -p .tmp/e2e-hosted
-export DATABASE_URL="file:./.tmp/e2e-hosted/gajian.sqlite"
+export DATABASE_URL="file:./.tmp/e2e-hosted/sentfund.sqlite"
 export DEMO_MODE=true HOSTED_DEMO=true HOSTED_READONLY="${HOSTED_READONLY:-false}"
 export ADMIN_SIGNER_PRIVATE_KEY= ANTHROPIC_API_KEY= ASSISTANT_STUB=
+# Identity checks on the synthetic specimens: real face engine, labelled test stub KTP reader.
+export IDENTITY_STUB=browser-tests
 node --env-file-if-exists=.env scripts/demo-reset.ts --with-testnet-history >/dev/null
 exec ./scripts/with-tmp.sh node_modules/.bin/next start -H 127.0.0.1 -p 8092
