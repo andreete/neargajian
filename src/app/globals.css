@@ -398,6 +398,7 @@ progress.bar::-moz-progress-bar { background: linear-gradient(90deg, var(--navy)
 .proof-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .proof-list li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
 .proof-list .label { color: var(--muted); font-size: 14px; }
+.proof-list .as-of { display: block; color: var(--muted); font-size: 13px; font-weight: 400; text-align: right; }
 .trust-note { padding: 28px; border-radius: var(--radius-lg); background: var(--navy-900); color: #e8eefb; }
 .trust-note h3 { color: #fff; margin-bottom: 10px; }
 .trust-note p { color: #c9d5ee; font-size: 15px; }

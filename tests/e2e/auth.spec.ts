@@ -32,6 +32,12 @@ test('landing page shows the product, the testnet badge and a strict CSP', async
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Run payroll with a clear approval trail.');
   await expect(page.locator('.testnet-badge').first()).toContainText('NEAR testnet');
   await expect(page.getByText('Sample data')).toBeVisible();
+  // On-chain proof: live facts for this vault only (never the earlier deployment's first payout), with an "as of" time.
+  const heroFacts = (await page.getByTestId('hero-facts').textContent()) ?? '';
+  expect(heroFacts).toMatch(/^(1 paid testnet run|\d+ paid testnet runs) · (1 repeat refused|\d+ repeats refused)$/);
+  expect(heroFacts).not.toMatch(/\b1 repeats\b|\b1 paid testnet runs\b/);
+  await expect(page.getByTestId('first-payout').getByRole('link')).not.toHaveAttribute('href', /7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL/);
+  await expect(page.getByTestId('payouts-so-far')).toContainText(/as of \d{1,2} \w{3} \d{4}, \d{2}:\d{2} UTC/);
   expect(problems).toEqual([]);
 });
 

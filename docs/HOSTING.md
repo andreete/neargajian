@@ -170,6 +170,12 @@ The demo runs at the apex **`sentfund.my.id`**. A plain CNAME is not allowed at 
 | **Vercel DNS** | **ALIAS**, name empty (the apex), the target Railway shows | **TXT**, name and value Railway shows (enter only the part before `.sentfund.my.id`) |
 | **A registrar panel without ALIAS/flattening** (GoDaddy, Hostinger, NameSilo and others listed by Railway) | not possible at the apex: move the nameservers to Cloudflare, or use `www.sentfund.my.id` (a normal CNAME `www`) and set `APP_BASE_URL` to that | **TXT** as Railway shows |
 
+**`www.sentfund.my.id` → `https://sentfund.my.id` (optional, not set up; Andre in the Cloudflare dashboard, about 2 minutes).** The agent's Cloudflare token can edit DNS only (Redirect Rules and Page Rules answer "Authentication error"), so this is a dashboard step:
+1. **DNS → Records → Add record:** type **AAAA**, name `www`, IPv6 `100::`, **Proxied** (orange cloud). The address is a placeholder; Cloudflare answers the request before it goes anywhere.
+2. **Rules → Redirect Rules → Create rule → template "Redirect from WWW to root"** (or custom: hostname equals `www.sentfund.my.id` → Dynamic, `concat("https://sentfund.my.id", http.request.uri.path)`, **301**, preserve query string) → Deploy.
+3. Check: `curl -sI https://www.sentfund.my.id/x` shows `301` and `location: https://sentfund.my.id/x`.
+Without both steps `www` simply does not resolve. Do not add only the DNS record: Railway would answer 404 for an unknown host.
+
 Railway issues the Let's Encrypt certificate, usually within an hour of the records resolving; DNS can take up to 72 hours worldwide. Done when the domain shows a green check. Then make sure `APP_BASE_URL` matches the domain exactly (https, no trailing slash) and **Deploy**.
 
 ## 6. Smoke test (Andre, about 10 minutes)
@@ -239,7 +245,8 @@ Railway → Variables → `HOSTED_READONLY=true` → **Deploy**.
 5. Anthropic: delete the hosted key, or the `sentfund-hosted` workspace.
 6. GitHub: https://github.com/settings/installations → Railway → remove access to the repository (or uninstall).
 7. Railway: cancel the Hobby plan if nothing else uses it.
-8. Remove the `release` branch if you like: `git push origin --delete release` (agent, with your yes).
+8. Remove the `release` branch if you like: `git -c core.sshCommand="ssh -i ~/.ssh/sentfund_deploy -o IdentitiesOnly=yes" push sentfund --delete release` (agent, with your yes).
+9. **Rotate the GitHub, Cloudflare and Railway tokens** that were pasted in chat during Phase 21 (Andre keeps them until this shutdown, on purpose): revoke the GitHub token (https://github.com/settings/tokens), delete the Cloudflare token (My Profile → API Tokens) and the Railway token (https://railway.com/account/tokens), then remove `CLOUDFLARE_API_TOKEN` and `RAILWAY_API_TOKEN` from this server's `.env`. Also remove the deploy keys `sentfund_deploy` (repository → Settings → Deploy keys) if the repository is archived.
 
 ---
 

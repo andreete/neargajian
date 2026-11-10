@@ -14,6 +14,7 @@ import { decide, latestVersion, reconcileVersion, runDetail, submitRun } from '@
 import { payRows, requestRelease, workerTick } from '@/server/payouts/release';
 import { companyCsv, historyFor, recipientCsv } from '@/server/reports/history';
 import { rowStates } from '@/server/runs/view';
+import { testnetFacts } from '@/server/landing';
 import { FakeVault } from '../helpers/fake-vault';
 
 const dir = mkdtempSync(join(tmpdir(), 'sentfund-paid-'));
@@ -49,10 +50,15 @@ beforeEach(async () => {
 describe('paid time from the chain', () => {
   it('run page, history and both CSVs show the pay_row block time, not the app clock', async () => {
     await releasing();
+    const before = testnetFacts(h.db, v().vaultContractId);
     await payRows(h.db, fake, v(), { role: 'worker', workerId: 'w', max: 10, now: APP_NOW });
     expect(v().status).toBe('paid');
     const acts = actions();
     expect(acts).toHaveLength(3);
+    // The landing page's facts count this app run live, with its block time as the "as of" time.
+    const after = testnetFacts(h.db, v().vaultContractId);
+    expect(after).toMatchObject({ paidRuns: before.paidRuns + 1, payouts: before.payouts + 3, doublePayments: 0, firstPayout: before.firstPayout });
+    expect(after.latestPayoutAt?.getTime()).toBe(Math.max(...acts.map((a) => a.blockTime!)));
     for (const a of acts) {
       expect(a.blockTime).toBe(fake.blockTimes.get(a.tx)!.getTime());
       expect(a.blockTime).not.toBe(a.appTime);

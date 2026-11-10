@@ -33,10 +33,41 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 20b CI image check and doc gaps | Done; **CI result not checked from here** (no GitHub CLI): Andre checks the Actions tab | none |
 | 21 SentFund rebrand + KTP/face identity checks | Done locally, all suites green; pushed to `origin` and the new `discoverateagency-ops/sentfund` (see NEXT-STEPS for the push result) | none on-chain; **real Claude KTP reader** on the 4 synthetic specimen scenarios (throwaway DB) |
 | 22 Testnet migration to `sentfund-payroll.testnet` + hosted demo live | Done: https://sentfund.my.id live and smoke-tested; all suites green | **Yes**: new accounts, token, locked vault (same release Wasm), 3 policy runs, assistant app run, hosted smoke run; `judge:verify` 221/221 |
+| 22b Review fixes (tunnel command, third-party licenses, live landing facts, online scope) | Done, released to https://sentfund.my.id | none (no transaction; read-only hosted checks) |
 
 ---
 
-## Phase 22 · Testnet migration to `sentfund-payroll.testnet`; the hosted demo goes live (10 Nov 2026)
+## Phase 22b · Review fixes (10 Nov 2026)
+
+Andre approved Phases 21 and 22 (verified on testnet himself) and asked for five fixes. He keeps the chat-pasted tokens until the shutdown (D-127).
+
+### Done
+1. **Tokens checked, names only:** `CLOUDFLARE_API_TOKEN` verifies `active` and reads the zone `sentfund.my.id`; `RAILWAY_API_TOKEN` reads the project `sunny-simplicity`. `HOSTED_ANTHROPIC_API_KEY` is **not** in `.env`, so nothing was set on Railway: the assistant and KTP reader stay off online.
+2. **Tunnel command** corrected in NEXT-STEPS: `ssh -N -L 8092:127.0.0.1:8092 neargajian@andre` (it was the only file with the wrong user).
+3. **README "Third-party software"**: YuNet (MIT) and SFace (Apache-2.0) with the licence lines from the official OpenCV Zoo pages and the papers, how the models are fetched and pinned, ONNX Runtime 1.31.1 (MIT), sharp 0.35.5 (Apache-2.0) with libvips (LGPL-3.0-or-later), the Anthropic SDK 1.3.0 (Apache-2.0, assistant + KTP reader), and the four specimen faces with their Wikimedia Commons pages (each public domain, AI-generated; checked 10 Nov), plus DejaVu Sans for the card text. Licences of the npm packages read from their `package.json`.
+4. **Landing "On-chain proof"** (D-127): first payout of the current vault, live counts with an "as of" time, plurals. New tests: `tests/integration/testnet-history.test.ts` (seeded SentFund facts exactly; the earlier deployment's facts stay with its vault), `tests/integration/paid-time.test.ts` (an app run adds 1 run and 3 payouts live, as-of = its block time), `tests/e2e/auth.spec.ts` (hero plurals, first payout is not `7Dwmqek…`, "as of … UTC").
+5. **README "Try it online"**: a table of what works online today and what is off until a hosted key exists (assistant, KTP reader); the assistant step moved out of the online "Do, see" list.
+6. **`www` redirect: not done** (token is DNS-only; dashboard steps in HOSTING section 5).
+7. HOSTING shutdown checklist: step 9 rotates the three tokens; the `release`-branch removal now names the `sentfund` remote. VIDEO: vault balance 1.93 on the SentFund vault.
+8. The local review DB (reset before the Phase 22 history export) had no imported history; imported it with `importTestnetHistory` (3 runs, idempotent). Local landing: 3 paid runs, 7 payouts, first payout `UEJ1PEDz…`, 1 repeat refused.
+
+### Checks (10 Nov 2026)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **26 files, 213 tests passed** |
+| `npm run samples:check` | no diff |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 3.0 GB |
+| `npm run test:e2e` / `test:judge-mode` / `test:hosted` | **31** / **1** / **3 + 1** passed |
+| `npm run contracts:test`, `contracts:lint`, `contracts:build` | 3 + 49 + 1 passed; fmt + clippy clean; build ok |
+| `npm run judge:deployment` | Deployment verified (release build, no key) |
+| `npm run judge:verify` | **221 PASS, 0 FAIL** |
+| `npm run secret-scan` | clean (working tree + 37 commits) |
+| `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
+
+Release and hosted results: see NEXT-STEPS (filled in after the deploy).
+
+ to `sentfund-payroll.testnet`; the hosted demo goes live (10 Nov 2026)
 
 Andre: deploy the hosted demo ("deploy do it for me"), use the new logo ("change the logo … deploy it first"), migrate the testnet deployment to SentFund ("continue with sentfund-payroll.testnet … run all safe without mistake"), then "make sure all gaps complete … test end to end QA". Decisions D-123 to D-126.
 

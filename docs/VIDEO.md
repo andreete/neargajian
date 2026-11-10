@@ -15,7 +15,7 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 
 ## What it costs
 
-- **tUSDC:** 0.20 per take, paid from the vault. On 10 Nov 2026 the vault holds **1.94 tUSDC** (topped up for QA and retakes; while the demo is public it stays at 2.00 or less): enough for about **nine** takes, less any QA runs. The assistant moment creates a draft only and costs nothing.
+- **tUSDC:** 0.20 per take, paid from the vault. On 10 Nov 2026 the vault (`vault.sentfund-payroll.testnet`) holds **1.93 tUSDC** (while the demo is public it stays at 2.00 or less): enough for about **nine** takes, less any QA runs. The assistant moment creates a draft only and costs nothing.
 - **NEAR (gas):** about 0.003 NEAR per take (Phase 13 measured 0.00297: create_run, two approvals, start_release, three payouts). The maker, approver and worker accounts each hold more than 0.37 NEAR, and the admin 0.48 NEAR. No faucet is needed.
 
 ## Pre-recording checklist

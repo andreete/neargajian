@@ -27,7 +27,11 @@ describe('imported testnet history', () => {
     expect(operationsTransfers(h.db)).toEqual([]);
     expect(testnetTotals(h.db)).toMatchObject({ paidRuns: 2, payouts: 5, paidTotal: 180_000n, rejectedRuns: 1 });
     expect(makerTestnetRuns(h.db, 'usr_maker').find((r) => r.id === 'p22-seq-202611100718')?.lastPaidTxHash).toBe('DMrHt1TcQAZjkKbuNh4RwX66wA25d7cmD5Nxa84Mf4Mc');
-    expect(testnetFacts()).toMatchObject({ paidRuns: 2, payouts: 5, doublePayments: 0, repeatAttemptsRefused: 1 });
+    expect(testnetFacts(h.db, 'vault.sentfund-payroll.testnet')).toEqual({
+      vault: 'vault.sentfund-payroll.testnet', paidRuns: 2, payouts: 5, doublePayments: 0, repeatAttemptsRefused: 1,
+      firstPayout: { txHash: 'UEJ1PEDzaYxXxWQWez4LAassLT93Beje7jzDbS9S8fP', at: new Date('2026-11-10T07:19:19.889Z') },
+      latestPayoutAt: new Date('2026-11-10T07:20:20.750Z'),
+    });
     h.sqlite.close();
   });
 
@@ -40,6 +44,10 @@ describe('imported testnet history', () => {
     expect(testnetTotals(h.db)).toMatchObject({ paidRuns: 3, payouts: 6, paidTotal: 230_000n, rejectedRuns: 1 });
     // The earlier runs belong to maker.gajian-payroll.testnet, not to today's demo maker.
     expect(makerTestnetRuns(h.db, 'usr_maker')).toEqual([]);
+    // Landing facts are per vault: the earlier deployment's first payout (7Dwmqek…) is never shown
+    // next to the SentFund vault.
+    expect(testnetFacts(h.db, 'vault.sentfund-payroll.testnet')).toMatchObject({ paidRuns: 0, payouts: 0, firstPayout: null, latestPayoutAt: null });
+    expect(testnetFacts(h.db, 'vault.gajian-payroll.testnet').firstPayout?.txHash).toBe('7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL');
     h.sqlite.close();
   });
 });

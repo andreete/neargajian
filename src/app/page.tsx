@@ -7,16 +7,14 @@ import {
 import { LoginDialogProvider, SignInButton } from '@/components/login-dialog';
 import { Chip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
+import { getDb } from '@/server/db/client';
 import { homeFor } from '@/server/auth/policy';
 import { DEMO_PASSWORD, demoUsers } from '@/server/db/demo-users';
 import { samplePreview, testnetFacts } from '@/server/landing';
 import { currentSession } from '@/server/web/page-auth';
-import { displayAmount } from '@/lib/format';
+import { displayAmount, formatDateTime } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
-
-// Live NEAR testnet evidence (docs/TESTNET.md).
-const FIRST_PAYOUT_TX = '7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL';
 
 export default async function LandingPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const config = getConfig();
@@ -24,7 +22,9 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const signinRequired = params.signin === 'required' && !session;
   const sample = samplePreview();
-  const facts = testnetFacts();
+  const facts = testnetFacts(getDb(), config.vaultContractId);
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const asOf = facts.latestPayoutAt ? `as of ${formatDateTime(facts.latestPayoutAt)}, the latest payout recorded by this copy` : 'none yet';
   const tx = (hash: string) => `${config.explorerTxUrl}${hash}`;
   const account = (id: string) => `${config.explorerAccountUrl}${id}`;
   const dashboard = session ? homeFor(session.user.role) : null;
@@ -130,7 +130,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
             <li><span className="icon"><WalletIcon size={18} /></span><span><strong>Live on NEAR testnet</strong><span className="sub mono">{config.vaultContractId}</span></span></li>
             <li><span className="icon"><ShieldIcon size={18} /></span><span><strong>Approvals enforced on-chain</strong><span className="sub">1, 2 in sequence or 2 in parallel</span></span></li>
             <li><span className="icon"><UploadIcon size={18} /></span><span><strong>1,000-row CSV/TXT upload</strong><span className="sub">Whole file validated first</span></span></li>
-            <li><span className="icon"><CheckIcon size={18} /></span><span><strong>{facts.doublePayments} double payments</strong><span className="sub">{facts.paidRuns} testnet runs · {facts.repeatAttemptsRefused} repeats refused</span></span></li>
+            <li><span className="icon"><CheckIcon size={18} /></span><span><strong>{plural(facts.doublePayments, 'double payment', 'double payments')}</strong><span className="sub" data-testid="hero-facts">{plural(facts.paidRuns, 'paid testnet run', 'paid testnet runs')} · {plural(facts.repeatAttemptsRefused, 'repeat refused', 'repeats refused')}</span></span></li>
           </ul>
         </section>
 
@@ -270,8 +270,8 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
               <ul className="proof-list">
                 <li><span className="label">Vault contract</span><a className="mono" href={account(config.vaultContractId)} target="_blank" rel="noreferrer">{config.vaultContractId} <ExternalIcon size={13} /><span className="sr-only">(opens NearBlocks)</span></a></li>
                 <li><span className="label">tUSDC token (6 decimals)</span><a className="mono" href={account(config.tokenContractId)} target="_blank" rel="noreferrer">{config.tokenContractId} <ExternalIcon size={13} /><span className="sr-only">(opens NearBlocks)</span></a></li>
-                <li><span className="label">First contract-controlled payout</span><a className="mono" href={tx(FIRST_PAYOUT_TX)} target="_blank" rel="noreferrer">{FIRST_PAYOUT_TX.slice(0, 10)}… <ExternalIcon size={13} /><span className="sr-only">(opens NearBlocks)</span></a></li>
-                <li><span className="label">Testnet payouts so far</span><span className="num">{facts.payouts} in {facts.paidRuns} runs, {facts.doublePayments} paid twice</span></li>
+                {facts.firstPayout ? <li data-testid="first-payout"><span className="label">First payout by this vault</span><a className="mono" href={tx(facts.firstPayout.txHash)} target="_blank" rel="noreferrer">{facts.firstPayout.txHash.slice(0, 10)}… <ExternalIcon size={13} /><span className="sr-only">(opens NearBlocks)</span></a></li> : null}
+                <li data-testid="payouts-so-far"><span className="label">Payouts by this vault</span><span className="num">{plural(facts.payouts, 'payout', 'payouts')} in {plural(facts.paidRuns, 'run', 'runs')}, {facts.doublePayments} paid twice<span className="as-of">{asOf}</span></span></li>
               </ul>
             </div>
             <aside className="trust-note" aria-labelledby="trust-title">

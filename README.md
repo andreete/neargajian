@@ -43,12 +43,23 @@ A small company paying staff or contractors in stablecoins usually has one perso
 - **Window 3, another browser or another browser profile:** `app2@sentfund.my.id` (approver 2)
 - `admin@sentfund.my.id` in any window when you want the admin view. Signing in replaces the window's current role.
 
+**What works online today (checked 10 Nov 2026):**
+
+| Works online | Off online until a hosted Claude API key is set |
+| --- | --- |
+| Sign-in for all four roles, upload or manual runs to the three live recipients, submit, approve 1 → 2, payment by the vault on testnet with NearBlocks links (last checked with a real 0.01 tUSDC run on 10 Nov) | **Payroll assistant** (the maker sees "The payroll assistant is off on this copy") |
+| History, consolidated and detailed reports, CSV exports | **KTP reader**, so the specimen identity checks cannot run online ("The KTP reader is off on this copy") |
+| Admin screens read-only: recipient directory, workflow, identity page with the stored identity results and the "verified recipients only" switch | |
+| The 1,000-row sample uploads and previews, and is refused at submit | |
+
 Do, see:
 1. **Maker → New run → Upload a file** with a CSV of the three live recipients, for example `docs/video/november-2026-contractors.csv` or `docs/hosting/smoke-test-0.01.csv` → **Continue to review** → **Submit**. See: Awaiting approval, with the `create_run` transaction link.
 2. **Approver 1, then approver 2 → Review queue → the run → Approve.** See: the vault enforces the order.
 3. **Maker → the run.** Within a minute: **Paid**, a NearBlocks link per payout, and the paid time equal to the block time.
-4. **Maker → New run → Payroll assistant:** "Create a disbursement for the Sales division, 0.03 tUSDC each, called November commissions". See: a preview of Daniel Hall and Emma Clark; **Create draft**.
-5. **History and reports:** consolidated and detailed views, CSV exports.
+4. **History and reports:** consolidated and detailed views, CSV exports.
+5. **Admin → Identity checks:** the identity results of the three recipients and the specimen cards. Running a specimen check needs the KTP reader, which is off online for now (see the table); try it locally with your own `ANTHROPIC_API_KEY`.
+
+The payroll assistant ("Create a disbursement for the Sales division, 0.03 tUSDC each, called November commissions") is off online until a hosted key is set; it works on a local copy with your own key (step 5 below).
 
 What the online copy does **not** let you do (on purpose, because the passwords are public):
 - It pays only the three live testnet recipients. A run with any recipient not in the directory and "Ready to receive tUSDC" is refused at submit; the 1,000-row sample uploads and previews but cannot be submitted.
@@ -193,8 +204,16 @@ All code in this repository was written during NEAR HACKATHON, on and after 9 No
 
 ## Third-party software
 
-- App runtime: Next.js 16.4.3, React 19.3.1, near-api-js 7.4.0, Drizzle ORM 0.45.4, better-sqlite3 13.0.3, csv-parse 7.0.3, server-only, Anthropic TypeScript SDK `@anthropic-ai/sdk` 1.3.0 (payroll assistant). Font: Plus Jakarta Sans (Google Fonts, via `next/font`).
-- Services: the Claude API (Anthropic) for the optional payroll assistant, only with your own `ANTHROPIC_API_KEY`; the browser's own speech recognition for voice input.
+- App runtime: Next.js 16.4.3, React 19.3.1, near-api-js 7.4.0, Drizzle ORM 0.45.4, better-sqlite3 13.0.3, csv-parse 7.0.3, server-only. Font: Plus Jakarta Sans (Google Fonts, via `next/font`).
+- Anthropic TypeScript SDK `@anthropic-ai/sdk` 1.3.0 (Apache-2.0): calls the Claude API for the payroll assistant and the KTP reader.
+- Identity check (Phase 21), all running on the server, no face data leaves it:
+  - **YuNet** face detector, `face_detection_yunet_2023mar.onnx`, from the official OpenCV Zoo ([opencv_zoo/models/face_detection_yunet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)): **MIT License** ("All files in this directory are licensed under MIT License"). Wei Wu, Hanyang Peng, Shiqi Yu, "YuNet: A Tiny Millisecond-level Face Detector", Machine Intelligence Research 20(5), 2023.
+  - **SFace** face recognizer, `face_recognition_sface_2021dec.onnx`, from the official OpenCV Zoo ([opencv_zoo/models/face_recognition_sface](https://github.com/opencv/opencv_zoo/tree/main/models/face_recognition_sface)): **Apache License 2.0** ("All files in this directory are licensed under Apache 2.0 License"). Yaoyao Zhong et al., "SFace: Sigmoid-Constrained Hypersphere Loss for Robust Face Recognition" ([arXiv:2205.12010](https://arxiv.org/abs/2205.12010)); ONNX conversion by Chengrui Wang.
+  - The models are not in this repository: `npm run vision:models` downloads them (Hugging Face mirror of the OpenCV Zoo, or the Zoo itself) and keeps them only if the SHA-256 equals the Zoo's Git LFS ID.
+  - **ONNX Runtime** `onnxruntime-node` 1.31.1 (MIT, Microsoft): runs both models on the CPU.
+  - **sharp** 0.35.5 (Apache-2.0): decodes, rotates, crops and resizes the photos and covers the face before the KTP goes to the Claude API. Its prebuilt binary bundles **libvips** (`@img/sharp-libvips-*` 1.3.4, LGPL-3.0-or-later, dynamically linked).
+- Synthetic identity specimens (`public/specimens/`, built by `scripts/make-identity-specimens.ts`): the four faces are AI-generated (StyleGAN/StyleGAN2) images from Wikimedia Commons, each marked **public domain** there ("the work of a computer algorithm or artificial intelligence"), downloaded and checked against Commons' SHA-1: [Woman_1.jpg](https://commons.wikimedia.org/wiki/File:Woman_1.jpg) (Emma; uploader Owlsmcgee), [Man_2.jpg](https://commons.wikimedia.org/wiki/File:Man_2.jpg) (Daniel; Owlsmcgee), [This_Person_Does_Not_Exist_example.jpg](https://commons.wikimedia.org/wiki/File:This_Person_Does_Not_Exist_example.jpg) (Grace; StyleGAN2 via thispersondoesnotexist.com) and [GAN_Mensch_StyleGAN2.png](https://commons.wikimedia.org/wiki/File:GAN_Mensch_StyleGAN2.png) (the impostor; StyleGAN2 via thispersondoesnotexist.com). Commons notes that the UK and Hong Kong give computer-generated works a limited 50-year copyright. Names, NIKs (non-existent kecamatan code 99) and card layout are our own; the card text is rendered in DejaVu Sans (Bitstream Vera / DejaVu free font license). Sources are also listed in `public/specimens/manifest.json`.
+- Services: the Claude API (Anthropic) for the optional payroll assistant and the KTP reader, only with your own `ANTHROPIC_API_KEY`; the browser's own speech recognition for voice input.
 - Development: TypeScript 6.0.3, Vitest 5.0.5, Playwright 1.64.1, ESLint 9 with eslint-config-next, drizzle-kit 0.31.11, ExcelJS 4.4.0 (generates the .xlsx template).
 - Contracts: near-sdk 5.30.1, near-contract-standards 5.30.1 (NEP-141 for tUSDC); tests use near-sandbox 0.4.0 (nearcore 2.14.0), near-api 0.8, cargo-near-build 0.11, tokio. Build: cargo-near 0.23.0, Rust 1.95.0.
 - Testnet RPC: FastNEAR public endpoint. Explorer links: NearBlocks testnet.
