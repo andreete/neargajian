@@ -50,6 +50,8 @@ export interface VaultClient {
 }
 
 /** Shown when a chain action is attempted on a copy without signer keys. Nothing is recorded. */
+import { standinMode, standinVault } from './standin.ts';
+
 export const NO_SIGNER_MESSAGE = 'This copy of SentFund has no signer keys, so it cannot send transactions to NEAR. Nothing was recorded. The live runs can be verified read-only with npm run judge:verify.';
 
 const ENV_KEY: Record<ChainRole, { account: string; key: string }> = {
@@ -177,6 +179,7 @@ let instance: VaultClient | undefined;
 /** The process-wide vault client. Tests may install a stand-in; production never does. */
 export function getVaultClient(): VaultClient {
   if (override) return override;
+  if (standinMode()) return standinVault(); // TEST-ONLY browser-test mode (standin.ts)
   instance ??= new NearVaultClient();
   return instance;
 }

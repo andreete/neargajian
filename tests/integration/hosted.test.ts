@@ -32,7 +32,7 @@ beforeAll(async () => {
   const live = sqlite.prepare('select id from recipients where sample = 0').all() as { id: string }[];
   for (const r of live) recordReadiness(db, 'usr_admin', r.id, 'ready', NOW);
   const { createSession, SESSION_COOKIE } = await import('@/server/auth/session');
-  for (const [who, id] of [['maker', 'usr_maker'], ['admin', 'usr_admin']] as const) {
+  for (const [who, id] of [['maker', 'usr_maker'], ['admin', 'usr_admin'], ['emma', 'usr_emp_emma'], ['daniel', 'usr_emp_daniel'], ['admin2', 'usr_admin']] as const) {
     const s = createSession(db, id, new Date());
     sessions[who] = { cookie: `${SESSION_COOKIE}=${s.token}`, csrf: s.csrfToken };
   }
@@ -195,5 +195,32 @@ describe('payroll assistant in the public demo', () => {
     expect((await interpretRequest(db, stubModel(), maker, turns, NOW)).kind).toBe('refused');
     expect((await interpretRequest(db, stubModel(), maker, turns, new Date(NOW.getTime() + 86_400_000))).kind).toBe('refused');
     void admin;
+  });
+});
+
+describe('Payroll Advance in the public demo (Phase 23)', () => {
+  it('employees can request only for the live recipients, at most 0.30, one at a time; the policy is read-only; the kill switch refuses requests', async () => {
+    process.env.HOSTED_DEMO = 'true';
+    const route = (await import('@/app/api/employee/advances/route')) as unknown as { POST: H };
+    const policy = (await import('@/app/api/admin/payroll-advance/route')) as unknown as { POST: H };
+    const ask = (who: string, amount: string) => route.POST(req(who, '/api/employee/advances', 'POST', JSON.stringify({ amount, consent: true })));
+    // Even with a higher net pay and maximum, the public demo caps an advance at 0.30.
+    sqlite.prepare("update recipients set monthly_net_pay = '1000000', max_amount = '1000000' where near_account_id = 'recipient2.sentfund-payroll.testnet'").run();
+    const { eligibilityFor } = await import('@/server/advance/eligibility');
+    const dan = sqlite.prepare("select id from recipients where near_account_id = 'recipient2.sentfund-payroll.testnet'").get() as { id: string };
+    const { recipients } = await import('@/server/db/schema');
+    const { eq } = await import('drizzle-orm');
+    const e = eligibilityFor(db, db.select().from(recipients).where(eq(recipients.id, dan.id)).get()!, { now: new Date() });
+    expect([e.max, e.maxBasis]).toEqual(['300000', 'the public demo cap of 0.30 tUSDC']);
+    expect((await ask('daniel', '0.31')).status).toBe(422);
+    expect((await ask('emma', '0.30')).status).toBe(201);
+    expect((await ask('emma', '0.10')).status).toBe(422); // one at a time (eligibility re-check)
+    const p = await policy.POST(req('admin2', '/api/admin/payroll-advance', 'POST', JSON.stringify({ enabled: false, maxPercent: 300, feeBps: 200, instalments: 6, minDays: 90 })));
+    expect(p.status).toBe(403);
+    expect(((await p.json()) as { error: { message: string } }).error.message).toMatch(/Payroll Advance policy is read-only in the public demo/);
+    process.env.HOSTED_READONLY = 'true';
+    expect((await ask('daniel', '0.10')).status).toBe(503);
+    expect(sqlite.prepare('select count(*) as n from payroll_advances').get()).toEqual({ n: 1 });
+    expect(sqlite.prepare("select value from app_settings where key = 'payroll_advance_policy'").get()).toBeUndefined();
   });
 });

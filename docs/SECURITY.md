@@ -1,26 +1,40 @@
 # Security model (app)
 
-Version 2 · Phase 19 · 10 Nov 2026 (version 1: Phase 06). Contract-side rules are in `contracts/vault` and `docs/RECOVERY.md`; this file covers the web app.
+Version 3 · Phase 23 · 10 Nov 2026 (version 2: Phase 19; version 1: Phase 06). Contract-side rules are in `contracts/vault` and `docs/RECOVERY.md`; this file covers the web app.
 
 ## Authorization matrix (server-owned)
 
 Source of truth: `src/server/auth/policy.ts` (`can(principal, action, run?)`). Run context (owner, assigned approvers) is loaded from the database; the "assigned approvers" of a run are the approvers snapshotted into any of its submitted versions. Query parameters, hidden buttons and client state never grant anything.
 
-| Action | Maker | Approver | Admin |
-| --- | --- | --- | --- |
-| `run.create`, `run.list_own` | yes | no | no |
-| `run.view`, `run.view_recipients`, `report.recipients` | own runs | assigned runs | **no** |
-| `run.edit_draft`, `run.submit`, `run.cancel`, `run.release` | own runs | no | no |
-| `run.decide` (approve / reject) | no | assigned runs | no |
-| `queue.view` | no | yes | no |
-| `workflow.view` | yes | yes | yes |
-| `workflow.update` | no | no | yes |
-| `report.company` (opaque references, no recipient fields) | yes | yes | yes |
-| `recipients.manage` (directory: list, add, edit, deactivate/reactivate, testnet check, import) | no | no | yes |
-| `settings.update` ("Pay registered recipients only") | no | no | yes |
+| Action | Maker | Approver | Admin | Employee |
+| --- | --- | --- | --- | --- |
+| `run.create`, `run.list_own` | yes | no | no | no |
+| `run.view`, `run.view_recipients`, `report.recipients` | own runs | assigned runs | **no** | no |
+| `run.edit_draft`, `run.submit`, `run.cancel`, `run.release` | own runs (never an advance run's draft) | no | no | no |
+| `run.decide` (approve / reject) | no | assigned runs | no | no |
+| `queue.view` | no | yes | no | no |
+| `workflow.view` | yes | yes | yes | no |
+| `workflow.update` | no | no | yes | no |
+| `report.company` (opaque references, no recipient fields) | yes | yes | yes | no |
+| `recipients.manage` (directory: list, add, edit, deactivate/reactivate, testnet check, import) | no | no | yes | no |
+| `settings.update` ("Pay registered recipients only") | no | no | yes | no |
+| `advance.self_service` (own monthly net pay, offer, request with consent, own requests, schedule and paid lines) | no | no | no | **own linked recipient only** |
+| `advance.handle` (Payroll Advance requests: decline with a reason, submit as a one-row run) | yes | no | no | no |
+| `advance.policy` (Payroll Advance policy; read-only in the public demo) | no | no | yes | no |
 | `assistant.use` (payroll assistant: preview, create a **draft** for oneself) | yes | no | no |
 
 Responses: 401 without a session; 403 when the role can never use an endpoint or page; **404** for a run the caller may not see, so run IDs reveal nothing. Pages: no session → `/?signin=required` (the sign-in dialog opens); wrong role → 403 page (`forbidden()`).
+
+## Employee role (Phase 23)
+
+- An employee login is linked to exactly one directory recipient (`users.recipient_id`, unique; a database CHECK requires it for the employee role and forbids it for every other role). The employee never has a chain account or a signer key.
+- Every employee read and write resolves the recipient **from the session**, never from the request: there is no recipient or user ID in the employee route (`POST /api/employee/advances`) or page (`/employee`). An employee sees only their own monthly net pay, offer, requests, outstanding advance and schedule, and the paid lines to their own NEAR account with explorer links.
+- Employees reach no other page (`/maker`, `/approver`, `/admin/*`, `/history`, `/runs/*` answer 403 or 404) and no other API route (refused with 403; a run ID answers 404). `tests/integration/boundaries.test.ts` calls every route as the employee and checks that nothing changes.
+- A request needs the explicit consent flag (the text "I agree to these N salary deductions" is stored with the time). The terms and the consent cannot change afterwards (trigger); requests are never deleted (trigger); the ledger and the instalments frozen with a version are append-only (triggers).
+- Eligibility and the money rules are re-checked on the server at the request, at the maker's submit and at the approval (an approval of an advance that is no longer eligible is refused before anything is signed). Two requests at the same moment cannot both succeed: an immediate transaction plus the partial unique index `payroll_advances_one_open_uq` (one open advance per recipient).
+- The maker cannot edit an advance run's draft or submit it as payroll; its kind and advance link are fixed (trigger).
+- The company CSV and the admin's company view never show an employee's name: an advance run appears as "Payroll Advance, <month year>".
+- The public demo caps an advance at 0.30 tUSDC (live recipients only, through the existing "Ready to receive tUSDC" submit gate); the policy is read-only there; the kill switch refuses requests (503) and pauses the worker.
 
 ## Sessions
 

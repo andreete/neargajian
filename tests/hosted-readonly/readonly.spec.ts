@@ -23,3 +23,17 @@ test('read-only banner everywhere; sign-in and browsing work; creating a run is 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.waitForURL((u) => u.pathname === '/');
 });
+
+test('kill switch: an employee can sign in but a Payroll Advance request is refused', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Try the demo' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
+  await dialog.getByLabel('Email').fill('daniel@sentfund.my.id');
+  await dialog.getByLabel('Password').fill('12345678');
+  await dialog.getByRole('button', { name: 'Sign in' }).click();
+  await page.waitForURL(/\/employee$/);
+  const offer = page.getByTestId('advance-offer');
+  await offer.getByLabel('I agree to these 6 salary deductions').check();
+  await offer.getByRole('button', { name: /^Request / }).click();
+  await expect(offer.getByRole('alert')).toContainText('The hosted demo is read-only right now');
+});

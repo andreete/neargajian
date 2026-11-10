@@ -9,7 +9,7 @@ import { Chip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
 import { getDb } from '@/server/db/client';
 import { homeFor } from '@/server/auth/policy';
-import { DEMO_PASSWORD, demoUsers } from '@/server/db/demo-users';
+import { DEMO_PASSWORD, demoEmails } from '@/server/db/demo-users';
 import { samplePreview, testnetFacts } from '@/server/landing';
 import { currentSession } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime } from '@/lib/format';
@@ -32,7 +32,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
 
   return (
     <LoginDialogProvider
-      demo={config.demoMode ? { emails: demoUsers().map((u) => u.email), password: DEMO_PASSWORD } : null}
+      demo={config.demoMode ? { emails: demoEmails(), password: DEMO_PASSWORD } : null}
       autoOpen={signinRequired}
       notice={signinRequired ? 'Please sign in to continue.' : null}
     >
@@ -286,7 +286,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
           <div className="container">
             <div>
               <h2 id="cta-title">See a payroll run end to end</h2>
-              <p>Sign in as the maker, an approver or the admin. Demo data only.</p>
+              <p>Sign in as the maker, an approver, the admin or an employee (Payroll Advance). Demo data only.</p>
             </div>
             {dashboard ? <Link className="btn btn-primary btn-lg" href={dashboard}>Open your dashboard</Link> : <SignInButton className="btn btn-primary btn-lg">Try the demo</SignInButton>}
           </div>

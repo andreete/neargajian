@@ -20,6 +20,7 @@ export function hostedMode(env: Env = process.env): HostedMode {
 export const HOSTED_ASSISTANT_DAILY_CAP = 200;
 
 export const READ_ONLY_MESSAGE = 'The hosted demo is read-only right now (paused by the SentFund team). Nothing was changed. You can still sign in and look around.';
+export const HOSTED_POLICY_MESSAGE = 'The Payroll Advance policy is read-only in the public demo. Run SentFund locally (README) to change it.';
 export const HOSTED_DIRECTORY_MESSAGE = 'The recipient directory is read-only in the public demo, so nobody can add payees. Run SentFund locally (README) to manage the directory.';
 
 /**

@@ -14,12 +14,14 @@ import { AlertIcon, CheckIcon, EditIcon, InfoIcon, PlusIcon, UploadIcon } from '
 export interface RecipientRow {
   id: string; nearAccountId: string; name: string; division: string; email: string; mobilePhone: string;
   maxAmount: string; maxDisplay: string; active: boolean; sample: boolean;
+  /** Payroll Advance (Phase 23): monthly net pay (display) and start date, "" when not set. */
+  monthlyNetPay: string; startDate: string;
   readiness: 'unchecked' | 'ready' | 'no_account' | 'not_registered' | 'check_failed'; readinessLabel: string; readinessCheckedAt: string | null; updatedAt: number;
 }
 
-type Field = 'nearAccountId' | 'name' | 'division' | 'email' | 'mobilePhone' | 'maxAmount';
-const EMPTY: Record<Field, string> = { nearAccountId: '', name: '', division: '', email: '', mobilePhone: '', maxAmount: '' };
-const LABEL: Record<Field, string> = { nearAccountId: 'NEAR account', name: 'Name', division: 'Division', email: 'Email', mobilePhone: 'Phone', maxAmount: 'Maximum per payout (tUSDC)' };
+type Field = 'nearAccountId' | 'name' | 'division' | 'email' | 'mobilePhone' | 'maxAmount' | 'monthlyNetPay' | 'startDate';
+const EMPTY: Record<Field, string> = { nearAccountId: '', name: '', division: '', email: '', mobilePhone: '', maxAmount: '', monthlyNetPay: '', startDate: '' };
+const LABEL: Record<Field, string> = { nearAccountId: 'NEAR account', name: 'Name', division: 'Division', email: 'Email', mobilePhone: 'Phone', maxAmount: 'Maximum per payout (tUSDC)', monthlyNetPay: 'Monthly net pay (tUSDC, optional)', startDate: 'Start date (optional)' };
 const COLUMN_LABEL: Record<string, string> = { near_account_id: 'NEAR account ID', receiver_name: 'Receiver name', currency: 'Currency', amount: 'Amount (maximum)', mobile_phone: 'Mobile phone', email: 'Email', division: 'Division' };
 
 const READINESS_TONE: Record<RecipientRow['readiness'], string> = { ready: 'success', no_account: 'danger', not_registered: 'danger', check_failed: 'waiting', unchecked: 'neutral' };
@@ -80,7 +82,7 @@ export function RecipientDirectory({ rows, csrfToken, divisions, cap, readOnly =
 
   function open(row: RecipientRow | null) {
     setEditing(row);
-    setForm(row ? { nearAccountId: row.nearAccountId, name: row.name, division: row.division, email: row.email, mobilePhone: row.mobilePhone, maxAmount: row.maxAmount } : EMPTY);
+    setForm(row ? { nearAccountId: row.nearAccountId, name: row.name, division: row.division, email: row.email, mobilePhone: row.mobilePhone, maxAmount: row.maxAmount, monthlyNetPay: row.monthlyNetPay, startDate: row.startDate } : EMPTY);
     setErrors({});
     setFormError(null);
     dialog.current?.showModal();
@@ -145,7 +147,7 @@ export function RecipientDirectory({ rows, csrfToken, divisions, cap, readOnly =
             <thead><tr><th scope="col">Recipient</th><th scope="col">Division</th><th scope="col">NEAR account</th><th scope="col" className="amount">Max (tUSDC)</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>{rows.map((r) => (
               <tr key={r.id} className={r.active ? undefined : 'is-inactive'}>
-                <td><div className="title">{r.name}</div><div className="sub rcp-email" title={r.email}>{r.email}</div></td>
+                <td><div className="title">{r.name}</div><div className="sub rcp-email" title={r.email}>{r.email}</div>{r.monthlyNetPay ? <div className="sub" data-testid="rcp-pay">Net pay {r.monthlyNetPay} · since {r.startDate || '—'}</div> : null}</td>
                 <td>{r.division}</td>
                 <td><CopyValue value={r.nearAccountId} label="NEAR account" size="md" /></td>
                 <td className="amount">{r.maxDisplay}</td>
@@ -167,6 +169,8 @@ export function RecipientDirectory({ rows, csrfToken, divisions, cap, readOnly =
             {field('email', { type: 'email' })}
             {field('mobilePhone', { type: 'tel', hint: 'For example +44 7700 900123' })}
             {field('maxAmount', { inputMode: 'decimal', hint: `At most the workflow's per-row cap of ${cap} tUSDC.` })}
+            {field('monthlyNetPay', { inputMode: 'decimal', hint: 'Payroll Advance: the maximum advance is a share of this. Empty = no Payroll Advance.' })}
+            {field('startDate', { hint: 'YYYY-MM-DD. Payroll Advance needs a minimum time since this date.' })}
             {editing ? (
               <div className="rcp-state">
                 <span>{editing.active ? 'Active' : 'Inactive'} · Testnet check: <strong>{editing.readinessLabel}</strong>{editing.readinessCheckedAt ? ` (${editing.readinessCheckedAt.slice(0, 16).replace('T', ' ')} UTC)` : ''}</span>

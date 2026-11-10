@@ -22,6 +22,9 @@ import { toRaw, validateDraft } from './draft-service.ts';
 import { confirmedPayouts, settleActions } from '../payouts/settle.ts';
 import { createReportEntries } from '../reports/entries.ts';
 import { createVersion, DomainError, getDraftRows, setVersionStatus, type WorkflowSnapshot } from './repository.ts';
+import { insertDeductions, planDeductions, planFingerprint, samePlan, syncAdvances, type PlannedDeduction } from '../advance/ledger.ts';
+import { advanceApprovalProblem } from '../advance/eligibility.ts';
+import { formatAmount } from '../money.ts';
 
 export type Version = typeof runVersions.$inferSelect;
 
@@ -92,11 +95,18 @@ export interface SubmitResult { versionId: string; versionNo: number; status: Ve
 /** Freezes the draft into a new version and sends create_run with the maker's restricted key. */
 export async function submitRun(db: Db, client: VaultClient, principal: Principal, runId: string, input: {
   expectedRevision: number; supersede?: boolean; now?: Date;
+  /** Set only by the Payroll Advance flow (advance/service.ts): advance runs are submitted from there. */
+  advance?: boolean;
+  /** Phase 23: the maker's "Apply Payroll Advance instalments" (required when the run carries any). */
+  applyInstalments?: boolean;
+  /** Fingerprint of the instalments shown on the review page (planFingerprint). */
+  expectedInstalments?: string;
 }): Promise<SubmitResult> {
   const now = input.now ?? new Date();
   const ctx = contextOf(db, runId);
   if (!ctx || !can(principal, 'run.submit', ctx)) throw new DomainError('not_found', 'Payroll run not found.');
   const run = ctx.run;
+  if (run.kind === 'advance' && !input.advance) throw new DomainError('conflict', 'A Payroll Advance run is submitted from "Payroll Advance requests", never edited or submitted as a payroll run.');
   if (run.draftRevision !== input.expectedRevision) throw new DomainError('conflict', 'The draft changed since you reviewed it. Review it again.');
   const live = versionsOf(db, runId).find((v) => LIVE_STATUSES.includes(v.status));
   if (live?.status === 'submitting') {
@@ -117,7 +127,22 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
     }
     throw new DomainError('invalid', 'Every row must be valid before submission. Fix or remove the invalid rows first.');
   }
-  const rows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
+  const grossRows = summary.rows.map((r, i) => ({ ...r.valid!, sourceLine: draft[i]?.sourceLine ?? null }));
+  // Payroll Advance instalments (Phase 23): the first payroll of the month deducts what is due;
+  // the amount committed on-chain is the net pay. The maker confirms it explicitly.
+  let plan: PlannedDeduction[] = [];
+  if (run.kind === 'payroll') {
+    plan = planDeductions(db, grossRows, now);
+    if (plan.length) {
+      if (typeof input.applyInstalments !== 'boolean') throw new DomainError('invalid', 'This run carries Payroll Advance instalments: confirm "Apply Payroll Advance instalments" (or turn it off) and submit again. Nothing was sent.');
+      if (input.expectedInstalments !== undefined && input.expectedInstalments !== planFingerprint(plan)) throw new DomainError('conflict', 'The Payroll Advance instalments changed since you reviewed this run. Review it again. Nothing was sent.');
+      if (!input.applyInstalments) plan = [];
+    }
+  }
+  const rows = grossRows.map((r, i) => {
+    const d = plan.find((p) => p.rowIndex === i);
+    return d ? { ...r, amount: d.net } : r;
+  });
   if (hostedMode().demo) {
     const problem = hostedSubmitProblem(db, rows);
     if (problem) throw new DomainError('invalid', problem);
@@ -131,9 +156,20 @@ export async function submitRun(db: Db, client: VaultClient, principal: Principa
     runId, makerUserId: principal.id, rows, workflow: snapshot, postingMode: run.postingMode, now, vaultContractId: client.vaultId,
     directoryCheck: directoryCheckFor(db, rows),
     source: run.source === 'upload' && run.draftFilename && run.draftFileSha256 ? { filename: run.draftFilename, sha256: run.draftFileSha256 } : null,
+    ...(plan.length ? {
+      inTransaction: {
+        // Re-planned inside the version's transaction: another payroll cannot take the same month's instalment.
+        check: (tx) => { if (!samePlan(planDeductions(tx, grossRows, now), plan)) throw new DomainError('conflict', 'The Payroll Advance instalments changed while submitting. Review the run again. Nothing was sent.'); },
+        attach: (tx, versionId) => insertDeductions(tx, versionId, plan, now),
+      },
+    } : {}),
   });
   const stored = db.select().from(runVersions).where(eq(runVersions.id, version.id)).get()!;
-  audit(db, principal.id, 'run.submit_requested', version.id, { versionNo: version.versionNo, rows: version.rowCount, supersedes: live?.chainRunId ?? null }, now);
+  audit(db, principal.id, 'run.submit_requested', version.id, {
+    versionNo: version.versionNo, rows: version.rowCount, supersedes: live?.chainRunId ?? null,
+    ...(run.kind === 'advance' ? { kind: 'advance' } : {}),
+    ...(typeof input.applyInstalments === 'boolean' ? { instalmentsApplied: input.applyInstalments, instalments: plan.length, instalmentTotal: formatAmount(plan.reduce((s, p) => s + p.instalment, 0n)) } : {}),
+  }, now);
 
   const outcome = await client.call('maker', 'create_run', {
     run_id: version.chainRunId, workflow_revision: snapshot.revision, row_count: version.rowCount, total: version.total.toString(),
@@ -221,6 +257,7 @@ export async function reconcileVersion(db: Db, client: VaultClient, versionId: s
       audit(db, null, 'run.status_from_chain', versionId, { status: target }, now);
     }
     if (status === 'paid') createReportEntries(db, versionId, now);
+    syncAdvances(db, now); // Payroll Advance statuses and ledger from the confirmed payouts (idempotent)
     if (chain.superseded_by) {
       const newer = db.select({ id: runVersions.id }).from(runVersions).where(eq(runVersions.chainRunId, chain.superseded_by)).get();
       if (newer) db.update(runVersions).set({ supersededByVersionId: newer.id }).where(eq(runVersions.id, versionId)).run();
@@ -307,6 +344,10 @@ export async function decide(db: Db, client: VaultClient, principal: Principal, 
   if (events.some((e) => e.approverUserId === principal.id && e.status !== 'failed')) throw new DomainError('conflict', 'You already decided on this version.');
   if (snap.kind === 'two_sequential' && step === 2 && !events.some((e) => e.step === 1 && e.decision === 'approve' && e.status === 'confirmed')) {
     throw new DomainError('conflict', 'Approver 2 can act only after approver 1 has approved on NEAR.');
+  }
+  if (input.decision === 'approve') {
+    const advanceProblem = advanceApprovalProblem(db, runId, now);
+    if (advanceProblem) throw new DomainError('invalid', advanceProblem);
   }
   const reason = input.reason?.trim() ?? '';
   if (input.decision === 'reject' && (reason.length < 3 || reason.length > MAX_REASON)) throw new DomainError('invalid', `Give a reason for the rejection (3–${MAX_REASON} characters).`);

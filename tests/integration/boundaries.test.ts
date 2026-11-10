@@ -18,8 +18,8 @@ process.env.DATABASE_URL = `file:${join(dir, 'bnd.sqlite')}`;
 process.env.DEMO_MODE = 'true';
 process.env.APP_BASE_URL = BASE;
 
-type Handler = (req: Request, ctx: { params: Promise<{ runId: string; recipientId: string }> }) => Response | Promise<Response>;
-type Who = 'anon' | 'maker' | 'maker2' | 'app1' | 'app3' | 'admin';
+type Handler = (req: Request, ctx: { params: Promise<{ runId: string; recipientId: string; advanceId: string }> }) => Response | Promise<Response>;
+type Who = 'anon' | 'maker' | 'maker2' | 'app1' | 'app3' | 'admin' | 'emp';
 const fake = new FakeVault();
 let db: import('@/server/db/client').Db;
 let sqlite: import('better-sqlite3').Database;
@@ -38,7 +38,7 @@ function call(who: Who, method: string, path: string, h: Handler, runId: string,
   }
   if (typeof body === 'string') headers.set('content-type', 'application/json');
   const req = new Request(`${BASE}${path}`, { method, headers, ...(body ? { body } : {}) });
-  return Promise.resolve(h(req, { params: Promise.resolve({ runId, recipientId: runId }) }));
+  return Promise.resolve(h(req, { params: Promise.resolve({ runId, recipientId: runId, advanceId: runId }) }));
 }
 
 /** All API operations with a valid body, so only authorization can refuse them. */
@@ -79,13 +79,28 @@ function operations(): { name: string; method: string; path: (id: string) => str
     { name: 'identity check', method: 'POST', path: () => '/api/admin/identity/check', h: () => route.idCheck!.POST!, body: () => { const f = new FormData(); f.set('recipientId', EMMA); f.set('ktp', new File([readFileSync('public/specimens/emma-ktp.jpg')], 'k.jpg', { type: 'image/jpeg' })); f.set('face', new File([readFileSync('public/specimens/emma-selfie.jpg')], 'f.jpg', { type: 'image/jpeg' })); return f; }, run: () => '' },
     { name: 'identity specimen', method: 'POST', path: () => '/api/admin/identity/specimen', h: () => route.idSpecimen!.POST!, body: j({ scenario: 'impostor' }), run: () => '' },
     { name: 'identity review', method: 'POST', path: () => '/api/admin/identity/review', h: () => route.idReview!.POST!, body: () => JSON.stringify({ recipientId: EMMA, decision: 'failed', reason: 'probe reason' }), run: () => '' },
+    // Phase 23: Payroll Advance (employee self-service, maker handling, admin policy).
+    { name: 'advance request', method: 'POST', path: () => '/api/employee/advances', h: () => route.advRequest!.POST!, body: j({ amount: '0.30', consent: true }), run: () => '' },
+    { name: 'advance decline', method: 'POST', path: (id) => `/api/advances/${id}/decline`, h: () => route.advDecline!.POST!, body: j({ reason: 'probe reason' }), run: () => 'adv-probe' },
+    { name: 'advance submit', method: 'POST', path: (id) => `/api/advances/${id}/submit`, h: () => route.advSubmit!.POST!, body: () => null, run: () => 'adv-probe' },
+    { name: 'admin payroll advance policy', method: 'POST', path: () => '/api/admin/payroll-advance', h: () => route.advPolicy!.POST!, body: j({ enabled: false, maxPercent: 100, feeBps: 100, instalments: 3, minDays: 30 }), run: () => '' },
   ];
 }
 
 const ADMIN_DIRECTORY = ['admin recipients list', 'admin recipient add', 'admin recipient edit', 'admin recipient status', 'admin recipient check', 'admin recipients import', 'admin settings read', 'admin settings change', 'identity check', 'identity specimen', 'identity review'];
 
+const ADVANCE = ['advance request', 'advance decline', 'advance submit', 'admin payroll advance policy'];
+/** Everything an employee must never reach (all but its own request route; run detail answers 404). */
+const NOT_FOR_EMPLOYEES = () => operations().map((o) => o.name).filter((n) => n !== 'advance request' && n !== 'run detail');
+
 /** Who must be refused where, and with which status. */
 const DENIED: [Who, string[], number][] = [
+  // Phase 23: the employee role reaches nothing but its own Payroll Advance request.
+  ['emp', NOT_FOR_EMPLOYEES(), 403],
+  ['emp', ['run detail'], 404],
+  ['maker', ['advance request', 'admin payroll advance policy'], 403],
+  ['app1', ADVANCE, 403],
+  ['admin', ['advance request', 'advance decline', 'advance submit'], 403],
   ['maker2', ['run detail', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'reconcile', 'cancel', 'release'], 404],
   ['app3', ['run detail', 'reconcile', 'decision'], 404],
   ['app1', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'cancel', 'release', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit', ...ADMIN_DIRECTORY, 'assistant', 'assistant draft'], 403],
@@ -108,6 +123,8 @@ function state() {
     assistant: q('select count(*) as n from assistant_requests'),
     identity: q('select id, identity_status, identity_check_id from recipients order by id'),
     identityChecks: q('select count(*) as n from identity_checks'),
+    advances: q('select id, status from payroll_advances order by id'),
+    advanceLedger: q('select count(*) as n from advance_ledger'),
   });
 }
 
@@ -130,7 +147,7 @@ beforeAll(async () => {
     { id: 'usr_app3', email: 'app3@example.com', displayName: 'Unassigned Approver', role: 'approver', passwordHash: hash.h, chainAccountId: null, createdAt: new Date() },
   ]).run();
   const { createSession, SESSION_COOKIE } = await import('@/server/auth/session');
-  for (const [who, id] of [['maker', 'usr_maker'], ['maker2', 'usr_maker2'], ['app1', 'usr_app1'], ['app3', 'usr_app3'], ['admin', 'usr_admin']] as const) {
+  for (const [who, id] of [['maker', 'usr_maker'], ['maker2', 'usr_maker2'], ['app1', 'usr_app1'], ['app3', 'usr_app3'], ['admin', 'usr_admin'], ['emp', 'usr_emp_emma']] as const) {
     const s = createSession(db, id, new Date());
     sessions[who] = { cookie: `${SESSION_COOKIE}=${s.token}`, csrf: s.csrfToken };
   }
@@ -174,6 +191,10 @@ beforeAll(async () => {
   route.idCheck = await load('@/app/api/admin/identity/check/route');
   route.idSpecimen = await load('@/app/api/admin/identity/specimen/route');
   route.idReview = await load('@/app/api/admin/identity/review/route');
+  route.advRequest = await load('@/app/api/employee/advances/route');
+  route.advDecline = await load('@/app/api/advances/[advanceId]/decline/route');
+  route.advSubmit = await load('@/app/api/advances/[advanceId]/submit/route');
+  route.advPolicy = await load('@/app/api/admin/payroll-advance/route');
 }, 60_000);
 
 afterAll(async () => {
@@ -209,7 +230,7 @@ describe('API permission boundaries', () => {
         checked += 1;
       }
     }
-    expect(checked).toBe(69); // Phase 21: + 3 identity routes × (approver, maker)
+    expect(checked).toBe(112); // Phase 21: + 3 identity routes × (approver, maker); Phase 23: + 34 employee, + 9 advance routes × other roles
     expect(state()).toBe(before);
     expect(fake.calls.length).toBe(calls);
   });
@@ -218,7 +239,7 @@ describe('API permission boundaries', () => {
     const before = state();
     const calls = fake.calls.length;
     for (const op of operations().filter((o) => o.method !== 'GET')) {
-      const who: Who = op.name.startsWith('admin') ? 'admin' : op.name === 'decision' ? 'app1' : 'maker';
+      const who: Who = op.name.startsWith('admin') ? 'admin' : op.name === 'decision' ? 'app1' : op.name === 'advance request' ? 'emp' : 'maker';
       const noCsrf = await call(who, op.method, op.path(op.run()), op.h(), op.run(), op.body(), { csrf: false });
       expect(noCsrf.status, `${op.name} without CSRF`).toBe(403);
       const foreign = await call(who, op.method, op.path(op.run()), op.h(), op.run(), op.body(), { origin: 'https://evil.example' });

@@ -20,6 +20,8 @@ import { DirectoryCheckNote, IdentityCheckNote } from '@/components/directory-ch
 import { unverifiedRows } from '@/server/identity/service';
 import type { DirectoryCheck } from '@/server/recipients/directory';
 import { directoryDrift } from '@/server/recipients/directory';
+import { AdvanceKindChip, AdvanceRunNote, InstalmentTable } from '@/components/advance-bits';
+import { advanceForRun, deductionsForVersion } from '@/server/advance/service';
 
 export const metadata: Metadata = { title: 'Payroll run' };
 
@@ -78,6 +80,9 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
     );
   }
   const pay = paymentState(d);
+  const live = ['pending_approval', 'approved', 'submitting'].includes(v.status);
+  const advance = advanceForRun(db, runId, new Date(), { live: v.status === 'pending_approval' });
+  const instalments = deductionsForVersion(db, v.id);
   const rows = pay.rows;
   const status: RunStatus = pay.status;
   const isMaker = session.user.id === d.run.makerUserId;
@@ -101,7 +106,7 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
         <Link href={isMaker ? '/maker' : '/approver'} className="btn btn-ghost btn-sm run-back">← {isMaker ? 'My runs' : 'Review queue'}</Link>
         <div className="run-title">
           <h1>{d.run.title}</h1>
-          <span className="run-chips"><StatusChip status={status} /><span className="chip chip-neutral">Version {v.versionNo}</span></span>
+          <span className="run-chips"><StatusChip status={status} />{advance ? <AdvanceKindChip /> : null}<span className="chip chip-neutral">Version {v.versionNo}</span></span>
         </div>
         {/* Page actions always sit here, top right, in every run state. */}
         <div className="action-bar" data-testid="run-actions">
@@ -112,10 +117,11 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
       <p className="run-sub">Vault run <span className="mono">{v.chainRunId}</span>{v.vaultContractId !== config.vaultContractId ? <> in the earlier vault <span className="mono">{v.vaultContractId}</span></> : null} · {v.postingMode === 'detailed' ? 'Detailed posting' : 'Consolidated posting'} · {v.sourceFilename ? <>file <span className="mono">{v.sourceFilename}</span></> : 'manual entry'} · submitted {formatDateTime(v.createdAt)}</p>
 
       {d.run.assistantRequestText ? <AssistantNote text={d.run.assistantRequestText} /> : null}
+      {advance ? <AdvanceRunNote view={advance} /> : null}
       <DirectoryCheckNote check={v.directoryCheck ? JSON.parse(v.directoryCheck) as { enforced: boolean; matched: number; rows: number } : null}
-        driftNow={['pending_approval', 'approved', 'submitting'].includes(v.status) ? directoryDrift(db, d.rows.map((r) => ({ accountId: r.nearAccountId, amount: r.amount }))) : 0} />
+        driftNow={live ? directoryDrift(db, d.rows.map((r) => ({ accountId: r.nearAccountId, amount: r.amount }))) : 0} />
       <IdentityCheckNote check={v.directoryCheck ? (JSON.parse(v.directoryCheck) as DirectoryCheck).identity : null} rows={d.rows.length}
-        unverifiedNow={['pending_approval', 'approved', 'submitting'].includes(v.status) ? unverifiedRows(db, d.rows.map((r) => ({ accountId: r.nearAccountId }))).length : 0} />
+        unverifiedNow={live ? unverifiedRows(db, d.rows.map((r) => ({ accountId: r.nearAccountId }))).length : 0} />
 
       <ChainAutoRefresh runId={runId} active={pendingChain} csrfToken={session.csrfToken}
         label={v.status === 'submitting' ? 'Submitted: waiting for the vault to confirm on NEAR' : v.status === 'releasing' || v.status === 'paid' ? `Releasing: ${paidCount} of ${pay.rowCount} recipients paid` : status === 'awaiting_funding' ? (d.snapshot?.releaseMode === 'maker' ? 'Awaiting funding: release again once the vault holds enough tUSDC' : 'Awaiting funding: the release worker retries once the vault holds enough tUSDC') : v.status === 'approved' ? 'Approved: the release worker will release this run' : 'Waiting for NEAR to confirm a decision'} />
@@ -143,6 +149,13 @@ export default async function RunPage({ params }: { params: Promise<{ runId: str
         </section>
       </div>
       <div className="section-gap" />
+      {instalments.length && d.canViewRecipients ? (
+        <>
+          <InstalmentTable title="Payroll Advance instalments in this run" rows={instalments.map((x) => ({ rowIndex: x.rowIndex, line: d.rows[x.rowIndex]?.sourceLine ?? null, name: d.rows[x.rowIndex]?.receiverName ?? '', gross: x.gross, instalment: x.instalment, net: x.net }))}
+            note={<>Gross pay is the uploaded or entered amount; the instalment is deducted and the <strong>net pay is the amount committed on-chain</strong> (the row amounts below). Each instalment counts as repaid only when its row is paid.</>} />
+          <div className="section-gap" />
+        </>
+      ) : null}
       {d.canViewRecipients ? <VersionRows rows={rows} explorerTxUrl={config.explorerTxUrl} total={v.total.toString()} /> : null}
       <div className="section-gap" />
       <PostingPreview mode={v.postingMode} title={d.run.title} rowCount={v.rowCount} total={v.total} firstAmounts={amounts.slice(0, 3)} />

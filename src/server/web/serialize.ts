@@ -20,7 +20,19 @@ export function recipientJson(r: Recipient) {
   return {
     id: r.id, nearAccountId: r.nearAccountId, name: r.name, division: r.division, email: r.email, mobilePhone: r.mobilePhone,
     maxAmount: formatAmount(r.maxAmount), active: r.active, sample: r.sample,
+    monthlyNetPay: r.monthlyNetPay === null ? '' : formatAmount(r.monthlyNetPay), startDate: r.startDate ?? '',
     readiness: r.readiness, readinessLabel: READINESS_LABEL[r.readiness], readinessCheckedAt: r.readinessCheckedAt?.toISOString() ?? null,
     updatedAt: r.updatedAt.getTime(),
+  };
+}
+
+import type { Advance } from '../advance/ledger.ts';
+
+/** A Payroll Advance request for the browser (amounts as exact decimal strings). */
+export function advanceJson(a: Advance) {
+  return {
+    id: a.id, status: a.status, statusDetail: a.statusDetail, amount: formatAmount(a.amount), fee: formatAmount(a.fee), net: formatAmount(a.net),
+    instalmentCount: a.instalmentCount, instalment: formatAmount(a.instalment), lastInstalment: formatAmount(a.lastInstalment),
+    expectedMonths: JSON.parse(a.expectedMonths) as string[], runId: a.runId, createdAt: a.createdAt.toISOString(),
   };
 }

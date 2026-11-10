@@ -81,7 +81,7 @@ describe('payroll assistant', () => {
   });
 
   it('refuses amounts above a recipient maximum or the per-row cap, and other currencies', async () => {
-    expect(await interpretRequest(h.db, stubModel(), maker, say('Pay the Sales division 0.50 each'), NOW)).toMatchObject({ kind: 'refused', message: expect.stringMatching(/0\.50 tUSDC is above the maximum per payout for Daniel Hall \(0\.10\), Emma Clark \(0\.10\)/) });
+    expect(await interpretRequest(h.db, stubModel(), maker, say('Pay the Sales division 0.50 each'), NOW)).toMatchObject({ kind: 'refused', message: expect.stringMatching(/0\.50 tUSDC is above the maximum per payout for Daniel Hall \(0\.30\), Emma Clark \(0\.30\)/) });
     expect(await interpretRequest(h.db, stubModel(), maker, say('Pay the Sales division 2 each'), NOW)).toMatchObject({ kind: 'refused', message: expect.stringMatching(/above the per-row cap of 1\.00 tUSDC/) });
     expect(await interpretRequest(h.db, stubModel(), maker, say('Pay the Sales division 5 USD each'), NOW)).toMatchObject({ kind: 'refused', message: expect.stringMatching(/Only tUSDC/) });
     expect(await interpretRequest(h.db, stubModel(() => draftReq({ divisions: ['Sales'], amount_per_person: '0.05', currency: 'NEAR' })), maker, say('Pay Sales 0.05 near'), NOW)).toMatchObject({ kind: 'refused', message: expect.stringMatching(/"NEAR" is not supported/) });

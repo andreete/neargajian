@@ -3,17 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { EditIcon, FileIcon, InboxIcon, LayersIcon, LogOutIcon, PlusIcon, UsersIcon, ShieldIcon } from './icons';
+import { EditIcon, FileIcon, InboxIcon, LayersIcon, LogOutIcon, PlusIcon, UsersIcon, ShieldIcon, WalletIcon } from './icons';
 
 export interface NavItem {
   href: string;
   label: string;
-  icon: 'runs' | 'plus' | 'reports' | 'inbox' | 'workflow' | 'users' | 'shield';
+  icon: 'runs' | 'plus' | 'reports' | 'inbox' | 'workflow' | 'users' | 'shield' | 'wallet';
   /** Set while the destination is built in a later phase: rendered disabled with a hint. */
   soon?: string;
 }
 
-const ICONS = { runs: FileIcon, plus: PlusIcon, reports: LayersIcon, inbox: InboxIcon, workflow: EditIcon, users: UsersIcon, shield: ShieldIcon };
+const ICONS = { runs: FileIcon, plus: PlusIcon, reports: LayersIcon, inbox: InboxIcon, workflow: EditIcon, users: UsersIcon, shield: ShieldIcon, wallet: WalletIcon };
 
 export function NavItems({ items }: { items: NavItem[] }) {
   const pathname = usePathname();

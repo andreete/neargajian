@@ -1,6 +1,6 @@
 # QA handoff (Phase 18, updated for Phases 20 and 21)
 
-For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built SentFund. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11); Phase 21 the SentFund rebrand and the KTP + face identity check (A12).
+For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built SentFund. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11); Phase 21 the SentFund rebrand and the KTP + face identity check (A12); Phase 23 Payroll Advance and the employee role (A13).
 
 ## 0. Your role and rules
 
@@ -63,7 +63,7 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm run judge:deployment` (after the build) | `PASS deployed code_hash equals the locally built Wasm`, `PASS no full-access key on vault.sentfund-payroll.testnet (0 keys in total)` |
 | `npm run contracts:lint`, `npm run contracts:test` | pass; 3 + 49 unit tests and a sandbox flow (downloads nearcore 2.14.0 on first run) |
 
-Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, password `12345678`. Use separate browser profiles for different roles. All times are UTC.
+Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, employees `emma@sentfund.my.id`, `daniel@sentfund.my.id`, `grace@sentfund.my.id`, password `12345678`. Use separate browser profiles for different roles. All times are UTC.
 
 ## 3. What to test (acceptance checks with expected results)
 
@@ -163,6 +163,18 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 - Privacy: the database holds the NIK only masked (`3174********0002`) plus a keyed hash, never an image (`identity_checks`, `recipients`). The KTP reader receives the card with the face covered.
 - Hosted demo: uploads and reviews answer "The public demo checks identities only on the built-in synthetic specimens …"; specimen checks are dry runs.
 - Reference: `tests/unit/identity.test.ts` (13), `tests/integration/identity.test.ts` (13, real face models + stub reader), `tests/integration/boundaries.test.ts` (identity routes refused for maker and approver), `tests/e2e/identity.spec.ts` (2). Live: the four specimen scenarios through the real Claude KTP reader (BUILD-STATE Phase 21).
+
+**A13: Payroll Advance and the employee role (Phase 23)**
+- Do: sign in as `emma@sentfund.my.id` (password `12345678`). See: only "My pay and Payroll Advance"; monthly net pay 0.10, "You can take now 0.30", the disclosure "Repaid like a loan", the terms (fee 0.006, you receive 0.294, 0.05 a month for 6 months) and six expected months. The **Request** button stays disabled until "I agree to these 6 salary deductions" is ticked; 0.31 or 0.009 are refused.
+- Do: as Emma, open `/maker`, `/approver`, `/admin/recipients`, `/history`. See: 403 every time.
+- Do: request 0.30 with the consent. See: Requested. A second request (another tab) is refused ("already have a Payroll Advance open").
+- Do: maker → **Payroll Advance requests**. See: the eligibility at the request and "re-checked now", the fee, the net payout and the schedule. **Decline** needs a reason (the employee sees it). **Submit for approval** → "Submit 0.294 tUSDC" → the run "Payroll Advance: Emma Clark, <month year>" (one row, 0.294).
+- Do: as admin, deactivate Emma before approving; as approver 1, **Approve**. See: refused, "not eligible any more"; **Reject** with a reason → Emma sees Rejected with the reason. (Reactivate her afterwards.)
+- Do: approve with both approvers (local copy with keys). See: Paid; Emma's page shows 0.30 outstanding, 6 instalments.
+- Do: maker → a payroll run paying Emma 0.10 → review. See: "Payroll Advance instalments": gross 0.10, −0.05, net 0.05, "Apply Payroll Advance instalments" ticked, the submit dialog shows the gross total, the instalments and "Exact total committed 0.05". After payment: 0.25 outstanding, 5 left; a second payroll in the same month deducts nothing.
+- Do: admin → **Payroll Advance**: change the fee or turn it off. See: the change log with who and when (read-only online). Deactivate an employee with a balance: "To settle outside SentFund" here and on Recipients.
+- Do: **Company reports** and the CSVs. See: the advance line titled "Payroll Advance, <month>" (no name), gross, instalment, advance, fee and net columns, "Both views match", "Advances outstanding".
+- Reference: `tests/unit/advance-terms.test.ts` (12), `tests/integration/advance.test.ts` (14), `boundaries.test.ts`, `hosted.test.ts`, `tests/e2e-standin/advance.spec.ts` (whole flow, stand-in vault). Live: BUILD-STATE Phase 23 and `docs/TESTNET.md`.
 
 **Also check:**
 - Layout at 1280x720 and 1440x900, desktop first: no horizontal page scroll; references, accounts and amounts on one line; run page actions top right in every state. Covered by `tests/e2e/pages.spec.ts`.

@@ -18,9 +18,10 @@ The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex incl
 - No secrets in git, logs, chat or docs. Keys stay in `~/.near-credentials` and `.env`. Never read, print or log `ANTHROPIC_API_KEY`; never rewrite `.env` in a way that drops lines you did not write.
 - No public repo, X post, submission or force-push without Andre's explicit yes.
 - No PII on-chain or in logs.
+- Payroll Advance (Phase 23) is an app feature on top of the frozen vault: never change the contract for it. The stand-in vault mode (`VAULT_STANDIN=browser-tests`) is for browser tests under `.tmp/` only.
 - `nice -n 19` for heavy commands, `CARGO_BUILD_JOBS=2`, never a Rust build and a Node install/build/test at the same time.
 - Temp files go to the repo's git-ignored `.tmp/`, never the shared `/tmp` tmpfs: use the npm scripts (they run through `scripts/with-tmp.sh`), or prefix other commands with `./scripts/with-tmp.sh` or `TMPDIR=$PWD/.tmp`.
 
 ## QA role (Phase 18; Codex QA not scheduled for now)
 
-When asked for independent QA: review only. Start from **`docs/QA-HANDOFF.md`** (self-contained: release candidate, setup, what to test with expected results, live evidence, known issues, scope). Follow the README from a clean checkout, verify acceptance checks A01–A08 from `docs/build/01-PRD.md` and A09–A10 (Phase 19) from `docs/QA-HANDOFF.md`, report pass/fail/blocked per check with repro steps, severity and paths. Ask before any action that sends a testnet transaction. Never publish or submit anything.
+When asked for independent QA: review only. Start from **`docs/QA-HANDOFF.md`** (self-contained: release candidate, setup, what to test with expected results, live evidence, known issues, scope). Follow the README from a clean checkout, verify acceptance checks A01–A08 from `docs/build/01-PRD.md` and A09–A13 (Phases 19–23: directory, assistant, hosted demo, identity checks, Payroll Advance) from `docs/QA-HANDOFF.md`, report pass/fail/blocked per check with repro steps, severity and paths. Ask before any action that sends a testnet transaction. Never publish or submit anything.

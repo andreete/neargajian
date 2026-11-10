@@ -24,13 +24,15 @@ export const units = customType<{ data: bigint; driverData: string }>({
 
 const ms = (name: string) => integer(name, { mode: 'timestamp_ms' });
 
-export const ROLES = ['maker', 'approver', 'admin'] as const;
+export const ROLES = ['maker', 'approver', 'admin', 'employee'] as const;
 export type Role = (typeof ROLES)[number];
 export const WORKFLOW_KINDS = ['one', 'two_sequential', 'two_parallel'] as const;
 export type WorkflowKind = (typeof WORKFLOW_KINDS)[number];
 export const RELEASE_MODES = ['automatic', 'maker'] as const;
 export type ReleaseMode = (typeof RELEASE_MODES)[number];
 export const POSTING_MODES = ['consolidated', 'detailed'] as const;
+export const RUN_KINDS = ['payroll', 'advance'] as const;
+export type RunKind = (typeof RUN_KINDS)[number];
 export type PostingMode = (typeof POSTING_MODES)[number];
 export const VERSION_STATUSES = [
   'submitting', 'submit_failed', 'pending_approval', 'approved', 'rejected', 'cancelled',
@@ -54,11 +56,15 @@ export const users = sqliteTable('users', {
   chainAccountId: text('chain_account_id'),
   createdAt: ms('created_at').notNull(),
   disabledAt: ms('disabled_at'),
+  /** Employee role only (Phase 23): the one directory recipient this user is. */
+  recipientId: text('recipient_id'),
 }, (t) => [
   uniqueIndex('users_email_uq').on(t.email),
   uniqueIndex('users_chain_account_uq').on(t.chainAccountId),
+  uniqueIndex('users_recipient_uq').on(t.recipientId),
   check('users_role_ck', inList('role', ROLES)),
   check('users_email_lower_ck', sql`email = lower(email)`),
+  check('users_employee_recipient_ck', sql`(role = 'employee') = (recipient_id IS NOT NULL)`),
 ]);
 
 export const sessions = sqliteTable('sessions', {
@@ -138,10 +144,16 @@ export const payrollRuns = sqliteTable('payroll_runs', {
   assistantRequestId: text('assistant_request_id'),
   /** The maker's own words (one line per message), shown as "Drafted by the payroll assistant from: …". */
   assistantRequestText: text('assistant_request_text'),
+  /** payroll = an ordinary run; advance = the one-row run that pays a Payroll Advance (Phase 23). */
+  kind: text('kind', { enum: RUN_KINDS }).notNull().default('payroll'),
+  /** The Payroll Advance this run pays (kind = advance only, set once). */
+  advanceId: text('advance_id'),
 }, (t) => [
   index('payroll_runs_maker_ix').on(t.makerUserId),
+  uniqueIndex('payroll_runs_advance_uq').on(t.advanceId),
   check('payroll_runs_posting_ck', inList('posting_mode', POSTING_MODES)),
   check('payroll_runs_source_ck', inList('source', ['manual', 'upload'])),
+  check('payroll_runs_kind_ck', sql`(kind = 'payroll' AND advance_id IS NULL) OR (kind = 'advance' AND advance_id IS NOT NULL)`),
 ]);
 
 /** Editable draft rows: raw values as entered or imported, in order. */
@@ -377,6 +389,9 @@ export const recipients = sqliteTable('recipients', {
   /** Masked NIK (first 4 + last 4 digits) and its keyed hash, from the latest check; never the NIK. */
   nikMasked: text('nik_masked'),
   nikHash: text('nik_hash'),
+  /** Payroll Advance (Phase 23): monthly net pay in base units and the start date (YYYY-MM-DD). */
+  monthlyNetPay: units('monthly_net_pay'),
+  startDate: text('start_date'),
   createdByUserId: text('created_by_user_id').notNull().references(() => users.id),
   createdAt: ms('created_at').notNull(),
   updatedByUserId: text('updated_by_user_id').notNull().references(() => users.id),
@@ -478,4 +493,101 @@ export const identityChecks = sqliteTable('identity_checks', {
   index('identity_checks_at_ix').on(t.at),
   check('identity_checks_outcome_ck', inList('outcome', IDENTITY_OUTCOMES)),
   check('identity_checks_source_ck', inList('source', IDENTITY_SOURCES)),
+]);
+
+// ------------------------------------------------------------------ Payroll Advance (Phase 23)
+
+export const ADVANCE_STATUSES = ['requested', 'declined', 'submitted', 'approved', 'paid', 'repaid', 'rejected', 'cancelled', 'failed'] as const;
+export type AdvanceStatus = (typeof ADVANCE_STATUSES)[number];
+/** Statuses that block a new request (one advance at a time; partial unique index). */
+export const OPEN_ADVANCE_STATUSES = ['requested', 'submitted', 'approved', 'paid'] as const;
+
+/**
+ * A Payroll Advance: an employee's salary advance, repaid like a loan from payroll. The terms
+ * (amount, fee, net payout, instalments) and the consent are fixed at the request (trigger).
+ * Paid as an ordinary one-row run (payroll_runs.kind = advance) through the vault's approvals.
+ */
+export const payrollAdvances = sqliteTable('payroll_advances', {
+  id: text('id').primaryKey(),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  employeeUserId: text('employee_user_id').notNull().references(() => users.id),
+  /** A: the advance the employee owes. */
+  amount: units('amount').notNull(),
+  /** Fee taken at payout (employer income, never repaid). */
+  fee: units('fee').notNull(),
+  /** A − fee: the one-row run committed on-chain. */
+  net: units('net').notNull(),
+  instalmentCount: integer('instalment_count').notNull(),
+  /** Regular monthly instalment (A ÷ n rounded down); the last one absorbs the rounding. */
+  instalment: units('instalment').notNull(),
+  lastInstalment: units('last_instalment').notNull(),
+  reason: text('reason'),
+  /** The exact consent text the employee ticked, and when. */
+  consentText: text('consent_text').notNull(),
+  consentedAt: ms('consented_at').notNull(),
+  /** JSON array of the expected months shown at the request ("2026-11", …). */
+  expectedMonths: text('expected_months').notNull(),
+  /** JSON: the policy and the eligibility checks at the request. */
+  policySnapshot: text('policy_snapshot').notNull(),
+  eligibilityAtRequest: text('eligibility_at_request').notNull(),
+  /** JSON: the eligibility re-check when the maker submitted. */
+  eligibilityAtSubmit: text('eligibility_at_submit'),
+  status: text('status', { enum: ADVANCE_STATUSES }).notNull(),
+  /** Decline / rejection reason or a note on a failed submission (no PII). */
+  statusDetail: text('status_detail'),
+  decidedByUserId: text('decided_by_user_id').references(() => users.id),
+  decidedAt: ms('decided_at'),
+  runId: text('run_id').references(() => payrollRuns.id),
+  paidAt: ms('paid_at'),
+  repaidAt: ms('repaid_at'),
+  createdAt: ms('created_at').notNull(),
+  updatedAt: ms('updated_at').notNull(),
+}, (t) => [
+  index('payroll_advances_recipient_ix').on(t.recipientId, t.createdAt),
+  uniqueIndex('payroll_advances_run_uq').on(t.runId),
+  uniqueIndex('payroll_advances_one_open_uq').on(t.recipientId).where(sql`status IN ('requested', 'submitted', 'approved', 'paid')`),
+  check('payroll_advances_status_ck', inList('status', ADVANCE_STATUSES)),
+  check('payroll_advances_count_ck', sql`instalment_count BETWEEN 1 AND 12`),
+]);
+
+/**
+ * Payroll Advance instalments carried by a payroll version's rows: gross (the uploaded or
+ * entered amount), instalment and net (committed on-chain). Frozen with the version.
+ */
+export const advanceDeductions = sqliteTable('advance_deductions', {
+  versionId: text('version_id').notNull().references(() => runVersions.id),
+  rowIndex: integer('row_index').notNull(),
+  advanceId: text('advance_id').notNull().references(() => payrollAdvances.id),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  /** Calendar month (UTC) of the payroll that carries the instalment, "2026-11". */
+  month: text('month').notNull(),
+  gross: units('gross').notNull(),
+  instalment: units('instalment').notNull(),
+  net: units('net').notNull(),
+  createdAt: ms('created_at').notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.versionId, t.rowIndex] }),
+  index('advance_deductions_advance_ix').on(t.advanceId),
+]);
+
+export const LEDGER_KINDS = ['advance', 'instalment'] as const;
+
+/**
+ * Append-only Payroll Advance ledger per employee. advance: counts when the advance run's row is
+ * paid on-chain (amount A). instalment: counts when the payroll row that carries it is paid.
+ */
+export const advanceLedger = sqliteTable('advance_ledger', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  advanceId: text('advance_id').notNull().references(() => payrollAdvances.id),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  kind: text('kind', { enum: LEDGER_KINDS }).notNull(),
+  amount: units('amount').notNull(),
+  versionId: text('version_id').notNull().references(() => runVersions.id),
+  rowIndex: integer('row_index').notNull(),
+  txHash: text('tx_hash'),
+  at: ms('at').notNull(),
+}, (t) => [
+  uniqueIndex('advance_ledger_row_uq').on(t.versionId, t.rowIndex, t.kind),
+  index('advance_ledger_recipient_ix').on(t.recipientId, t.id),
+  check('advance_ledger_kind_ck', inList('kind', LEDGER_KINDS)),
 ]);

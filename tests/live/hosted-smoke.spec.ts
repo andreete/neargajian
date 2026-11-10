@@ -70,6 +70,35 @@ test('hosted: the 1,000-row sample previews but cannot be submitted (nothing sen
   await maker.context().close();
 });
 
+// Needs ANTHROPIC_API_KEY on the hosted service (Andre's separate key). No NEAR transaction: the
+// assistant preview is not turned into a draft, and the specimen check is a dry run.
+test('hosted: assistant preview (no draft created) and a specimen identity dry run', async ({ browser }) => {
+  test.setTimeout(180_000);
+  const maker = await session(browser, 'maker@sentfund.my.id');
+  await maker.goto('/maker/runs/new');
+  await expect(maker.getByTestId('assistant-off')).toHaveCount(0);
+  const box = maker.getByTestId('payroll-assistant');
+  await box.getByRole('textbox').fill('Create a disbursement for the Sales division, 0.03 tUSDC each, called November commissions');
+  await box.getByRole('button', { name: /^(Send|Answer)$/ }).click();
+  const preview = maker.getByTestId('assistant-preview');
+  await expect(preview).toBeVisible({ timeout: 90_000 });
+  await expect(preview).toContainText('Sales division, 2 recipients, 0.03 tUSDC each, total 0.06 tUSDC');
+  await shot(maker, '05-hosted-assistant-preview');
+  await maker.context().close(); // "Create draft" is never clicked
+
+  const admin = await session(browser, 'admin@sentfund.my.id');
+  await admin.goto('/admin/identity');
+  const demo = admin.getByTestId('specimen-demo');
+  await demo.getByTestId('specimen-emma').click();
+  const result = demo.getByTestId('identity-result');
+  await expect(result).toHaveAttribute('data-outcome', /verified|needs_review|failed/, { timeout: 90_000 });
+  await expect(result.getByTestId('identity-dry-run')).toBeVisible();
+  await expect(result).toHaveAttribute('data-outcome', 'verified');
+  await result.scrollIntoViewIfNeeded();
+  await shot(admin, '06-hosted-specimen-dry-run');
+  await admin.context().close();
+});
+
 test('hosted: a 0.01 tUSDC run to Emma Clark, approved by both, paid on testnet', async ({ browser }) => {
   test.setTimeout(900_000);
   const maker = await session(browser, 'maker@sentfund.my.id');

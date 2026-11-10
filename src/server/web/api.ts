@@ -94,6 +94,6 @@ export async function readJson<T>(request: Request, maxBytes = 1_000_000): Promi
 }
 
 /** Directory and settings changes are refused in the public demo (visitors cannot add payees). */
-export function refuseInHostedDemo(): Response | null {
-  return hostedMode().demo ? problem(403, 'hosted_read_only', HOSTED_DIRECTORY_MESSAGE) : null;
+export function refuseInHostedDemo(message: string = HOSTED_DIRECTORY_MESSAGE): Response | null {
+  return hostedMode().demo ? problem(403, 'hosted_read_only', message) : null;
 }

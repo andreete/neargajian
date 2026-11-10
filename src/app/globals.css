@@ -890,3 +890,19 @@ fieldset.field legend { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
 .bulk-list .is-done { background: var(--success-bg); }
 .bulk-list .is-error, .bulk-list .is-skipped { background: var(--warning-bg); }
 @media (max-width: 1023px) { .specimen-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Payroll Advance (Phase 23) */
+.months-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 12px; }
+.months-list li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; white-space: nowrap; }
+.eligibility-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.eligibility .check-list { gap: 8px; }
+.eligibility .check-list li .hint { display: block; font-size: 0.8125rem; }
+.eligibility .check-list li.bad svg { color: var(--danger); }
+.consent { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--sky-100); background: var(--sky-50); border-radius: 10px; cursor: pointer; }
+.consent input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.advance-form { display: grid; gap: 14px; max-width: 760px; }
+.advance-terms { display: grid; gap: 10px; }
+.policy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.setting-card-inline { display: flex; align-items: center; gap: 12px; }
+.fixed-rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.advance-note { border-color: #ddd6fb; }

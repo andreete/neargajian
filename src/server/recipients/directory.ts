@@ -16,7 +16,7 @@ import {
   appSettings, auditEvents, recipientEvents, recipients, users,
   type IdentityStatus, type RecipientEventAction, type RecipientReadiness,
 } from '../db/schema.ts';
-import { formatAmountShort } from '../money.ts';
+import { formatAmountShort, parseAmount } from '../money.ts';
 import { CURRENCY, validateRow, type DirectoryEntry, type RecipientRule } from '../payroll/validate.ts';
 import { DomainError } from '../runs/repository.ts';
 import { READINESS_LABEL, type CheckedReadiness, type ReadinessChecker } from './readiness.ts';
@@ -105,16 +105,53 @@ export interface RecipientInput {
   mobilePhone: string;
   /** Maximum per payout in tUSDC, as typed (e.g. "0.10"). */
   maxAmount: string;
+  /** Payroll Advance (Phase 23), optional: monthly net pay in tUSDC ("" = none) and start date YYYY-MM-DD ("" = none). */
+  monthlyNetPay?: string;
+  startDate?: string;
 }
 export type RecipientField = keyof RecipientInput;
 export interface RecipientIssue { field: RecipientField; message: string }
-export interface CleanRecipient { nearAccountId: string; name: string; division: string; email: string; mobilePhone: string; maxAmount: bigint }
+export interface CleanRecipient {
+  nearAccountId: string; name: string; division: string; email: string; mobilePhone: string; maxAmount: bigint;
+  /** Undefined = not part of this change (a bulk import never touches them); null = cleared. */
+  monthlyNetPay?: bigint | null; startDate?: string | null;
+}
+
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** Monthly net pay and start date (Payroll Advance): optional; validated only when sent. */
+function validatePayFields(input: Partial<RecipientInput>, now: Date): { errors: RecipientIssue[]; value: Pick<CleanRecipient, 'monthlyNetPay' | 'startDate'> } {
+  const errors: RecipientIssue[] = [];
+  const value: Pick<CleanRecipient, 'monthlyNetPay' | 'startDate'> = {};
+  if (typeof input.monthlyNetPay === 'string') {
+    const text = input.monthlyNetPay.trim();
+    if (!text) value.monthlyNetPay = null;
+    else {
+      const parsed = parseAmount(text, 10n ** 15n);
+      if (!parsed.ok) errors.push({ field: 'monthlyNetPay', message: `Monthly net pay: ${parsed.message.replace(/^Amount /, '').replace(/^./, (c) => c.toLowerCase())}` });
+      else if (parsed.value <= 0n) errors.push({ field: 'monthlyNetPay', message: 'Monthly net pay must be more than 0, or leave it empty.' });
+      else value.monthlyNetPay = parsed.value;
+    }
+  }
+  if (typeof input.startDate === 'string') {
+    const text = input.startDate.trim();
+    if (!text) value.startDate = null;
+    else {
+      const m = DATE_RE.exec(text);
+      const d = m ? new Date(`${text}T00:00:00Z`) : null;
+      if (!m || !d || Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== text) errors.push({ field: 'startDate', message: 'Start date: use YYYY-MM-DD, e.g. 2026-03-02.' });
+      else if (d.getTime() > now.getTime()) errors.push({ field: 'startDate', message: 'Start date cannot be in the future.' });
+      else value.startDate = text;
+    }
+  }
+  return { errors, value };
+}
 
 const DIVISION_RE = /^[A-Za-z0-9][A-Za-z0-9 &/-]{0,39}$/;
 export const MAX_DIVISION = 40;
 
 /** Same rules as a payroll row (shared validation), plus the division; the maximum ≤ the per-row cap. */
-export function validateRecipient(input: Partial<RecipientInput>, perRowCap: bigint): { ok: true; value: CleanRecipient } | { ok: false; errors: RecipientIssue[] } {
+export function validateRecipient(input: Partial<RecipientInput>, perRowCap: bigint, now = new Date()): { ok: true; value: CleanRecipient } | { ok: false; errors: RecipientIssue[] } {
   const s = (v: unknown) => (typeof v === 'string' ? v.slice(0, 300) : '');
   const row = validateRow({
     near_account_id: s(input.nearAccountId), receiver_name: s(input.name), currency: CURRENCY,
@@ -130,8 +167,10 @@ export function validateRecipient(input: Partial<RecipientInput>, perRowCap: big
   const division = s(input.division).trim().replace(/\s+/g, ' ');
   if (!division) errors.push({ field: 'division', message: 'Division is required, e.g. Sales.' });
   else if (!DIVISION_RE.test(division)) errors.push({ field: 'division', message: `Division: letters, digits, spaces, & / - only, up to ${MAX_DIVISION} characters.` });
+  const pay = validatePayFields(input, now);
+  errors.push(...pay.errors);
   if (errors.length || !row.valid) return { ok: false, errors };
-  return { ok: true, value: { nearAccountId: row.valid.accountId, name: row.valid.receiverName, division, email: row.valid.email, mobilePhone: row.valid.mobilePhone, maxAmount: row.valid.amount } };
+  return { ok: true, value: { nearAccountId: row.valid.accountId, name: row.valid.receiverName, division, email: row.valid.email, mobilePhone: row.valid.mobilePhone, maxAmount: row.valid.amount, ...pay.value } };
 }
 
 /** An existing division with the same name in another case keeps its spelling ("sales" → "Sales"). */
@@ -150,8 +189,8 @@ function logEvent(db: Queryable, input: { recipientId: string; actorId: string; 
   }).run();
 }
 
-const FIELDS_OF: (keyof CleanRecipient)[] = ['name', 'division', 'email', 'mobilePhone', 'maxAmount'];
-const asText = (v: string | bigint) => (typeof v === 'bigint' ? v.toString() : v);
+const FIELDS_OF: (keyof CleanRecipient)[] = ['name', 'division', 'email', 'mobilePhone', 'maxAmount', 'monthlyNetPay', 'startDate'];
+const asText = (v: string | bigint | null | undefined): string | null => (v === null || v === undefined ? null : typeof v === 'bigint' ? v.toString() : v);
 
 function insertRecipient(db: Queryable, actorId: string, value: CleanRecipient, now: Date, source: string, opts: { sample?: boolean } = {}): Recipient {
   if (db.select({ id: recipients.id }).from(recipients).where(eq(recipients.nearAccountId, value.nearAccountId)).get()) {
@@ -160,12 +199,15 @@ function insertRecipient(db: Queryable, actorId: string, value: CleanRecipient, 
   const id = randomUUID();
   const division = canonicalDivision(db, value.division);
   const row = {
-    id, ...value, division, active: true, sample: opts.sample ?? false, readiness: 'unchecked' as const,
+    id, ...value, monthlyNetPay: value.monthlyNetPay ?? null, startDate: value.startDate ?? null, division, active: true, sample: opts.sample ?? false, readiness: 'unchecked' as const,
     createdByUserId: actorId, createdAt: now, updatedByUserId: actorId, updatedAt: now,
   };
   db.insert(recipients).values(row).run();
   const changes: Changes = { nearAccountId: [null, value.nearAccountId], active: [null, true] };
-  for (const f of FIELDS_OF) changes[f] = [null, asText(f === 'division' ? division : value[f])];
+  for (const f of FIELDS_OF) {
+    const after = asText(f === 'division' ? division : value[f]);
+    if (after !== null) changes[f] = [null, after];
+  }
   logEvent(db, { recipientId: id, actorId, at: now, action: 'created', source, changes });
   return db.select().from(recipients).where(eq(recipients.id, id)).get()!;
 }
@@ -175,13 +217,14 @@ function applyEdit(db: Queryable, actorId: string, current: Recipient, value: Om
   const next = { ...value, division: canonicalDivision(db, value.division) };
   const changes: Changes = {};
   for (const f of FIELDS_OF) {
-    if (f === 'nearAccountId') continue;
+    if (f === 'nearAccountId' || next[f] === undefined) continue; // undefined: not part of this change
     const before = asText(current[f]);
     const after = asText(next[f]);
     if (before !== after) changes[f] = [before, after];
   }
   if (Object.keys(changes).length === 0) return changes;
-  db.update(recipients).set({ ...next, updatedByUserId: actorId, updatedAt: now }).where(eq(recipients.id, current.id)).run();
+  const set = Object.fromEntries(Object.entries(next).filter(([, v]) => v !== undefined));
+  db.update(recipients).set({ ...set, updatedByUserId: actorId, updatedAt: now }).where(eq(recipients.id, current.id)).run();
   logEvent(db, { recipientId: current.id, actorId, at: now, action: 'updated', source, changes });
   return changes;
 }
@@ -193,7 +236,7 @@ function audit(db: Queryable, actorId: string, action: string, entityId: string 
 
 export function createRecipient(db: Db, actor: Principal, input: Partial<RecipientInput>, perRowCap: bigint, now: Date) {
   requireAdmin(actor);
-  const v = validateRecipient(input, perRowCap);
+  const v = validateRecipient(input, perRowCap, now);
   if (!v.ok) return v;
   const created = db.transaction((tx) => {
     const r = insertRecipient(tx, actor.id, v.value, now, 'form');
@@ -206,7 +249,7 @@ export function createRecipient(db: Db, actor: Principal, input: Partial<Recipie
 export function updateRecipient(db: Db, actor: Principal, id: string, input: Partial<RecipientInput>, perRowCap: bigint, now: Date, expectedUpdatedAt?: number) {
   requireAdmin(actor);
   const current = getRecipient(db, id);
-  const v = validateRecipient({ ...input, nearAccountId: current.nearAccountId }, perRowCap);
+  const v = validateRecipient({ ...input, nearAccountId: current.nearAccountId }, perRowCap, now);
   if (!v.ok) return v;
   const changes = db.transaction((tx) => {
     const fresh = getRecipient(tx, id);
@@ -264,6 +307,22 @@ export async function checkReadiness(db: Db, checker: ReadinessChecker, actorId:
   return out;
 }
 
+/**
+ * Seed only (Phase 23): sets the Payroll Advance fields and the maximum of a live recipient, logged
+ * as a directory change (source "seed"). Only when the monthly net pay is still empty, so an
+ * admin's later edits are never overwritten. Returns true when something changed.
+ */
+export function seedPayFields(db: Db, actorId: string, account: string, value: { maxAmount: bigint; monthlyNetPay: bigint; startDate: string }, now: Date): boolean {
+  return db.transaction((tx) => {
+    const current = tx.select().from(recipients).where(eq(recipients.nearAccountId, account)).get();
+    if (!current || current.monthlyNetPay !== null) return false;
+    const changes = applyEdit(tx, actorId, current, {
+      name: current.name, division: current.division, email: current.email, mobilePhone: current.mobilePhone, ...value,
+    }, now, 'seed');
+    return Object.keys(changes).length > 0;
+  }, { behavior: 'immediate' });
+}
+
 // ------------------------------------------------------------------ bulk import
 
 export interface ImportPlan { create: CleanRecipient[]; update: { current: Recipient; value: CleanRecipient }[]; unchanged: number }
@@ -273,7 +332,7 @@ export function planImport(db: Queryable, rows: CleanRecipient[]): ImportPlan {
   for (const value of rows) {
     const current = db.select().from(recipients).where(eq(recipients.nearAccountId, value.nearAccountId)).get();
     if (!current) plan.create.push(value);
-    else if (FIELDS_OF.some((f) => f !== 'nearAccountId' && asText(current[f]) !== asText(f === 'division' ? canonicalDivision(db, value.division) : value[f]))) plan.update.push({ current, value });
+    else if (FIELDS_OF.some((f) => f !== 'nearAccountId' && value[f] !== undefined && asText(current[f]) !== asText(f === 'division' ? canonicalDivision(db, value.division) : value[f]))) plan.update.push({ current, value });
     else plan.unchanged += 1;
   }
   return plan;
@@ -363,10 +422,10 @@ export function recentDirectoryEvents(db: Queryable, limit = 15, recipientId?: s
 
 /** "max per payout 0.10 → 0.20 tUSDC; division Sales → Operations". */
 export function describeChanges(changes: Changes): string {
-  const label: Record<string, string> = { name: 'name', division: 'division', email: 'email', mobilePhone: 'phone', maxAmount: 'maximum', active: 'status', readiness: 'testnet check', nearAccountId: 'NEAR account' };
+  const label: Record<string, string> = { name: 'name', division: 'division', email: 'email', mobilePhone: 'phone', maxAmount: 'maximum', active: 'status', readiness: 'testnet check', nearAccountId: 'NEAR account', monthlyNetPay: 'monthly net pay', startDate: 'start date' };
   const fmt = (k: string, v: string | boolean | null) => {
     if (v === null) return '—';
-    if (k === 'maxAmount') return `${formatAmountShort(BigInt(String(v)))} tUSDC`;
+    if (k === 'maxAmount' || k === 'monthlyNetPay') return `${formatAmountShort(BigInt(String(v)))} tUSDC`;
     if (k === 'active') return v ? 'active' : 'inactive';
     if (k === 'readiness') return READINESS_LABEL[v as RecipientReadiness] ?? String(v);
     return String(v);

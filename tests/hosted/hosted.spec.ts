@@ -69,3 +69,22 @@ test('without the admin key the workflow is read-only, and the directory is read
   // Three live recipients, checked "Ready" at the reset.
   await expect(page.getByRole('region', { name: 'Directory' }).getByRole('row').filter({ hasText: 'Ready' })).toHaveCount(3);
 });
+
+test('Payroll Advance: an employee signs in and requests (at most 0.30, nothing sent); the policy is read-only', async ({ page, browser }) => {
+  await signIn(page, 'grace@sentfund.my.id', /\/employee$/);
+  await expect(page.getByTestId('hosted-banner')).toBeVisible();
+  await expect(page.getByTestId('advance-available')).toContainText('0.30');
+  const offer = page.getByTestId('advance-offer');
+  await offer.getByLabel('Amount (tUSDC)').fill('0.31');
+  await expect(offer.getByText('Choose from 0.01 to 0.30 tUSDC.')).toBeVisible();
+  await offer.getByLabel('Amount (tUSDC)').fill('0.10');
+  await offer.getByLabel('I agree to these 6 salary deductions').check();
+  await offer.getByRole('button', { name: 'Request 0.10 tUSDC' }).click();
+  await expect(page.getByTestId('advance-current').getByTestId('advance-status')).toHaveText('Requested');
+  const admin = await browser.newPage();
+  await signIn(admin, 'admin@sentfund.my.id', /\/admin$/);
+  await admin.goto('/admin/payroll-advance');
+  await expect(admin.getByTestId('advance-policy-read-only')).toBeVisible();
+  await expect(admin.getByRole('button', { name: 'Save policy' })).toHaveCount(0);
+  await admin.close();
+});

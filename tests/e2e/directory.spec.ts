@@ -98,14 +98,14 @@ test('Pay registered recipients only: an upload row outside the directory or abo
     'near_account_id,receiver_name,currency,amount,mobile_phone,email',
     'recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,0.05,+44 7700 900101,emma.clark@example.com',
     'stranger.testnet,Sam Stranger,tUSDC,0.05,+44 7700 900888,sam@example.com',
-    'recipient2.sentfund-payroll.testnet,Daniel Hall,tUSDC,0.25,+44 7700 900102,daniel.hall@example.com',
+    'recipient2.sentfund-payroll.testnet,Daniel Hall,tUSDC,0.35,+44 7700 900102,daniel.hall@example.com',
   ].join('\r\n');
   await page.getByLabel('Choose a payroll file').setInputFiles({ name: 'with-stranger.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
   const panel = page.getByTestId('error-panel');
   await expect(panel).toContainText('File rejected: 2 problems');
   await expect(panel).toContainText('Row 3: no active recipient with this NEAR account in the recipient directory');
   await expect(panel.getByRole('row', { name: /^3 NEAR account ID No active recipient/ })).toBeVisible();
-  await expect(panel.getByRole('row', { name: /^4 Amount Amount is above this recipient's maximum of 0\.10 tUSDC per payout\./ })).toBeVisible();
+  await expect(panel.getByRole('row', { name: /^4 Amount Amount is above this recipient's maximum of 0\.30 tUSDC per payout\./ })).toBeVisible();
   await expect(panel).toContainText('Nothing was imported.');
   expect(problems).toEqual([]);
 });

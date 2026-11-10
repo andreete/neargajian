@@ -8,13 +8,18 @@
 import { useRef, useState } from 'react';
 import { AlertIcon, SendIcon, XIcon } from './icons';
 
-export function SubmitPanel({ runId, revision, rowCount, totalDisplay, nextVersion, replaces, approvalSummary, csrfToken }: {
+/** Phase 23: the Payroll Advance instalments this run would carry (all display strings + the plan fingerprint). */
+export interface InstalmentSummary { count: number; total: string; netTotal: string; fingerprint: string }
+
+export function SubmitPanel({ runId, revision, rowCount, totalDisplay, nextVersion, replaces, approvalSummary, csrfToken, instalments = null }: {
   runId: string; revision: number; rowCount: number; totalDisplay: string; nextVersion: number; replaces: number | null;
-  approvalSummary: string; csrfToken: string;
+  approvalSummary: string; csrfToken: string; instalments?: InstalmentSummary | null;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apply, setApply] = useState(true);
+  const committed = instalments && apply ? instalments.netTotal : totalDisplay;
 
   async function submit() {
     if (pending) return;
@@ -23,7 +28,7 @@ export function SubmitPanel({ runId, revision, rowCount, totalDisplay, nextVersi
     try {
       const res = await fetch(`/api/runs/${runId}/submit`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
-        body: JSON.stringify({ expectedRevision: revision, supersede: replaces !== null }),
+        body: JSON.stringify({ expectedRevision: revision, supersede: replaces !== null, ...(instalments ? { applyInstalments: apply, expectedInstalments: instalments.fingerprint } : {}) }),
       });
       const body = (await res.json()) as { status?: string; error?: string | { message: string } };
       if (res.ok || res.status === 502) {
@@ -41,6 +46,12 @@ export function SubmitPanel({ runId, revision, rowCount, totalDisplay, nextVersi
 
   return (
     <>
+      {instalments ? (
+        <label className="consent" data-testid="apply-instalments">
+          <input type="checkbox" checked={apply} onChange={(e) => setApply(e.target.checked)} />
+          <span><strong>Apply Payroll Advance instalments</strong>: deduct {instalments.total} tUSDC from {instalments.count} row{instalments.count === 1 ? '' : 's'} (net total {instalments.netTotal} tUSDC is committed on-chain). Turn off only to pay this run without deductions; the instalment then stays due.</span>
+        </label>
+      ) : null}
       <div className="form-actions">
         <button type="button" className="btn btn-primary btn-lg" onClick={() => dialog.current?.showModal()}><SendIcon size={18} />Submit for approval</button>
         <span className="hint">You will confirm the total before anything is sent.</span>
@@ -56,7 +67,13 @@ export function SubmitPanel({ runId, revision, rowCount, totalDisplay, nextVersi
         <div className="modal-body">
           <dl className="kv confirm-kv">
             <dt>Recipients</dt><dd className="num">{rowCount.toLocaleString('en-US')}</dd>
-            <dt>Exact total</dt><dd className="num">{totalDisplay} tUSDC</dd>
+            {instalments ? (
+              <>
+                <dt>Gross total</dt><dd className="num">{totalDisplay} tUSDC</dd>
+                <dt>Payroll Advance instalments</dt><dd className="num">{apply ? `−${instalments.total} tUSDC (${instalments.count} row${instalments.count === 1 ? '' : 's'})` : 'Not applied'}</dd>
+                <dt>Exact total committed</dt><dd className="num"><strong>{committed} tUSDC</strong></dd>
+              </>
+            ) : <><dt>Exact total</dt><dd className="num">{totalDisplay} tUSDC</dd></>}
             <dt>Token</dt><dd>tUSDC (zero-value test token, 6 decimals)</dd>
             <dt>Version</dt><dd>{nextVersion}{replaces !== null ? ` (replaces version ${replaces}, which is cancelled on-chain)` : ''}</dd>
             <dt>Approval</dt><dd>{approvalSummary}</dd>
@@ -64,7 +81,7 @@ export function SubmitPanel({ runId, revision, rowCount, totalDisplay, nextVersi
           <div className="result wait"><AlertIcon size={16} /><span>Nothing is paid now. Payment happens only after the required approvals, from the vault contract.</span></div>
           {error ? <div className="form-error" role="alert"><AlertIcon size={18} />{error}</div> : null}
           <div className="form-actions">
-            <button type="button" className="btn btn-primary" onClick={submit} disabled={pending} autoFocus>{pending ? 'Submitting to NEAR…' : `Submit ${totalDisplay} tUSDC for approval`}</button>
+            <button type="button" className="btn btn-primary" onClick={submit} disabled={pending} autoFocus>{pending ? 'Submitting to NEAR…' : `Submit ${committed} tUSDC for approval`}</button>
             <button type="button" className="btn btn-secondary" onClick={() => dialog.current?.close()} disabled={pending}>Cancel</button>
           </div>
         </div>

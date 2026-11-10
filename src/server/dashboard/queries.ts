@@ -20,6 +20,8 @@ export type RunDisplayStatus = RunStatus;
 export interface RunSummary {
   id: string;
   title: string;
+  /** Phase 23: an advance run is made from an employee's request (never edited as a draft). */
+  kind: 'payroll' | 'advance';
   postingMode: PostingMode;
   source: 'manual' | 'upload';
   status: RunDisplayStatus;
@@ -41,7 +43,7 @@ export function makerRuns(db: Queryable, makerUserId: string): RunSummary[] {
     const latest = versions.find((v) => v.runId === run.id);
     if (latest) {
       return {
-        id: run.id, title: run.title, postingMode: latest.postingMode, source: run.source, status: displayStatusFor(db, latest),
+        id: run.id, title: run.title, kind: run.kind, postingMode: latest.postingMode, source: run.source, status: displayStatusFor(db, latest),
         versionNo: latest.versionNo, rowCount: latest.rowCount, total: latest.total, invalidRows: 0, updatedAt: latest.statusUpdatedAt,
       };
     }
@@ -54,7 +56,7 @@ export function makerRuns(db: Queryable, makerUserId: string): RunSummary[] {
       else invalid += 1;
     }
     return {
-      id: run.id, title: run.title, postingMode: run.postingMode, source: run.source, status: 'draft' as const,
+      id: run.id, title: run.title, kind: run.kind, postingMode: run.postingMode, source: run.source, status: 'draft' as const,
       versionNo: null, rowCount: rows.length, total, invalidRows: invalid, updatedAt: run.updatedAt,
     };
   });
@@ -64,6 +66,7 @@ export interface QueueItem {
   versionId: string;
   runId: string;
   title: string;
+  kind: 'payroll' | 'advance';
   versionNo: number;
   rowCount: number;
   total: bigint;
@@ -79,13 +82,13 @@ export interface QueueItem {
 
 /** Versions whose snapshotted workflow assigns this approver. */
 export function approverQueue(db: Queryable, approverUserId: string): { pending: QueueItem[]; reviewed: QueueItem[] } {
-  const rows = db.select({ v: runVersions, title: payrollRuns.title }).from(runVersions)
+  const rows = db.select({ v: runVersions, title: payrollRuns.title, kind: payrollRuns.kind }).from(runVersions)
     .innerJoin(payrollRuns, eq(runVersions.runId, payrollRuns.id)).orderBy(desc(runVersions.createdAt)).all();
   const decided = new Set(db.select({ versionId: approvalEvents.versionId }).from(approvalEvents)
     .where(and(eq(approvalEvents.approverUserId, approverUserId), inArray(approvalEvents.status, ['pending', 'confirmed']))).all().map((e) => e.versionId));
   const pending: QueueItem[] = [];
   const reviewed: QueueItem[] = [];
-  for (const { v, title } of rows) {
+  for (const { v, title, kind } of rows) {
     const snapshot = JSON.parse(v.workflowSnapshot) as WorkflowSnapshot;
     const step = snapshot.approvers.findIndex((a) => a.userId === approverUserId);
     if (step < 0) continue;
@@ -96,7 +99,7 @@ export function approverQueue(db: Queryable, approverUserId: string): { pending:
     const mine = db.select().from(approvalEvents).where(and(eq(approvalEvents.versionId, v.id), eq(approvalEvents.approverUserId, approverUserId))).all()
       .filter((e) => e.status !== 'failed').at(-1);
     const item: QueueItem = {
-      versionId: v.id, runId: v.runId, title, versionNo: v.versionNo, rowCount: v.rowCount, total: v.total,
+      versionId: v.id, runId: v.runId, title, kind, versionNo: v.versionNo, rowCount: v.rowCount, total: v.total,
       postingMode: v.postingMode, status: displayStatusFor(db, v), myStep: step + 1, actionable, submittedAt: v.createdAt,
       myDecision: mine?.decision ?? null, myDecisionStatus: (mine?.status as 'pending' | 'confirmed' | undefined) ?? null, myDecisionTx: mine?.chainTxHash ?? null,
     };

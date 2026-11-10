@@ -58,7 +58,7 @@ const lines = (csv: string) => csv.replace(/^﻿/, '').trim().split('\r\n');
 describe('history and exports', () => {
   it('one versus 1,000 company entries for identical data, with identical totals', () => {
     const csv = lines(companyCsv(db, maker));
-    expect(csv[0]).toBe('reference,posting_mode,run_title,run_version,vault_run_id,line,paid_at_utc,amount,currency,status');
+    expect(csv[0]).toBe('reference,posting_mode,run_kind,run_title,run_version,vault_run_id,line,paid_at_utc,gross_amount,advance_instalment,advance_amount,advance_fee,amount,currency,status');
     const consolidated = csv.filter((l) => l.includes(',consolidated,'));
     const detailed = csv.filter((l) => l.includes(',detailed,'));
     expect(consolidated).toHaveLength(1);
@@ -68,13 +68,14 @@ describe('history and exports', () => {
     expect(sum(detailed)).toBe(10_000_000n);
     expect(consolidated[0]).toMatch(/,10\.000000,tUSDC,paid$/);
     expect(new Set(detailed.map((l) => l.split(',')[0])).size).toBe(1000); // unique opaque references
-    expect(detailed[0]).toMatch(/^SFD-[A-Z2-9]{8}-0001,detailed,Uniform detailed,1,sfd-/);
-    for (const l of [...consolidated, ...detailed]) expect(l.split(',').at(-4)).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/); // UTC, whole seconds
+    expect(detailed[0]).toMatch(/^SFD-[A-Z2-9]{8}-0001,detailed,payroll,Uniform detailed,1,sfd-/);
+    expect(detailed[0]).toMatch(/,0\.010000,0\.000000,0\.000000,0\.000000,0\.010000,tUSDC,paid$/); // gross, instalment, advance, fee, net
+    for (const l of [...consolidated, ...detailed]) expect(l.split(',').at(-8)).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/); // UTC, whole seconds
   });
 
   it('both history views reconcile; partially paid runs stay out of reports', () => {
     const h = historyFor(db, maker);
-    expect(h.totals).toEqual({ runs: 2, lines: 2000, consolidatedTotal: 20_000_000n, detailedTotal: 20_000_000n, reconciles: true });
+    expect(h.totals).toEqual({ runs: 2, lines: 2000, consolidatedTotal: 20_000_000n, detailedTotal: 20_000_000n, reconciles: true, grossTotal: 20_000_000n, instalmentTotal: 0n, advanceTotal: 0n, feeTotal: 0n, outstanding: 0n, ledgerMatches: true });
     expect(h.inProgress.map((r) => [r.title, r.paidCount])).toEqual([['Still paying', 10]]);
     expect(companyCsv(db, maker)).not.toContain('Still paying');
   });
@@ -99,7 +100,7 @@ describe('history and exports', () => {
 
   it('the recipient-detail export is separate and scoped to the maker and assigned approvers', () => {
     const csv = lines(recipientCsv(db, app1, 'https://testnet.nearblocks.io/txns/'));
-    expect(csv[0]).toBe('reference,run_title,run_version,file_row,near_account_id,receiver_name,email,paid_at_utc,amount,currency,tx_hash,explorer_url');
+    expect(csv[0]).toBe('reference,run_kind,run_title,run_version,file_row,near_account_id,receiver_name,email,paid_at_utc,gross_amount,advance_instalment,advance_amount,advance_fee,amount,currency,tx_hash,explorer_url');
     expect(csv).toHaveLength(1 + 2000);
     expect(csv[1]).toMatch(/,2,gjn-emp-0001\.testnet,Matthew Miller,matthew\.miller\.0001@example\.com,.*,0\.010000,tUSDC,TX\d+,https:\/\/testnet\.nearblocks\.io\/txns\/TX\d+$/);
     expect(lines(recipientCsv(db, { id: 'usr_nobody', role: 'approver' }, 'x'))).toHaveLength(1);

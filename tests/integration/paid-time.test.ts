@@ -76,12 +76,12 @@ describe('paid time from the chain', () => {
     expect(hist.paidAt?.getTime()).toBe(Math.max(...acts.map((a) => a.blockTime!)));
 
     const company = csvLines(companyCsv(h.db, maker)); // detailed posting: one line per payout
-    expect(company.map((l) => l.split(',')[6])).toEqual([0, 1, 2].map((i) => iso(byRow.get(i)!)));
+    expect(company.map((l) => l.split(',')[7])).toEqual([0, 1, 2].map((i) => iso(byRow.get(i)!)));
     const recipients = csvLines(recipientCsv(h.db, maker, 'https://testnet.nearblocks.io/txns/'));
     for (const line of recipients) {
       const cells = line.split(',');
-      const tx = cells[10]!;
-      expect(cells[7]).toBe(iso(fake.blockTimes.get(tx)!)); // the explorer's time for that very tx
+      const tx = cells[15]!;
+      expect(cells[8]).toBe(iso(fake.blockTimes.get(tx)!)); // the explorer's time for that very tx
     }
   });
 

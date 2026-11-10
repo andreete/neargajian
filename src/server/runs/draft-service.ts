@@ -38,6 +38,9 @@ export function editableRun(db: Db, principal: Principal, runId: string, opts: {
   if (!run || !can(principal, 'run.edit_draft', { makerUserId: run.makerUserId, assignedApproverIds: [] })) {
     throw new DomainError('not_found', 'Payroll run not found.');
   }
+  if (run.kind === 'advance' && !opts.allowLocked) {
+    throw new DomainError('conflict', "A Payroll Advance run is made from the employee's request and cannot be edited. Decline the request or cancel the run instead.");
+  }
   if (!opts.allowLocked && draftLock(db, runId)) throw new DomainError('conflict', draftLock(db, runId) ?? '');
   return run;
 }

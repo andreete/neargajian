@@ -35,7 +35,10 @@ export type Action =
   | 'report.recipients'
   | 'recipients.manage'
   | 'settings.update'
-  | 'assistant.use';
+  | 'assistant.use'
+  | 'advance.self_service'
+  | 'advance.handle'
+  | 'advance.policy';
 
 const isOwner = (p: Principal, run?: RunContext) => run !== undefined && p.role === 'maker' && run.makerUserId === p.id;
 const isAssigned = (p: Principal, run?: RunContext) => run !== undefined && p.role === 'approver' && run.assignedApproverIds.includes(p.id);
@@ -52,6 +55,12 @@ const ROLE_RULES: Partial<Record<Action, readonly Role[]>> = {
   'settings.update': ['admin'],
   // The payroll assistant drafts runs for the signed-in maker only (never submit/approve/release).
   'assistant.use': ['maker'],
+  // Payroll Advance (Phase 23): the employee sees and requests only for their own linked recipient
+  // (the service resolves it from the session, never from the request); the maker declines or
+  // submits requests; the admin sets the policy. Employees have no other action in this matrix.
+  'advance.self_service': ['employee'],
+  'advance.handle': ['maker'],
+  'advance.policy': ['admin'],
 };
 
 /** Resource rules: maker ownership or assignment to the run's snapshotted workflow. */
@@ -83,7 +92,9 @@ export function homeFor(role: Role): string {
       return '/approver';
     case 'admin':
       return '/admin';
+    case 'employee':
+      return '/employee';
   }
 }
 
-export const ROLE_LABEL: Record<Role, string> = { maker: 'Maker', approver: 'Approver', admin: 'Admin' };
+export const ROLE_LABEL: Record<Role, string> = { maker: 'Maker', approver: 'Approver', admin: 'Admin', employee: 'Employee' };

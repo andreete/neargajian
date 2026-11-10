@@ -6,6 +6,7 @@ import { CheckIcon, XIcon } from '@/components/icons';
 import { getDb } from '@/server/db/client';
 import { activeWorkflow, approverQueue, approverTestnetDecisions } from '@/server/dashboard/queries';
 import { requireRole } from '@/server/web/page-auth';
+import { AdvanceKindChip } from '@/components/advance-bits';
 import { displayAmount, formatDateTime } from '@/lib/format';
 import { SignerPanel, WorkflowPanel } from '../workflow-panel';
 import { OperationsTransfers, TestnetChip, TxLink } from '../history-bits';
@@ -61,7 +62,7 @@ export default async function ApproverDashboard() {
                 <table className="data">
                   <thead><tr><th scope="col">Run</th><th scope="col">Status</th><th scope="col" className="amount">Rows</th><th scope="col" className="amount">Total (tUSDC)</th><th scope="col">Submitted (UTC)</th></tr></thead>
                   <tbody>{queue.pending.map((i) => (
-                    <tr key={i.versionId}><td><div className="title"><Link href={`/runs/${i.runId}`}>{i.title}</Link></div><div className="sub">Version {i.versionNo} · your step {i.myStep}{i.actionable ? ' · ready for you' : ''}</div></td>
+                    <tr key={i.versionId}><td><div className="title"><Link href={`/runs/${i.runId}`}>{i.title}</Link>{i.kind === 'advance' ? <> <AdvanceKindChip /></> : null}</div><div className="sub">Version {i.versionNo} · your step {i.myStep}{i.actionable ? ' · ready for you' : ''}</div></td>
                       <td><StatusChip status={i.status} /></td><td className="amount">{i.rowCount.toLocaleString('en-US')}</td><td className="amount">{displayAmount(i.total)}</td><td className="sub when">{formatDateTime(i.submittedAt)}</td></tr>
                   ))}</tbody>
                 </table>
@@ -82,7 +83,7 @@ export default async function ApproverDashboard() {
                   <thead><tr><th scope="col">Run</th><th scope="col">Your decision</th><th scope="col">Run status</th><th scope="col" className="amount">Total (tUSDC)</th><th scope="col">Decided (UTC)</th><th scope="col">Proof</th></tr></thead>
                   <tbody>{queue.reviewed.map((i) => (
                     <tr key={i.versionId}>
-                      <td><div className="title"><Link href={`/runs/${i.runId}`}>{i.title}</Link></div><div className="sub">Version {i.versionNo} · step {i.myStep}</div></td>
+                      <td><div className="title"><Link href={`/runs/${i.runId}`}>{i.title}</Link>{i.kind === 'advance' ? <> <AdvanceKindChip /></> : null}</div><div className="sub">Version {i.versionNo} · step {i.myStep}</div></td>
                       <td>{i.myDecision === 'approve' ? <Chip tone={i.myDecisionStatus === 'pending' ? 'waiting' : 'success'} icon={<CheckIcon size={13} />}>{i.myDecisionStatus === 'pending' ? 'Approval pending on NEAR' : 'Approved'}</Chip> : i.myDecision === 'reject' ? <Chip tone="danger" icon={<XIcon size={13} />}>Rejected</Chip> : <span className="muted">Not needed</span>}</td>
                       <td><StatusChip status={i.status} /></td>
                       <td className="amount">{displayAmount(i.total)}</td>

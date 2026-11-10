@@ -6,7 +6,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { and, asc, eq, max } from 'drizzle-orm';
 import { buildPayoutTree, reviewDigest, toHex, type PayoutLeaf, type ReviewRow } from '../commitments.ts';
-import type { Db, Queryable } from '../db/client.ts';
+import type { Db, Queryable, Tx } from '../db/client.ts';
 import {
   draftRows, payrollRuns, runVersions, versionRows,
   type PostingMode, type VersionStatus, type WorkflowKind, type ReleaseMode,
@@ -42,6 +42,9 @@ export interface NewRunInput {
   id?: string;
   /** Set when the payroll assistant drafted the run (fixed afterwards, trigger). */
   assistant?: { requestId: string; requestText: string };
+  /** Phase 23: the one-row run that pays a Payroll Advance (fixed afterwards, trigger). */
+  kind?: 'payroll' | 'advance';
+  advanceId?: string;
 }
 
 export function createRun(db: Queryable, input: NewRunInput): string {
@@ -52,6 +55,7 @@ export function createRun(db: Queryable, input: NewRunInput): string {
     id, makerUserId: input.makerUserId, title, postingMode: input.postingMode, source: input.source,
     draftRevision: 0, createdAt: input.now, updatedAt: input.now,
     ...(input.assistant ? { assistantRequestId: input.assistant.requestId, assistantRequestText: input.assistant.requestText } : {}),
+    ...(input.kind === 'advance' ? { kind: 'advance' as const, advanceId: input.advanceId ?? null } : {}),
   }).run();
   return id;
 }
@@ -131,6 +135,11 @@ export function createVersion(db: Db, input: {
   vaultContractId?: string;
   /** Recipient-directory check at submission (Phase 19), frozen with the version. */
   directoryCheck?: { enforced: boolean; matched: number; rows: number } | null;
+  /**
+   * Runs first inside the version's transaction (Phase 23: re-plans the Payroll Advance
+   * instalments and throws if they changed) and then gets the new version ID to attach them.
+   */
+  inTransaction?: { check: (tx: Tx) => void; attach: (tx: Tx, versionId: string) => void };
 }) {
   if (input.rows.length < 1 || input.rows.length > 1000) throw new DomainError('invalid', 'A version needs 1-1,000 rows.');
   const leaves: PayoutLeaf[] = input.rows.map((r, index) => ({ index, accountId: r.accountId, amount: r.amount }));
@@ -143,6 +152,7 @@ export function createVersion(db: Db, input: {
   const digest = reviewDigest(salt, input.postingMode, input.rows);
   return db.transaction((tx) => {
     ownedRun(tx, input.runId, input.makerUserId);
+    input.inTransaction?.check(tx);
     const last = tx.select({ n: max(runVersions.versionNo) }).from(runVersions).where(eq(runVersions.runId, input.runId)).get();
     const versionNo = (last?.n ?? 0) + 1;
     const id = randomUUID();
@@ -162,6 +172,7 @@ export function createVersion(db: Db, input: {
         amount: r.amount, mobilePhone: r.mobilePhone, email: r.email, sourceLine: r.sourceLine ?? null,
       }).run();
     });
+    input.inTransaction?.attach(tx, id);
     return { id, versionNo, chainRunId: chainRunIdFor(input.runId, versionNo), total: tree.total, rowCount: tree.rowCount, payoutRoot: toHex(tree.root) };
   }, { behavior: 'immediate' });
 }

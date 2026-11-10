@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { closeDatabase, databaseFileFromUrl, getDatabase } from '../src/server/db/client.ts';
+import { seedPayrollAdvance } from '../src/server/db/seed.ts';
 
 const log = (event: string, detail: Record<string, unknown> = {}) => process.stdout.write(`${JSON.stringify({ at: new Date().toISOString(), service: 'hosted-prepare', event, ...detail })}\n`);
 const file = databaseFileFromUrl(process.env.DATABASE_URL);
@@ -31,7 +32,9 @@ if (firstBoot || (token && token !== last)) {
   writeFileSync(marker, `${token || 'initial'}\n`);
   log('demo_reset_done');
 } else {
-  getDatabase(); // applies pending migrations
+  const { db } = getDatabase(); // applies pending migrations
+  // Phase 23 on an existing demo database: employee sign-ins + Payroll Advance fields (idempotent).
+  const added = process.env.DEMO_MODE === 'true' ? await seedPayrollAdvance(db) : [];
   closeDatabase();
-  log('migrations_applied', { file });
+  log('migrations_applied', { file, ...(added.length ? { payrollAdvanceSeed: added } : {}) });
 }

@@ -34,8 +34,52 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 21 SentFund rebrand + KTP/face identity checks | Done locally, all suites green; pushed to `origin` and the new `discoverateagency-ops/sentfund` (see NEXT-STEPS for the push result) | none on-chain; **real Claude KTP reader** on the 4 synthetic specimen scenarios (throwaway DB) |
 | 22 Testnet migration to `sentfund-payroll.testnet` + hosted demo live | Done: https://sentfund.my.id live and smoke-tested; all suites green | **Yes**: new accounts, token, locked vault (same release Wasm), 3 policy runs, assistant app run, hosted smoke run; `judge:verify` 221/221 |
 | 22b Review fixes (tunnel command, third-party licenses, live landing facts, online scope) | Done, released to https://sentfund.my.id | none (no transaction; read-only hosted checks) |
+| 23 Hosted Claude key + Payroll Advance (employee role) | Done locally, all suites green; pushed to `main` on both remotes; **not released** to the hosted site (Andre reviews first). Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
 
 ---
+
+## Phase 23 · Hosted Claude key, then Payroll Advance (10 Nov 2026)
+
+Andre approved Phase 22b. Part 1: set the hosted Claude key if present. Part 2: "phase-23: Payroll Advance" (brief in the session; decisions D-128 to D-134).
+
+### Part 1: hosted Claude key (D-128)
+- `HOSTED_ANTHROPIC_API_KEY` present in `.env` (checked by name). Set on Railway as `ANTHROPIC_API_KEY` by `variableUpsert` (value never printed; skip deploys), then `deploymentRedeploy` of the current release `a29c514` with the same image: deployment `4aab2264…` **SUCCESS** at 10:51 UTC; health ok.
+- `npx playwright test -c playwright.hosted-live.config.ts --grep "assistant preview"` → **1 passed** on https://sentfund.my.id, no NEAR transaction: the assistant preview "Sales division, 2 recipients, 0.03 tUSDC each, total 0.06 tUSDC" (Create draft not pressed) and Emma's specimen check **Verified, 0.932, dry run**. Screenshots `docs/screenshots/phase-22/05-hosted-assistant-preview.png`, `06-hosted-specimen-dry-run.png`.
+
+### Part 2: Payroll Advance, built
+- **Domain** `src/server/advance/`: `terms.ts` (pure money rules: fee half-up, instalments rounded down with the last absorbing, maximum, months, `deductionFor`: 50% rule, carry-over, catch-up, one per month), `policy.ts` (admin policy, validated, audited), `eligibility.ts` (8 checks, expected months, approval re-check), `ledger.ts` (`planDeductions`, frozen instalments, `syncAdvances`: statuses + append-only ledger from confirmed payouts, company totals), `service.ts` (request with consent, decline, submit as one-row run, read models for employee / maker / approver / admin).
+- **Lifecycle** (`runs/lifecycle.ts`, `runs/repository.ts`, `runs/draft-service.ts`): payroll submit plans the instalments, requires the explicit "Apply Payroll Advance instalments" choice, checks the review's fingerprint, re-plans inside the version's transaction and commits the **net** rows; advance runs are submitted only from the advance flow and never edited; an approval of an advance run re-checks eligibility first; reconciliation runs `syncAdvances`.
+- **Database** `0010_phase23_payroll_advance.sql` (hand-written, D-129): employee role + `users.recipient_id`, directory fields, run kind, `payroll_advances`, `advance_deductions`, `advance_ledger`, triggers. Tested on a copy of the local DB before use (users 4, sessions 6, draft rows kept, `foreign_key_check` clean).
+- **Pages**: `/employee` (net pay, offer with terms, months and consent, current advance + schedule, requests, paid lines), `/maker/advances` (queue with eligibility at request and now, decline / submit dialogs), `/admin/payroll-advance` (policy, change log, outstanding, "to settle outside SentFund"); run page Payroll Advance note and per-row instalment table; review page instalment table + "Apply Payroll Advance instalments" in the submit panel; directory form fields; history kind, breakdowns and totals; maker list and approver queue labels; landing and sign-in texts list the employee logins.
+- **API**: `POST /api/employee/advances` (employee), `POST /api/advances/[id]/decline|submit` (maker), `POST /api/admin/payroll-advance` (admin, 403 in the public demo); submit route takes `applyInstalments` and `expectedInstalments`.
+- **Reports**: both CSVs gain `run_kind, gross_amount, advance_instalment, advance_amount, advance_fee` before `amount` (net paid on-chain); company-level titles of advance runs carry no name (D-131); reconciliation also checks every line and the ledger.
+- **Seed / hosting**: `seedPayrollAdvance` (D-133) in `db:seed`, `demo:reset` and every hosted start. Local review DB: migrated + seeded (backup `data/backups/before-phase23-*.sqlite`); the demo draft that `db:seed` re-added was removed again.
+- **Tests**: `tests/unit/advance-terms.test.ts` (12), `tests/integration/advance.test.ts` (14), `boundaries.test.ts` (+43 refusals: employee everywhere else, advance routes for other roles; 112 in total), `hosted.test.ts` (+1), the stand-in whole-flow browser test `tests/e2e-standin/advance.spec.ts` with layout sweeps of every new page (D-132), `tests/hosted/hosted.spec.ts` (+1), `tests/hosted-readonly/readonly.spec.ts` (+1). Existing tests updated for the new CSV columns and the live recipients' new 0.30 maximum. `tests/e2e/layout.ts` now holds the shared layout sweep.
+
+### Live proof on testnet (local app, real transactions, 10 Nov 2026 11:26–11:28 UTC)
+| Step | Result |
+| --- | --- |
+| `p23-advance`: Emma requests 0.30 with the consent; maker submits; app1, app2 approve in the browser; worker pays | `sfd-d42481f6ec94460ca716-v1`: 1 row, **0.294** to `recipient1`, Paid (27 s); fee 0.006 stays in the vault; ledger advance 0.30 |
+| `p23-payroll`: payroll file Emma 0.10; review shows gross 0.10, instalment −0.05, net 0.05, Apply ticked; submit 0.05; both approve | `sfd-fb3204a5a83c43afb4cb-v1`: 1 row, **0.05** to `recipient1`, Paid; Emma: **0.25 outstanding, 5 instalments left** |
+| Balances | vault 1.930 → 1.586 (−0.344); recipient1 0.070 → 0.414; NEAR 9.91138 → 9.90822 |
+| `record-run-evidence.ts` ×2, `npm run judge:verify` | **241 PASS, 0 FAIL** |
+Screenshots (1440x900) `docs/screenshots/phase-23/`: 01 Emma's offer with the consent (live), 01b Daniel's offer (final layout, nothing sent), 02 maker queue (live), 03 approver view (live), 04 advance paid (live), 05 payroll run with the instalment (read-only recapture of the paid run), 06 employee after the first instalment (read-only recapture). What is live and what is a recapture: D-134.
+
+### Checks (10 Nov 2026)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **28 files, 240 tests passed** |
+| `npm run samples:check` | no diff |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 2.0–3.7 GB (two earlier attempts were stopped by the watchdog at 1.4 GB while other users' load was high; retried when the host had recovered) |
+| `npm run test:e2e` | **31 passed**, then the stand-in whole flow **1 passed** |
+| `npm run test:judge-mode` / `test:hosted` | **1** / **4 + 2** passed |
+| `npm run secret-scan` | clean (working tree + 39 commits) |
+| `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
+| contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (contracts unchanged) |
+| `npm run judge:verify` | **241 PASS, 0 FAIL** |
+
+Not done: release to the hosted site (Andre reviews first); the hosted 0.01 smoke run (sends a transaction); the vault is unchanged (frozen).
 
 ## Phase 22b · Review fixes (10 Nov 2026)
 

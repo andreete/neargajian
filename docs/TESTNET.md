@@ -462,6 +462,48 @@ The four Phase 21 host keys on the gajian accounts were **deleted** ([`GLiCV8w1�
 - NEAR across the SentFund accounts: 10.00000 → **9.91138** (≈ 0.0886 NEAR of gas for 10 account creations, 3 deploys, the key deletion, 10 key additions, registrations, funding, 3 policy runs and 2 app runs; storage deposits stay inside our accounts).
 - The earlier gajian set: 9.86991 → 9.86974 NEAR (the four host-key deletions). `vault2.gajian-payroll.testnet` stays locked with **1.94 tUSDC of the earlier token** (zero value; it can only leave through an approved run of that vault).
 
+## Phase 23: Payroll Advance through the app (10 Nov 2026, 11:26–11:28 UTC)
+
+Local app (production build on 127.0.0.1:8092 + the release worker, the demo database), `tests/live/phase23.spec.ts` in a real browser. No contract change: both runs are ordinary runs on `vault.sentfund-payroll.testnet` (workflow revision 3, two in sequence, automatic release).
+
+### Emma Clark's Payroll Advance: A = 0.30, fee 0.006 kept in the vault, 0.294 paid (`sfd-d42481f6ec94460ca716-v1`)
+
+Emma (`emma@sentfund.my.id`, linked to `recipient1.sentfund-payroll.testnet`, monthly net pay 0.10, start date 2025-09-01, identity verified, ready) requested 0.30 with the consent "I agree to these 6 salary deductions"; the maker submitted it from "Payroll Advance requests" as the one-row run "Payroll Advance: Emma Clark, November 2026"; both approvers approved in the browser; the worker released and paid.
+
+| Step | Signer | Tx | Result |
+| --- | --- | --- | --- |
+| `create_run` (1 row, total 294000) | `maker.sentfund-payroll.testnet` | [`37SZR26w…`](https://testnet.nearblocks.io/txns/37SZR26wRmEcuogUPvzWTA7Kt6ht8pE4KaLYqqjFvaqg) | ok |
+| `approve` (step 1) | `approver1.sentfund-payroll.testnet` | [`3s5WUejD…`](https://testnet.nearblocks.io/txns/3s5WUejD7KV7EK1LHYwhKmNfjQWsA8HLgogwetf7PPGf) | ok |
+| `approve` (step 2) | `approver2.sentfund-payroll.testnet` | [`sy361Znu…`](https://testnet.nearblocks.io/txns/sy361ZnufM8CPFooBFDG9VcKnPumiEV4yiRdkoUkvfb) | ok, Approved |
+| `start_release` | `worker.sentfund-payroll.testnet` | [`Gh1xiUQo…`](https://testnet.nearblocks.io/txns/Gh1xiUQoTc29U8UfKZ4YjAhiyNYGoLeVHcFRBVs2XVvK) | ok, reserved 0.294 |
+| `pay_row` 0: 0.294000 → `recipient1` | `worker.sentfund-payroll.testnet` | [`9k9B4dXb…`](https://testnet.nearblocks.io/txns/9k9B4dXbtA2TR8suBDVsNN8m3AYU9nLvFvxzyns6dVXR) | ok, Paid |
+
+Ledger: advance 0.300000 owed by Emma (counted when `pay_row` 0 was confirmed); fee 0.006000 stays in the vault as employer income.
+
+### November payroll for Emma with the first instalment: gross 0.10, instalment 0.05, net 0.05 paid (`sfd-fb3204a5a83c43afb4cb-v1`)
+
+The maker uploaded a one-row payroll file paying Emma 0.10 (`p23-november-salary.csv`). The review showed "Payroll Advance instalments": gross 0.10, instalment −0.05, net 0.05, with "Apply Payroll Advance instalments" ticked; the version commits the **net** 0.05 on-chain.
+
+| Step | Signer | Tx | Result |
+| --- | --- | --- | --- |
+| `create_run` (1 row, total 50000) | `maker.sentfund-payroll.testnet` | [`2ZjgJozZ…`](https://testnet.nearblocks.io/txns/2ZjgJozZjdD4uuc9q2Q8RduMtoYN4byzg15xZ4jCha4V) | ok |
+| `approve` (step 1) | `approver1.sentfund-payroll.testnet` | [`H8XxHR35…`](https://testnet.nearblocks.io/txns/H8XxHR35iWiXeGRuVMQnfq2ZnBZ2t1TSPnBD5hfjNssJ) | ok |
+| `approve` (step 2) | `approver2.sentfund-payroll.testnet` | [`AiXV46mi…`](https://testnet.nearblocks.io/txns/AiXV46mitfEE9BrnyrBT8t62SigPPooqT6X1hZbPQSDs) | ok, Approved |
+| `start_release` | `worker.sentfund-payroll.testnet` | [`761w24jK…`](https://testnet.nearblocks.io/txns/761w24jK5Cyqhc9ysmMkvEjmCN9URJHqDPyAFwbjnNDC) | ok |
+| `pay_row` 0: 0.050000 → `recipient1` | `worker.sentfund-payroll.testnet` | [`D913jASh…`](https://testnet.nearblocks.io/txns/D913jAShaP9rzxFDSGYrvu6ERPTgqpQSP3NfYtNk9Uw8) | ok, Paid |
+
+After it: Emma's outstanding balance **0.25 tUSDC, 5 instalments left** (December 2026 to April 2027 expected); ledger: advance 0.300000, instalment 0.050000. The offer had forecast December as the first deduction (Emma's "November commissions" had already been paid on 10 Nov before the advance); the first payroll **after** the payout was this November run, so the schedule starts in November (D-130).
+
+Both runs are in `docs/evidence/testnet-runs.json`; `npm run judge:verify`: **241 PASS, 0 FAIL** (10 Nov 2026).
+
+### Balances (`node scripts/testnet/balances.mjs`, after both runs)
+
+| Account | Before (Phase 22) | After | Change |
+| --- | --- | --- | --- |
+| `vault.sentfund-payroll.testnet` | 1.930000 tUSDC | 1.586000 tUSDC | −0.344000 (0.294 + 0.050) |
+| `recipient1.sentfund-payroll.testnet` | 0.070000 tUSDC | 0.414000 tUSDC | +0.344000 |
+| All SentFund accounts (NEAR) | 9.91138 | 9.90822 | −0.00316 (gas, 10 transactions) |
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -476,5 +518,6 @@ The four Phase 21 host keys on the gajian accounts were **deleted** ([`GLiCV8w1�
 | 10 Nov 2026 | Phase 19b: assistant-drafted run through the app (submit, 2 approvals, release, 2 payouts) | 2 | 0.060000 | 0.00227 | Phase 19b table |
 | 10 Nov 2026 | Phase 21: 4 host keys for the Railway demo (`add-key`, function-call only) | — | — | 0.00016 | Phase 21 table |
 | 10 Nov 2026 | Phase 22: SentFund deployment (`sentfund-payroll.testnet`): accounts, token, locked vault, keys, 3 policy runs, the assistant app run, the hosted smoke run; gajian host keys deleted | 6 | 0.250000 | 0.0886 (SentFund set) + 0.00017 (gajian set) | Phase 22 section |
+| 10 Nov 2026 | Phase 23: Payroll Advance through the app (Emma's advance 0.294 net + her November payroll with the first instalment, net 0.05) | 2 | 0.344000 | 0.00316 | Phase 23 section |
 
-**Total testnet NEAR burned so far: ≈ 0.130 NEAR on the earlier gajian set (10.00000 → 9.86974) + ≈ 0.089 NEAR on the SentFund set (10.00000 → 9.91138)** (across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.130 NEAR on the earlier gajian set (10.00000 → 9.86974) + ≈ 0.092 NEAR on the SentFund set (10.00000 → 9.90822)** (across all our accounts; storage deposits and contract storage stay inside our accounts).

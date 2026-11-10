@@ -461,7 +461,7 @@
     },
     {
       "phase": "22",
-      "label": "SentFund vault: payroll assistant draft for the Sales division (0.03 \u00d7 2), approved by both in the browser, paid automatically",
+      "label": "SentFund vault: payroll assistant draft for the Sales division (0.03 × 2), approved by both in the browser, paid automatically",
       "vault": "vault.sentfund-payroll.testnet",
       "runId": "gjn-1dcfe59097104a6db4ab-v1",
       "status": "Paid",
@@ -550,6 +550,90 @@
           "step": "pay_row 0 (worker)",
           "hash": "DpjyXcLCVMdyKdUAFd6Y9a52JwQovN3dU7G6N1QQC8sM",
           "signer": "worker.sentfund-payroll.testnet"
+        }
+      ]
+    },
+    {
+      "phase": "23",
+      "label": "Payroll Advance: Emma Clark takes 0.30 (fee 0.006 stays in the vault), one-row run of 0.294 approved by both in the browser",
+      "vault": "vault.sentfund-payroll.testnet",
+      "runId": "sfd-d42481f6ec94460ca716-v1",
+      "status": "Paid",
+      "total": "294000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient1.sentfund-payroll.testnet",
+          "amount": "294000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "signer": "maker.sentfund-payroll.testnet",
+          "hash": "37SZR26wRmEcuogUPvzWTA7Kt6ht8pE4KaLYqqjFvaqg"
+        },
+        {
+          "step": "approve (approver 1)",
+          "signer": "approver1.sentfund-payroll.testnet",
+          "hash": "3s5WUejD7KV7EK1LHYwhKmNfjQWsA8HLgogwetf7PPGf"
+        },
+        {
+          "step": "approve (approver 2)",
+          "signer": "approver2.sentfund-payroll.testnet",
+          "hash": "sy361ZnufM8CPFooBFDG9VcKnPumiEV4yiRdkoUkvfb"
+        },
+        {
+          "step": "start_release (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "Gh1xiUQoTc29U8UfKZ4YjAhiyNYGoLeVHcFRBVs2XVvK"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "9k9B4dXbtA2TR8suBDVsNN8m3AYU9nLvFvxzyns6dVXR"
+        }
+      ]
+    },
+    {
+      "phase": "23",
+      "label": "Payroll with the first Payroll Advance instalment: Emma Clark gross 0.10, instalment 0.05, net 0.05 committed and paid",
+      "vault": "vault.sentfund-payroll.testnet",
+      "runId": "sfd-fb3204a5a83c43afb4cb-v1",
+      "status": "Paid",
+      "total": "50000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient1.sentfund-payroll.testnet",
+          "amount": "50000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "signer": "maker.sentfund-payroll.testnet",
+          "hash": "2ZjgJozZjdD4uuc9q2Q8RduMtoYN4byzg15xZ4jCha4V"
+        },
+        {
+          "step": "approve (approver 1)",
+          "signer": "approver1.sentfund-payroll.testnet",
+          "hash": "H8XxHR35iWiXeGRuVMQnfq2ZnBZ2t1TSPnBD5hfjNssJ"
+        },
+        {
+          "step": "approve (approver 2)",
+          "signer": "approver2.sentfund-payroll.testnet",
+          "hash": "AiXV46mitfEE9BrnyrBT8t62SigPPooqT6X1hZbPQSDs"
+        },
+        {
+          "step": "start_release (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "761w24jK5Cyqhc9ysmMkvEjmCN9URJHqDPyAFwbjnNDC"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "D913jAShaP9rzxFDSGYrvu6ERPTgqpQSP3NfYtNk9Uw8"
         }
       ]
     }
@@ -744,13 +828,13 @@
       "receiver": "tusdc.sentfund-payroll.testnet"
     },
     {
-      "step": "22 redeploy tUSDC with the SentFund display name (889ee816\u2026, no init)",
+      "step": "22 redeploy tUSDC with the SentFund display name (889ee816…, no init)",
       "hash": "6xm2JGfrobxgosVNqn2Avu5YdtoPXvSNZxkKhHtyUEqz",
       "signer": "tusdc.sentfund-payroll.testnet",
       "receiver": "tusdc.sentfund-payroll.testnet"
     },
     {
-      "step": "22 deploy release Wasm 38953891\u2026 + init (revision 1)",
+      "step": "22 deploy release Wasm 38953891… + init (revision 1)",
       "hash": "81kemp2nqB2WUx62M1PbbRgScNc18UbQGEyEFB9dEo71",
       "signer": "vault.sentfund-payroll.testnet",
       "receiver": "vault.sentfund-payroll.testnet"

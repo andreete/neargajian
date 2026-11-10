@@ -1,6 +1,6 @@
 # Demo video runbook (2 to 3 minutes)
 
-One complete payroll moment on NEAR testnet: upload → review → submit → two approvals → automatic payout → Paid with an explorer link → history and export, then a short payroll-assistant moment. Total under 3 minutes (about 2:55). Every step is real (final vault `vault.sentfund-payroll.testnet`, real transactions, real database). Nothing is staged or mocked.
+One complete payroll moment on NEAR testnet: upload → review → submit → two approvals → automatic payout → Paid with an explorer link → history and export, then a short payroll-assistant moment and a short Payroll Advance scene. Total under 3 minutes (about 2:58 with the end card dropped). Every step is real (final vault `vault.sentfund-payroll.testnet`, real transactions, real database). Nothing is staged or mocked.
 
 **Where to record:** on the **hosted site** (https://sentfund.my.id, live and smoke-tested on 10 Nov 2026, `docs/HOSTING.md`), so the video shows exactly what judges can open. **Fallback:** this local copy on http://127.0.0.1:8092 with the checklist below. The script is the same in both; on the hosted site the purple "Public demo on NEAR testnet" banner is visible, which is fine (say it once), and steps 1–4 of the checklist are replaced by: kill switch off, `/api/health` ok, vault at 2.00 tUSDC or less (`docs/HOSTING.md` step 9).
 
@@ -21,11 +21,12 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 ## Pre-recording checklist
 
 1. [ ] **Stop** the app and the worker if they run (`kill $(cat .tmp/review-server.pid)`, `kill $(cat .tmp/worker.pid)`).
-2. [ ] **Clean database:** `npm run demo:reset`. The current database is moved to `data/backups/` and never deleted. Expect: `recipient check on testnet: Ready to receive tUSDC; Ready to receive tUSDC; Ready to receive tUSDC`, `fresh database …: maker@sentfund.my.id, app1@sentfund.my.id, app2@sentfund.my.id, admin@sentfund.my.id, workflow revision 3, recipient directory (3 testnet recipients + 1000 sample employees), "Pay registered recipients only" on` and `workflow mirrors vault.sentfund-payroll.testnet revision 3: two in sequence …, automatic release`.
+2. [ ] **Clean database:** `npm run demo:reset`. The current database is moved to `data/backups/` and never deleted. Expect: `recipient check on testnet: Ready to receive tUSDC; Ready to receive tUSDC; Ready to receive tUSDC`, `fresh database …: maker@sentfund.my.id, app1@sentfund.my.id, app2@sentfund.my.id, admin@sentfund.my.id, workflow revision 3, recipient directory (3 testnet recipients + 1000 sample employees), "Pay registered recipients only" on, …, emma@sentfund.my.id, daniel@sentfund.my.id, grace@sentfund.my.id, Payroll Advance fields for 3 live recipients (net pay 0.10, maximum 0.30)` and `workflow mirrors vault.sentfund-payroll.testnet revision 3: two in sequence …, automatic release`.
 2b. [ ] **Payroll assistant on:** `ANTHROPIC_API_KEY` is set in `.env` (the New run page shows "Payroll assistant" with "Model: claude-opus-5-5", not "off on this copy"). Without a key, skip the 2:30 segment. For voice, use Chrome or Edge and allow the microphone once; Chrome sends the audio to Google's speech service.
 3. [ ] **Vault balance:** `node scripts/testnet/balances.mjs` → the `vault.sentfund-payroll.testnet` line shows at least **0.200000 tUSDC** per planned take. To top up (the admin mints test tUSDC and funds the vault; needs the operator keys on this machine): `node scripts/testnet/phase16.ts fund 0.60`.
 4. [ ] **App and worker running:** `npm run build && npm run start` (http://127.0.0.1:8092) and, in a second terminal, `npm run worker`. The worker log shows `"event":"started" … "vault":"vault.sentfund-payroll.testnet"`. `curl -s http://127.0.0.1:8092/api/health` returns `"status":"ok"`.
 5. [ ] **Three separate browser sessions** (sign-ins are per browser profile): Chrome profile A for the maker, profile B for approver 1 (`app1@sentfund.my.id`), profile C for approver 2 (`app2@sentfund.my.id`). Sign in to B and C beforehand and leave them on **Review queue**. Leave A on the landing page, signed out.
+5b. [ ] **Payroll Advance scene:** a fourth profile D signed in as `grace@sentfund.my.id` (an employee with no advance yet), left on "My pay and Payroll Advance". On the hosted site this needs the Phase 23 release.
 6. [ ] **Window size 1440x900**, zoom 100%, bookmarks bar hidden, notifications and extensions off. For example: `google-chrome --profile-directory="Profile 1" --window-size=1440,900 http://127.0.0.1:8092`.
 7. [ ] **NearBlocks** testnet (https://testnet.nearblocks.io) reachable in profile A; the explorer link opens in a new tab.
 8. [ ] The CSV file `docs/video/november-2026-contractors.csv` is ready in the file picker's folder.
@@ -35,7 +36,7 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 
 | Time | Window | Click / action | What appears on screen | Voice-over (suggested) |
 | --- | --- | --- | --- | --- |
-| 0:00 | A | Landing page, scroll a little | SentFund headline, "NEAR testnet" badge, proof strip | "GAJIAN: payroll with approvals that a NEAR contract enforces. Everything here runs on NEAR testnet with our test token tUSDC." |
+| 0:00 | A | Landing page, scroll a little | SentFund headline, "NEAR testnet" badge, proof strip | "SentFund: payroll with approvals that a NEAR contract enforces. Everything here runs on NEAR testnet with our test token tUSDC." |
 | 0:10 | A | **Try the demo** → `maker@sentfund.my.id` / `12345678` → **Sign in** | "My runs", empty | "I'm the maker in the finance team." |
 | 0:18 | A | **New run** → title `November 2026 contractors` → **Upload a file** → **Detailed** → **Create draft run** | Draft page with the drop zone and templates | |
 | 0:28 | A | **Choose a payroll file** → `november-2026-contractors.csv` | "Accepted … 3 rows, exact total 0.20 tUSDC", review table with file rows 2–4 | "Every row is validated; one bad row would reject the whole file." |
@@ -49,7 +50,9 @@ Run: **"November 2026 contractors"**, file `docs/video/november-2026-contractors
 | 2:22 | A | **Exports** → **Company entries (accounting)** | CSV download | "The company export has no personal data. The recipient export is restricted to the maker and the approvers." |
 | 2:28 | A | **New run** → Payroll assistant box → type (or click **Speak** and say) `Create a disbursement for the Sales division, 0.05 tUSDC each, called November commissions` → **Send** | Preview: "Sales division, 2 recipients, 0.05 tUSDC each, total 0.10 tUSDC", rows Daniel Hall and Emma Clark from the directory | "Or just ask. The assistant only turns my words into a draft request; the app picks the recipients from the admin's directory and checks every amount." |
 | 2:38 | A | **Create draft** | Draft page: "Drafted by the payroll assistant from: …" with the two rows; not submitted | "It never submits or pays. I review and submit it, and the approvers see where it came from." |
-| 2:46 | A | (optional end card) | Text: repo link, `vault.sentfund-payroll.testnet`, "verify: npm run judge:verify" | "The vault's code can't change: it has no access keys. Everything is verifiable from the repository." |
+| 2:46 | D | Grace's "My pay and Payroll Advance": amount 0.10, tick **I agree to these 6 salary deductions** → **Request 0.10 tUSDC** | The disclosure "Repaid like a loan", fee 0.002, you receive 0.098, 0.016666 a month (the last one 0.01667), six expected months; then **Requested** | "Employees can take a Payroll Advance: a salary advance repaid like a loan, with the fee and the six deductions shown before they agree." |
+| 2:54 | A | **Payroll Advance requests** | Grace's request with the eligibility checks and "Submit for approval" | "It becomes an ordinary one-row run through the same approvals; the next payroll deducts the instalment and puts the net pay on-chain." (Stop here; submitting it is optional and costs 0.098 tUSDC.) |
+| (cut) | A | (optional end card, drop it to stay under 3:00) | Text: repo link, `vault.sentfund-payroll.testnet`, "verify: npm run judge:verify" | "The vault's code can't change: it has no access keys. Everything is verifiable from the repository." |
 
 If a step takes longer on testnet (a few seconds per transaction), cut the waiting in editing; do not speed up or alter what the screen shows.
 

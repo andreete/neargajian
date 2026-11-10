@@ -1,6 +1,6 @@
 # SentFund (formerly GAJIAN): standing rules for Claude sessions
 
-SentFund is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory** and runs **identity checks** (KTP read by Claude vision with the face covered, NIK rules offline, face match on this server with OpenCV YuNet + SFace; Phase 21, `docs/SECURITY.md`); "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo runs at **https://sentfund.my.id** (Railway + Cloudflare, `HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) and stays online until at least 25 Nov 2026.
+SentFund is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. Employees (role `employee`, linked to one directory recipient) can take a **Payroll Advance** (Phase 23: a salary advance repaid like a loan, up to 300% of monthly net pay, 2% fee at payout, 6 instalments deducted from payroll; paid as an ordinary one-row run, no contract change; D-129..D-134). The admin keeps a **recipient directory** and runs **identity checks** (KTP read by Claude vision with the face covered, NIK rules offline, face match on this server with OpenCV YuNet + SFace; Phase 21, `docs/SECURITY.md`); "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo runs at **https://sentfund.my.id** (Railway + Cloudflare, `HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) and stays online until at least 25 Nov 2026.
 
 ## Start every session here
 
@@ -71,12 +71,13 @@ npm run samples:check            # regenerates sample files; must produce no git
 nice -n 19 npm run build
 npm run dev                      # http://127.0.0.1:8092 ; health: /api/health
 npm run db:seed                  # demo users/workflow/draft (DEMO_MODE=true)
-nice -n 19 npm run test:e2e      # Playwright vs the production build (port 8092 must be free)
+nice -n 19 npm run test:e2e      # Playwright vs the production build (port 8092 must be free), then the stand-in whole-flow test (Payroll Advance; labelled stand-in vault, no testnet)
 nice -n 19 npm run screenshots   # docs/screenshots/phase-06
 npm run worker                   # release worker, its own process; run only when payouts are needed, stop with SIGTERM/Ctrl+C
 nice -n 19 npm run live:phase13  # LIVE testnet flow through the app (needs server + worker on 8092); real transactions, on purpose only
 nice -n 19 npm run live:phase16  # LIVE Phase 16 rehearsal (one step at a time with --grep); real transactions, on purpose only
 nice -n 19 npm run live:phase19 -- --grep p19-directory   # Phase 19 screenshots (no key); p19-assistant / p19-live-run need ANTHROPIC_API_KEY (p19-live-run: real transactions)
+nice -n 19 npx playwright test -c playwright.live.config.ts tests/live/phase23.spec.ts --grep p23-shots   # Phase 23 read-only recaptures; p23-advance / p23-payroll send REAL transactions (done 10 Nov)
 node --env-file=.env scripts/testnet/record-run-evidence.ts <runId> <phase> "<label>"   # add a paid app run to judge:verify
 npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
 npm run demo:reset               # move data/sentfund.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)

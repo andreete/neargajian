@@ -8,7 +8,8 @@ import { describeChanges, directoryStats, divisions, listRecipients, recentDirec
 import { READINESS_LABEL } from '@/server/recipients/readiness';
 import { requireRole } from '@/server/web/page-auth';
 import { hostedMode, HOSTED_DIRECTORY_MESSAGE } from '@/server/hosted';
-import { InfoIcon } from '@/components/icons';
+import { AlertIcon, InfoIcon } from '@/components/icons';
+import { outstandingAdvances } from '@/server/advance/service';
 import { displayAmount, formatDateTime } from '@/lib/format';
 
 export const metadata: Metadata = { title: 'Recipients' };
@@ -33,6 +34,7 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
   const readOnly = hostedMode().demo;
   const href = (page: number) => `/admin/recipients?${new URLSearchParams({ ...(q ? { q } : {}), ...(division ? { division } : {}), ...(status !== 'all' ? { status } : {}), page: String(page) })}`;
 
+  const settle = outstandingAdvances(db).filter((o) => !o.active);
   return (
     <>
       <div className="page-head">
@@ -43,6 +45,7 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
       </div>
 
       {readOnly ? <div className="callout" role="note" data-testid="hosted-directory-note"><InfoIcon size={18} /><span>{HOSTED_DIRECTORY_MESSAGE} In the public demo a run can only be submitted when every recipient is &ldquo;Ready to receive tUSDC&rdquo;.</span></div> : null}
+      {settle.length ? <div className="callout callout-warn" role="note" data-testid="advance-settle-outside"><AlertIcon size={18} /><span><strong>Payroll Advance to settle outside SentFund:</strong> {settle.map((o) => `${o.name} (inactive) owes ${displayAmount(o.balance)} tUSDC`).join('; ')}. No payroll deducts it any more.</span></div> : null}
       <RegisteredOnlySwitch on={on} csrfToken={session.csrfToken} readOnly={readOnly} />
       <div className="section-gap sm" />
 
@@ -70,6 +73,7 @@ export default async function RecipientsPage({ searchParams }: { searchParams: P
         rows={list.rows.map((r) => ({
           id: r.id, nearAccountId: r.nearAccountId, name: r.name, division: r.division, email: r.email, mobilePhone: r.mobilePhone,
           maxAmount: formatAmount(r.maxAmount), maxDisplay: displayAmount(r.maxAmount), active: r.active, sample: r.sample,
+          monthlyNetPay: r.monthlyNetPay === null ? '' : displayAmount(r.monthlyNetPay), startDate: r.startDate ?? '',
           readiness: r.readiness, readinessLabel: READINESS_LABEL[r.readiness], readinessCheckedAt: r.readinessCheckedAt?.toISOString() ?? null, updatedAt: r.updatedAt.getTime(),
         }))} />
       {list.pages > 1 ? (

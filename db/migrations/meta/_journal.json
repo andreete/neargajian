@@ -71,6 +71,13 @@
       "when": 1794287726718,
       "tag": "0009_phase21_identity_sentfund",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794308355975,
+      "tag": "0010_phase23_payroll_advance",
+      "breakpoints": true
     }
   ]
 }

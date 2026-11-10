@@ -22,7 +22,8 @@ import { loadConfig } from '../config.ts';
 // The demo sign-ins live in their own small module so the public landing page does not import the
 // seed (and through it the identity engine).
 export { DEMO_PASSWORD, demoUsers, type DemoUser, type SeedEnv } from './demo-users.ts';
-import { DEMO_PASSWORD, MASTER, demoUsers, type SeedEnv } from './demo-users.ts';
+import { DEMO_EMPLOYEES, DEMO_PASSWORD, MASTER, demoUsers, type SeedEnv } from './demo-users.ts';
+import { seedPayFields } from '../recipients/directory.ts';
 
 export const DEMO_DRAFT_RUN_ID = 'run_demo_november';
 
@@ -69,6 +70,27 @@ export function seedRecipientDirectory(db: Db, now: Date): string[] {
     seedIdentity(db, admin, loadConfig().sessionSecret, now)];
 }
 
+/**
+ * Payroll Advance demo (Phase 23), idempotent: the three live recipients get a monthly net pay of
+ * 0.10 tUSDC, start dates more than 90 days ago and a maximum per payout of 0.30; the employee
+ * sign-ins emma@, daniel@ and grace@ are linked to them. Runs at every hosted start (after the
+ * migrations) and in the seed; does nothing when the directory has no live recipients yet.
+ */
+export async function seedPayrollAdvance(db: Db, now = new Date()): Promise<string[]> {
+  const out: string[] = [];
+  let fields = 0;
+  for (const e of DEMO_EMPLOYEES) {
+    const r = db.select().from(recipients).where(eq(recipients.nearAccountId, e.account)).get();
+    if (!r) continue;
+    if (seedPayFields(db, 'usr_admin', e.account, { maxAmount: e.maxAmount, monthlyNetPay: e.monthlyNetPay, startDate: e.startDate }, now)) fields += 1;
+    if (db.select({ id: users.id }).from(users).where(eq(users.email, e.email)).get()) continue;
+    db.insert(users).values({ id: e.id, email: e.email, displayName: e.displayName, role: 'employee', recipientId: r.id, chainAccountId: null, passwordHash: await hashPassword(DEMO_PASSWORD), createdAt: now }).run();
+    out.push(e.email);
+  }
+  if (fields) out.push(`Payroll Advance fields for ${fields} live recipient${fields === 1 ? '' : 's'} (net pay 0.10, maximum 0.30)`);
+  return out;
+}
+
 export async function seedDemo(db: Db, options: SeedOptions = {}) {
   const env = options.env ?? process.env;
   if (env.DEMO_MODE !== 'true') throw new Error('Refusing to seed demo users: DEMO_MODE is not "true".');
@@ -110,6 +132,7 @@ export async function seedDemo(db: Db, options: SeedOptions = {}) {
   }
 
   if (options.recipientDirectory) created.push(...seedRecipientDirectory(db, now));
+  created.push(...(await seedPayrollAdvance(db, now)));
 
   const history = options.testnetHistory === false ? 0 : importTestnetHistory(db, readTestnetHistory());
   if (history) created.push(`${history} testnet runs from db/seed/testnet-history.json`);

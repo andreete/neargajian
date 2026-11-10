@@ -11,6 +11,7 @@ export function navFor(role: SessionUser['role']): NavItem[] {
       return [
         { href: '/maker', label: 'My runs', icon: 'runs' },
         { href: '/maker/runs/new', label: 'New run', icon: 'plus' },
+        { href: '/maker/advances', label: 'Payroll Advance requests', icon: 'wallet' },
         { href: '/history', label: 'History and reports', icon: 'reports' },
       ];
     case 'approver':
@@ -23,8 +24,11 @@ export function navFor(role: SessionUser['role']): NavItem[] {
         { href: '/admin', label: 'Workflow settings', icon: 'workflow' },
         { href: '/admin/recipients', label: 'Recipients', icon: 'users' },
         { href: '/admin/identity', label: 'Identity checks', icon: 'shield' },
+        { href: '/admin/payroll-advance', label: 'Payroll Advance', icon: 'wallet' },
         { href: '/history', label: 'Company reports', icon: 'reports' },
       ];
+    case 'employee':
+      return [{ href: '/employee', label: 'My pay and Payroll Advance', icon: 'wallet' }];
   }
 }
 

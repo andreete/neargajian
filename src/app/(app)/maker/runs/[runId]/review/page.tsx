@@ -19,6 +19,8 @@ import { DomainError } from '@/server/runs/repository';
 import { requireRole } from '@/server/web/page-auth';
 import { displayAmount } from '@/lib/format';
 import { KIND_LABEL, RELEASE_LABEL } from '../../../../workflow-panel';
+import { InstalmentTable } from '@/components/advance-bits';
+import { planDeductions, planFingerprint, syncAdvances } from '@/server/advance/ledger';
 
 export const metadata: Metadata = { title: 'Review before submitting' };
 
@@ -42,6 +44,10 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
   const hostedProblem = ready && hostedMode().demo ? hostedSubmitProblem(db, s.rows.flatMap((r) => (r.valid ? [{ accountId: r.valid.accountId, amount: r.valid.amount }] : []))) : null;
   const validRows = s.rows.flatMap((r) => (r.valid ? [{ accountId: r.valid.accountId }] : []));
   const identityProblem = ready ? identitySubmitProblem(db, validRows) : null;
+  syncAdvances(db);
+  const grossRows = s.rows.flatMap((r) => (r.valid ? [{ accountId: r.valid.accountId, amount: r.valid.amount }] : []));
+  const plan = ready && s.validCount === s.rows.length ? planDeductions(db, grossRows, new Date()) : [];
+  const planTotal = plan.reduce((x, p) => x + p.instalment, 0n);
   const names = wf?.approvers.map((a) => a.displayName) ?? [];
   const approvalSummary = wf ? `${KIND_LABEL[wf.kind]} (${names.join(wf.kind === 'two_sequential' ? ' then ' : ' and ')}), ${RELEASE_LABEL[wf.releaseMode].toLowerCase()}` : 'No active workflow';
 
@@ -77,12 +83,17 @@ export default async function ReviewPage({ params }: { params: Promise<{ runId: 
           <div className={view.run.postingMode === 'consolidated' ? 'is-selected-wrap' : undefined}><PostingPreview mode="consolidated" title={view.run.title} rowCount={s.validCount} total={s.validTotal} firstAmounts={amounts.slice(0, 3)} /></div>
           <div className={view.run.postingMode === 'detailed' ? 'is-selected-wrap' : undefined}><PostingPreview mode="detailed" title={view.run.title} rowCount={s.validCount} total={s.validTotal} firstAmounts={amounts.slice(0, 3)} /></div>
         </div>
+        {plan.length ? (
+          <InstalmentTable title="Payroll Advance instalments" rows={plan.map((p) => ({ rowIndex: p.rowIndex, line: view.rows[p.rowIndex]?.sourceLine ?? null, name: p.name, gross: p.gross, instalment: p.instalment, net: p.net, carried: p.carried }))}
+            note={<>These employees repay a Payroll Advance. The first payroll of each month (UTC) deducts the instalment due, never more than 50% of the row&apos;s gross pay. Confirm &ldquo;Apply Payroll Advance instalments&rdquo; below: the <strong>net pay is committed on-chain</strong>. The server plans the instalments again when you submit.</>} />
+        ) : null}
         <ReviewTable rows={view.rows} total={s.validTotal} />
         {ready ? (
           <section className="card card-pad" aria-labelledby="submit-h">
             <h2 id="submit-h" className="panel-h">Submit</h2>
             <SubmitPanel runId={runId} revision={view.run.draftRevision} rowCount={s.validCount} totalDisplay={displayAmount(s.validTotal)}
-              nextVersion={(latest?.versionNo ?? 0) + 1} replaces={null} approvalSummary={approvalSummary} csrfToken={session.csrfToken} />
+              nextVersion={(latest?.versionNo ?? 0) + 1} replaces={null} approvalSummary={approvalSummary} csrfToken={session.csrfToken}
+              instalments={plan.length ? { count: plan.length, total: displayAmount(planTotal), netTotal: displayAmount(s.validTotal - planTotal), fingerprint: planFingerprint(plan) } : null} />
           </section>
         ) : null}
       </div>

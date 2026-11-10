@@ -15,6 +15,7 @@ export interface AcceptedDirectoryImport { ok: true; filename: string; sha256: s
 
 const COLUMN_OF: Record<RecipientField, ImportError['column']> = {
   nearAccountId: 'near_account_id', name: 'receiver_name', division: 'division', email: 'email', mobilePhone: 'mobile_phone', maxAmount: 'amount',
+  monthlyNetPay: null, startDate: null, // not in a directory file (set in the form)
 };
 
 export function importRecipientFile(input: { filename: string; bytes: Uint8Array; perRowCap: bigint }): AcceptedDirectoryImport | RejectedImport {

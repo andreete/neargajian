@@ -73,7 +73,7 @@ describe('Pay registered recipients only', () => {
     expect(out.result.errors).toEqual([
       { line: 3, record: 2, column: 'near_account_id', message: 'This recipient is inactive in the recipient directory.' },
       { line: 4, record: 3, column: 'near_account_id', message: 'No active recipient with this NEAR account in the recipient directory. Ask the admin to add it.' },
-      { line: 5, record: 4, column: 'amount', message: "Amount is above this recipient's maximum of 0.10 tUSDC per payout." },
+      { line: 5, record: 4, column: 'amount', message: "Amount is above this recipient's maximum of 0.30 tUSDC per payout." },
     ]);
   });
 
@@ -177,7 +177,7 @@ describe('bulk import', () => {
     setRecipientActive(h.db, admin, recipientId('recipient3.sentfund-payroll.testnet'), false, NOW);
     const r = importRecipientFile({ filename: 'd.csv', perRowCap: CAP, bytes: file(
       'b1.testnet,Ben One,tUSDC,0.05,+44 7700 900310,b1@example.com,Engineering',
-      'recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,0.10,+44 7700 900101,emma.clark@example.com,Sales',
+      'recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,0.30,+44 7700 900101,emma.clark@example.com,Sales',
       'recipient3.sentfund-payroll.testnet,Grace Lewis,tUSDC,0.20,+44 7700 900103,grace.lewis@example.com,Operations',
     ) });
     expect(r.ok).toBe(true);
@@ -186,6 +186,6 @@ describe('bulk import', () => {
     expect(applied).toMatchObject({ created: 1, updated: 1, unchanged: 1, inactiveKept: 1 });
     const grace = h.db.select().from(recipients).where(eq(recipients.nearAccountId, 'recipient3.sentfund-payroll.testnet')).get()!;
     expect([grace.active, grace.maxAmount]).toEqual([false, 200_000n]);
-    expect(recentDirectoryEvents(h.db, 1, grace.id)[0]).toMatchObject({ action: 'updated', source: 'import', changes: { maxAmount: ['100000', '200000'] } });
+    expect(recentDirectoryEvents(h.db, 1, grace.id)[0]).toMatchObject({ action: 'updated', source: 'import', changes: { maxAmount: ['300000', '200000'] } });
   });
 });

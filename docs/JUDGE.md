@@ -76,7 +76,7 @@ npm run demo:reset        # fresh database: 4 demo users, the vault's current wo
 npm run build && npm run start          # http://127.0.0.1:8092
 ```
 
-Demo sign-ins (password `12345678`): `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`. Without the signer keys (which never leave our machine) the app shows a "Read-only copy" note: you can sign in, build and upload runs and review them, and Submit of a run paying the three verified live recipients answers "This copy of SentFund has no signer keys … Nothing was recorded." (the 1,000-row sample is refused earlier by the identity rule; `npm run test:judge-mode` checks both). The live flow is verified by step 3, the screenshots (`docs/screenshots/phase-13/`, `docs/screenshots/phase-16/`) and the demo video.
+Demo sign-ins (password `12345678`): `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, and the employees `emma@`, `daniel@`, `grace@sentfund.my.id` (Payroll Advance). Without the signer keys (which never leave our machine) the app shows a "Read-only copy" note: you can sign in, build and upload runs and review them, and Submit of a run paying the three verified live recipients answers "This copy of SentFund has no signer keys … Nothing was recorded." (the 1,000-row sample is refused earlier by the identity rule; `npm run test:judge-mode` checks both). The live flow is verified by step 3, the screenshots (`docs/screenshots/phase-13/`, `docs/screenshots/phase-16/`) and the demo video.
 
 ## 4b. Recipient directory and payroll assistant (Phase 19): do X, see Y
 
