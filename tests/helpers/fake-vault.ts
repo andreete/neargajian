@@ -16,8 +16,8 @@ interface Run {
 }
 
 export class FakeVault implements VaultClient {
-  vaultId = 'vault2.gajian-payroll.testnet';
-  wf: ChainWorkflow = { revision: 3, kind: 'TwoSequential', approvers: ['approver1.gajian-payroll.testnet', 'approver2.gajian-payroll.testnet'], release_mode: 'Automatic', maker: 'maker.gajian-payroll.testnet', worker: 'worker.gajian-payroll.testnet', max_row_amount: '1000000', max_run_total: '100000000' };
+  vaultId = 'vault.sentfund-payroll.testnet';
+  wf: ChainWorkflow = { revision: 3, kind: 'TwoSequential', approvers: ['approver1.sentfund-payroll.testnet', 'approver2.sentfund-payroll.testnet'], release_mode: 'Automatic', maker: 'maker.sentfund-payroll.testnet', worker: 'worker.sentfund-payroll.testnet', max_row_amount: '1000000', max_run_total: '100000000' };
   runs = new Map<string, Run>();
   rows = new Map<string, { status: 'InFlight' | 'Paid' | 'Failed'; receiver_id: string; amount: string; attempts: number }>();
   balance = 1_000_000n;
@@ -55,7 +55,7 @@ export class FakeVault implements VaultClient {
     return { signed: signedP, release };
   }
 
-  accountFor(role: ChainRole) { return `${role}.gajian-payroll.testnet`; }
+  accountFor(role: ChainRole) { return `${role}.sentfund-payroll.testnet`; }
   /** Roles whose signer key is missing (simulates a judge's copy without keys). */
   noKeys = new Set<ChainRole>();
   canSign(role: ChainRole) { return !this.noKeys.has(role); }

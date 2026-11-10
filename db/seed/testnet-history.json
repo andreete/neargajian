@@ -4,400 +4,54 @@
   "note": "Read from NEAR testnet by scripts/testnet/export-history.mjs. Do not edit by hand.",
   "runs": [
     {
-      "runId": "p02-run-1",
-      "vault": "vault.gajian-payroll.testnet",
-      "vaultGeneration": "phase-02 (deleted in Phase 04)",
-      "title": "First contract-controlled payout",
-      "category": "payroll",
-      "kind": "one",
-      "releaseMode": "automatic",
-      "approvers": [
-        "approver1.gajian-payroll.testnet"
-      ],
-      "status": "paid",
-      "rejectionReason": null,
-      "maker": "maker.gajian-payroll.testnet",
-      "total": "50000",
-      "rowCount": 1,
-      "payoutRoot": null,
-      "reviewDigest": null,
-      "createdAt": "2026-11-09T10:18:43.827Z",
-      "rows": [
-        {
-          "index": 0,
-          "receiver": "recipient1.gajian-payroll.testnet",
-          "amount": "50000",
-          "paidTxHash": "7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL",
-          "paidAt": "2026-11-09T10:19:02.021Z"
-        }
-      ],
-      "events": [
-        {
-          "txHash": "9nPkiwHz86SU6E6b9Yr4PWMHq3QSdmnhWFETE3gsV3WV",
-          "signer": "maker.gajian-payroll.testnet",
-          "method": "create_run",
-          "at": "2026-11-09T10:18:43.827Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "BtkgTjy5sKh2rg7uNnU5XrRKp97ZcovQmH9v63pzaymL",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "start_release",
-          "at": "2026-11-09T10:18:48.136Z",
-          "success": false,
-          "error": "Run is not approved for release",
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "CaPgWr2khsPp4oJqXTsYxYwyJj36UTy8N1WNX8MzontM",
-          "signer": "approver1.gajian-payroll.testnet",
-          "method": "approve",
-          "at": "2026-11-09T10:18:52.383Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "EYSLrascnRZ4gUT8ikYm2k9WmCWVDKHd47EYkWk11snb",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "start_release",
-          "at": "2026-11-09T10:18:57.182Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:19:02.021Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 0
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "6Hg4aX2qC3cHWQwNZPVa7oBeZG9HqzMH3EVB8VtAMeXq",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:19:07.989Z",
-          "success": false,
-          "error": "Run is not releasing",
-          "args": {
-            "index": 0
-          },
-          "paidReturned": null
-        }
-      ]
-    },
-    {
-      "runId": "p02-drain",
-      "vault": "vault.gajian-payroll.testnet",
-      "vaultGeneration": "phase-02 (deleted in Phase 04)",
-      "title": "Vault retirement: funds returned to the admin",
-      "category": "operations",
-      "kind": "one",
-      "releaseMode": "automatic",
-      "approvers": [
-        "approver1.gajian-payroll.testnet"
-      ],
-      "status": "paid",
-      "rejectionReason": null,
-      "maker": "maker.gajian-payroll.testnet",
-      "total": "950000",
-      "rowCount": 10,
-      "payoutRoot": null,
-      "reviewDigest": null,
-      "createdAt": "2026-11-09T10:40:15.524Z",
-      "rows": [
-        {
-          "index": 0,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "Fet8zYwNr1DC9DDiwycHrANWd2CMwRYmitxkazVJ7zCL",
-          "paidAt": "2026-11-09T10:40:28.844Z"
-        },
-        {
-          "index": 1,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "58sZkJPpUviztiSGx83wugtw9bx89pP5HMpR5ChetxWR",
-          "paidAt": "2026-11-09T10:41:10.135Z"
-        },
-        {
-          "index": 2,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "J4xBVnczPdX9N4VTqdCw3gUZKTXRWvQ9mcLcBhqkq6iH",
-          "paidAt": "2026-11-09T10:41:15.768Z"
-        },
-        {
-          "index": 3,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "9ZRizR2yyCxM8GdoCsghwcpBMRgSYHK9d1LkunpsbUEC",
-          "paidAt": "2026-11-09T10:41:21.964Z"
-        },
-        {
-          "index": 4,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "G2GzToeS7dsQMgfEKtrsccPptwxSQ2aBJxfGWvahcFTw",
-          "paidAt": "2026-11-09T10:41:27.383Z"
-        },
-        {
-          "index": 5,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "2nBWGQWfTvzmDUmvGJ7FywATPoxHCDgL6Jw2qSqyxUVD",
-          "paidAt": "2026-11-09T10:42:08.768Z"
-        },
-        {
-          "index": 6,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "FHqgiUZPtgtn5shuxf6favvYMMPnNnynLWmVjTGssDDZ",
-          "paidAt": "2026-11-09T10:42:14.772Z"
-        },
-        {
-          "index": 7,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "AQKMPmbzz39Na7GvbDS6zVPeRvRFCBn6fjZoaxg24ZS4",
-          "paidAt": "2026-11-09T10:42:20.816Z"
-        },
-        {
-          "index": 8,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "3hhUC3v8b113rJPSZZtQfS9TAFk7Bc9XGFERRRBcwF1V",
-          "paidAt": "2026-11-09T10:42:26.881Z"
-        },
-        {
-          "index": 9,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "95000",
-          "paidTxHash": "EaqSFT61e1vXPatfps9cDz38yhcarRqqdfieteHcHrGn",
-          "paidAt": "2026-11-09T10:42:32.313Z"
-        }
-      ],
-      "events": [
-        {
-          "txHash": "BZNkzBYvvzKE3fiCeoq4rqWbAi9LBVWofuZwzZgnL1uM",
-          "signer": "maker.gajian-payroll.testnet",
-          "method": "create_run",
-          "at": "2026-11-09T10:40:15.524Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "71wbYGD2wXdhQFcxD1w3ywAiN8TJ8ZsacRqYWikUSovG",
-          "signer": "approver1.gajian-payroll.testnet",
-          "method": "approve",
-          "at": "2026-11-09T10:40:19.734Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "cVv7s38hiQ33ErYTukK83QR3u7vsYrnrLq49nXtA2Mi",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "start_release",
-          "at": "2026-11-09T10:40:24.570Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "Fet8zYwNr1DC9DDiwycHrANWd2CMwRYmitxkazVJ7zCL",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:40:28.844Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 0
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "58sZkJPpUviztiSGx83wugtw9bx89pP5HMpR5ChetxWR",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:41:10.135Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 1
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "J4xBVnczPdX9N4VTqdCw3gUZKTXRWvQ9mcLcBhqkq6iH",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:41:15.768Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 2
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "9ZRizR2yyCxM8GdoCsghwcpBMRgSYHK9d1LkunpsbUEC",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:41:21.964Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 3
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "G2GzToeS7dsQMgfEKtrsccPptwxSQ2aBJxfGWvahcFTw",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:41:27.383Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 4
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "2nBWGQWfTvzmDUmvGJ7FywATPoxHCDgL6Jw2qSqyxUVD",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:42:08.768Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 5
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "FHqgiUZPtgtn5shuxf6favvYMMPnNnynLWmVjTGssDDZ",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:42:14.772Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 6
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "AQKMPmbzz39Na7GvbDS6zVPeRvRFCBn6fjZoaxg24ZS4",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:42:20.816Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 7
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "3hhUC3v8b113rJPSZZtQfS9TAFk7Bc9XGFERRRBcwF1V",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:42:26.881Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 8
-          },
-          "paidReturned": true
-        },
-        {
-          "txHash": "EaqSFT61e1vXPatfps9cDz38yhcarRqqdfieteHcHrGn",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T10:42:32.313Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 9
-          },
-          "paidReturned": true
-        }
-      ]
-    },
-    {
-      "runId": "p04-seq-202611091047",
-      "vault": "vault.gajian-payroll.testnet",
-      "vaultGeneration": "phase-04",
+      "runId": "p22-seq-202611100718",
+      "vault": "vault.sentfund-payroll.testnet",
+      "vaultGeneration": "sentfund (Phase 22)",
       "title": "Two approvers in sequence, automatic release",
       "category": "payroll",
       "kind": "two_sequential",
       "releaseMode": "automatic",
       "approvers": [
-        "approver1.gajian-payroll.testnet",
-        "approver2.gajian-payroll.testnet"
+        "approver1.sentfund-payroll.testnet",
+        "approver2.sentfund-payroll.testnet"
       ],
       "status": "paid",
       "rejectionReason": null,
-      "maker": "maker.gajian-payroll.testnet",
+      "maker": "maker.sentfund-payroll.testnet",
       "total": "150000",
       "rowCount": 3,
-      "payoutRoot": "e5ccd3c1fd33799d88b177fd57854211efa937fa8ee5435e704d3ee9b57099bf",
-      "reviewDigest": "6098af5c337f3c5f52c8585511e49c409749f55fae525b1f58b1c6dc27bca56d",
-      "createdAt": "2026-11-09T10:47:05.194Z",
+      "payoutRoot": "978d22e047a9ff48e62afdb06d408643eec317eb41d1cacf8065f5f9be174728",
+      "reviewDigest": "c6d87c50c47707fe0d950cdd51d660930038081ec6bb6b069c7a91c40ae98e8a",
+      "createdAt": "2026-11-10T07:18:47.678Z",
       "rows": [
         {
           "index": 0,
-          "receiver": "recipient1.gajian-payroll.testnet",
+          "receiver": "recipient1.sentfund-payroll.testnet",
           "amount": "30000",
-          "paidTxHash": "3JxCtfXomzLrGvSwsFT3AVXB9HnzxLWgEBzAGRkCMKPF",
-          "paidAt": "2026-11-09T10:47:46.239Z"
+          "paidTxHash": "UEJ1PEDzaYxXxWQWez4LAassLT93Beje7jzDbS9S8fP",
+          "paidAt": "2026-11-10T07:19:19.889Z"
         },
         {
           "index": 1,
-          "receiver": "recipient2.gajian-payroll.testnet",
+          "receiver": "recipient2.sentfund-payroll.testnet",
           "amount": "70000",
-          "paidTxHash": "GDd9YWkE44AJLptJQ98EdJ7Kmz5fnBio4wwKtQmm9Ff",
-          "paidAt": "2026-11-09T10:47:51.646Z"
+          "paidTxHash": "CbQSNZo8YkXVSVtfiQ8x5NNcK46s2PLc2NFtveg7KRM4",
+          "paidAt": "2026-11-10T07:19:24.758Z"
         },
         {
           "index": 2,
-          "receiver": "recipient3.gajian-payroll.testnet",
+          "receiver": "recipient3.sentfund-payroll.testnet",
           "amount": "50000",
-          "paidTxHash": "9DKhPivdPHpMPi82UhA5C3ri9Zr2SygdEiCptHM1euZR",
-          "paidAt": "2026-11-09T10:47:56.911Z"
+          "paidTxHash": "DMrHt1TcQAZjkKbuNh4RwX66wA25d7cmD5Nxa84Mf4Mc",
+          "paidAt": "2026-11-10T07:19:29.986Z"
         }
       ],
       "events": [
         {
-          "txHash": "GzCjK9KhBSehhiQ6t2uKjfcpenWc3r5S632P9h2eu7tF",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "2MdYti3zCUfRvwPPZ2n2TNSesmB5odATbSZ8XYTutLqD",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "create_run",
-          "at": "2026-11-09T10:47:05.194Z",
+          "at": "2026-11-10T07:18:47.678Z",
           "success": true,
           "error": null,
           "args": {
@@ -405,10 +59,10 @@
           }
         },
         {
-          "txHash": "GJcGj4WPT4GhtNDowQ8N5QfrE34yHK1EiJBabPVgfNrp",
-          "signer": "approver2.gajian-payroll.testnet",
+          "txHash": "A2neNKRW7tnSRUofR4bmx72BkFZ7Hvc4Arc73KMEAUcN",
+          "signer": "approver2.sentfund-payroll.testnet",
           "method": "approve",
-          "at": "2026-11-09T10:47:12.451Z",
+          "at": "2026-11-10T07:18:54.451Z",
           "success": false,
           "error": "Approver 2 can act only after approver 1 approved",
           "args": {
@@ -416,10 +70,10 @@
           }
         },
         {
-          "txHash": "5JjWMB3D7SxqFozzQ38psj88YpygnQcDkbpAzoyzJMES",
-          "signer": "approver1.gajian-payroll.testnet",
+          "txHash": "9dH6hHfo3PFaJYaBjZMx9ZyrbNrtFGhPVsDFniGNrpZc",
+          "signer": "approver1.sentfund-payroll.testnet",
           "method": "approve",
-          "at": "2026-11-09T10:47:19.808Z",
+          "at": "2026-11-10T07:18:59.270Z",
           "success": true,
           "error": null,
           "args": {
@@ -427,10 +81,10 @@
           }
         },
         {
-          "txHash": "CZsAPrnuYM8n6VN6PhzAmtXfSPAWsJVau79Qsgnn7hpv",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "5w5bYf2bGZvgub5RkpMM7TemsEx8HRH9s5J9DWXuTN7K",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "start_release",
-          "at": "2026-11-09T10:47:27.028Z",
+          "at": "2026-11-10T07:19:04.162Z",
           "success": false,
           "error": "Run is not approved for release",
           "args": {
@@ -438,10 +92,10 @@
           }
         },
         {
-          "txHash": "3idDNziFG1Y2tWcjUba5uYfD9SNP5ohsabNGkVTN8xty",
-          "signer": "approver2.gajian-payroll.testnet",
+          "txHash": "9z7wQ6WWyYy4vtmfSi6yvhU5r23ALvRbesgbUNhcLNFK",
+          "signer": "approver2.sentfund-payroll.testnet",
           "method": "approve",
-          "at": "2026-11-09T10:47:33.490Z",
+          "at": "2026-11-10T07:19:07.915Z",
           "success": true,
           "error": null,
           "args": {
@@ -449,10 +103,10 @@
           }
         },
         {
-          "txHash": "5EbiJBsWgSgrYQ3jtoGzAwFngZDhEkbgtQJbN9jYRoEy",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "FyY6qrbad9ZKTv5McmbNCHiF9m1wHvPSAzJFVLGps3nd",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "start_release",
-          "at": "2026-11-09T10:47:37.790Z",
+          "at": "2026-11-10T07:19:11.999Z",
           "success": false,
           "error": "Only the release worker can release this run (automatic release)",
           "args": {
@@ -460,10 +114,10 @@
           }
         },
         {
-          "txHash": "CW1asRBq6tJB89tJzoLFiikKMvP5H1nUe8ovxarJJc34",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "HwrDLPNq6myNu6iqE5ErP7z8CuDV4rX8Wvqg7ApFaYuk",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "start_release",
-          "at": "2026-11-09T10:47:42.018Z",
+          "at": "2026-11-10T07:19:16.144Z",
           "success": true,
           "error": null,
           "args": {
@@ -471,10 +125,10 @@
           }
         },
         {
-          "txHash": "3JxCtfXomzLrGvSwsFT3AVXB9HnzxLWgEBzAGRkCMKPF",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "UEJ1PEDzaYxXxWQWez4LAassLT93Beje7jzDbS9S8fP",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:47:46.239Z",
+          "at": "2026-11-10T07:19:19.889Z",
           "success": true,
           "error": null,
           "args": {
@@ -483,10 +137,10 @@
           "paidReturned": true
         },
         {
-          "txHash": "GDd9YWkE44AJLptJQ98EdJ7Kmz5fnBio4wwKtQmm9Ff",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "CbQSNZo8YkXVSVtfiQ8x5NNcK46s2PLc2NFtveg7KRM4",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:47:51.646Z",
+          "at": "2026-11-10T07:19:24.758Z",
           "success": true,
           "error": null,
           "args": {
@@ -495,10 +149,10 @@
           "paidReturned": true
         },
         {
-          "txHash": "9DKhPivdPHpMPi82UhA5C3ri9Zr2SygdEiCptHM1euZR",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "DMrHt1TcQAZjkKbuNh4RwX66wA25d7cmD5Nxa84Mf4Mc",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:47:56.911Z",
+          "at": "2026-11-10T07:19:29.986Z",
           "success": true,
           "error": null,
           "args": {
@@ -507,10 +161,10 @@
           "paidReturned": true
         },
         {
-          "txHash": "9rXgzDWGdaFv99rEgw9vdR7cBq3vp4NwRQc6Eck6JKhq",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "BYpZkcQe7td5FnYHk1sqEm3M39oPQ9QjqBqWVhixX8Gv",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:48:02.110Z",
+          "at": "2026-11-10T07:19:34.772Z",
           "success": false,
           "error": "Run is not releasing",
           "args": {
@@ -521,47 +175,47 @@
       ]
     },
     {
-      "runId": "p04-par-202611091047",
-      "vault": "vault.gajian-payroll.testnet",
-      "vaultGeneration": "phase-04",
+      "runId": "p22-par-202611100718",
+      "vault": "vault.sentfund-payroll.testnet",
+      "vaultGeneration": "sentfund (Phase 22)",
       "title": "Two approvers in parallel, maker release",
       "category": "payroll",
       "kind": "two_parallel",
       "releaseMode": "maker",
       "approvers": [
-        "approver1.gajian-payroll.testnet",
-        "approver2.gajian-payroll.testnet"
+        "approver1.sentfund-payroll.testnet",
+        "approver2.sentfund-payroll.testnet"
       ],
       "status": "paid",
       "rejectionReason": null,
-      "maker": "maker.gajian-payroll.testnet",
+      "maker": "maker.sentfund-payroll.testnet",
       "total": "30000",
       "rowCount": 2,
-      "payoutRoot": "aaee9952886764cf21601ab761862b449e320e96beb773ae01393aea4e877507",
-      "reviewDigest": "3a60803d9dfd4d21ce503a4d3402f0037f51baa703f6d22c2c667cd1df5f5115",
-      "createdAt": "2026-11-09T10:48:17.966Z",
+      "payoutRoot": "dfb867cf78cfff2a87e78fef28945788947e85d17b5b1a07143db239f0f49e0c",
+      "reviewDigest": "a9d9eac69399212fc89a40706bb6a96ef9a93596b087c30c39e45ae126a483c0",
+      "createdAt": "2026-11-10T07:19:49.862Z",
       "rows": [
         {
           "index": 0,
-          "receiver": "recipient2.gajian-payroll.testnet",
+          "receiver": "recipient2.sentfund-payroll.testnet",
           "amount": "20000",
-          "paidTxHash": "8bZ6chcLc6RRAQKpo6ZPyDxSYnLqwph8AiSjhzt2fAVY",
-          "paidAt": "2026-11-09T10:48:44.675Z"
+          "paidTxHash": "huhHZnhiXea9pK9WF9rgmHZzmbMXReRiztMdM3XNptU",
+          "paidAt": "2026-11-10T07:20:15.337Z"
         },
         {
           "index": 1,
-          "receiver": "recipient3.gajian-payroll.testnet",
+          "receiver": "recipient3.sentfund-payroll.testnet",
           "amount": "10000",
-          "paidTxHash": "EnfLJSx231Yo2r42pHRtXPLGBp8H3LF6A4tidP79xuGF",
-          "paidAt": "2026-11-09T10:48:50.086Z"
+          "paidTxHash": "F3DdLKT6deizv9Aq3dYbSBRSodAoyiyYscEZfcnmKgF8",
+          "paidAt": "2026-11-10T07:20:20.750Z"
         }
       ],
       "events": [
         {
-          "txHash": "HcuQ6rrGrdH5sbhG38CTNm8QL4JwxVDzmP9qqyLVfkxg",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "3nkcd5kKpUB4M6vTtXFVfwX5bAuu9EHzrKud1uQ8qRcM",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "create_run",
-          "at": "2026-11-09T10:48:17.966Z",
+          "at": "2026-11-10T07:19:49.862Z",
           "success": true,
           "error": null,
           "args": {
@@ -569,10 +223,10 @@
           }
         },
         {
-          "txHash": "2aRhtrQWy8QcTgLLFtCU3FQkwiu3khPax3Qs34CFQ8Ym",
-          "signer": "approver2.gajian-payroll.testnet",
+          "txHash": "7qrHVTvtHfi46MWBS8MZ4nYdQkyBrYaKo6x4pFvWYRKY",
+          "signer": "approver2.sentfund-payroll.testnet",
           "method": "approve",
-          "at": "2026-11-09T10:48:23.036Z",
+          "at": "2026-11-10T07:19:54.198Z",
           "success": true,
           "error": null,
           "args": {
@@ -580,10 +234,10 @@
           }
         },
         {
-          "txHash": "EFkkJudvRe9FWy7Y2ihGx1CTGhrwXCmnskhKstRisMwt",
-          "signer": "approver1.gajian-payroll.testnet",
+          "txHash": "G94g4x3AKPKFVLCrL4rTnmgfciSjMW8x3j4TpizxpQmS",
+          "signer": "approver1.sentfund-payroll.testnet",
           "method": "approve",
-          "at": "2026-11-09T10:48:27.696Z",
+          "at": "2026-11-10T07:19:58.327Z",
           "success": true,
           "error": null,
           "args": {
@@ -591,10 +245,10 @@
           }
         },
         {
-          "txHash": "G9sgA8X9JJ7wGJZFoqLn6wa36F4Goga2jxhmNRajE8XA",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "Cooy8qEoNipQZhY5HM3DTJnEnWxFmrr1HjNYUxFFxTYg",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "start_release",
-          "at": "2026-11-09T10:48:31.793Z",
+          "at": "2026-11-10T07:20:02.675Z",
           "success": false,
           "error": "Only the maker can release this run (maker release)",
           "args": {
@@ -602,10 +256,10 @@
           }
         },
         {
-          "txHash": "4av69XHLUMRKrWeXWYF3x8vKGbPMv5wnXgov7RbGZCoe",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "ZnpShgXjikEr5qzNRmBua9EEyPN4A4tMGfznFZQFdhL",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "start_release",
-          "at": "2026-11-09T10:48:36.198Z",
+          "at": "2026-11-10T07:20:06.840Z",
           "success": true,
           "error": null,
           "args": {
@@ -613,10 +267,10 @@
           }
         },
         {
-          "txHash": "7TUUMNJTvUTGTzngZUDqKATiN69PKQCFNdbEph5DU1Tn",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "GNMH8SJteSD6F836PvcAqobCatVXLBc1hxpdVeZze8sZ",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:48:40.419Z",
+          "at": "2026-11-10T07:20:11.045Z",
           "success": false,
           "error": "Payout proof does not match the approved run",
           "args": {
@@ -625,10 +279,10 @@
           "paidReturned": null
         },
         {
-          "txHash": "8bZ6chcLc6RRAQKpo6ZPyDxSYnLqwph8AiSjhzt2fAVY",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "huhHZnhiXea9pK9WF9rgmHZzmbMXReRiztMdM3XNptU",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:48:44.675Z",
+          "at": "2026-11-10T07:20:15.337Z",
           "success": true,
           "error": null,
           "args": {
@@ -637,10 +291,10 @@
           "paidReturned": true
         },
         {
-          "txHash": "EnfLJSx231Yo2r42pHRtXPLGBp8H3LF6A4tidP79xuGF",
-          "signer": "worker.gajian-payroll.testnet",
+          "txHash": "F3DdLKT6deizv9Aq3dYbSBRSodAoyiyYscEZfcnmKgF8",
+          "signer": "worker.sentfund-payroll.testnet",
           "method": "pay_row",
-          "at": "2026-11-09T10:48:50.086Z",
+          "at": "2026-11-10T07:20:20.750Z",
           "success": true,
           "error": null,
           "args": {
@@ -651,38 +305,38 @@
       ]
     },
     {
-      "runId": "p04-rej-202611091047",
-      "vault": "vault.gajian-payroll.testnet",
-      "vaultGeneration": "phase-04",
+      "runId": "p22-rej-202611100718",
+      "vault": "vault.sentfund-payroll.testnet",
+      "vaultGeneration": "sentfund (Phase 22)",
       "title": "Rejected by approver 1",
       "category": "payroll",
       "kind": "two_parallel",
       "releaseMode": "maker",
       "approvers": [
-        "approver1.gajian-payroll.testnet",
-        "approver2.gajian-payroll.testnet"
+        "approver1.sentfund-payroll.testnet",
+        "approver2.sentfund-payroll.testnet"
       ],
       "status": "rejected",
       "rejectionReason": null,
-      "maker": "maker.gajian-payroll.testnet",
+      "maker": "maker.sentfund-payroll.testnet",
       "total": "10000",
       "rowCount": 1,
-      "payoutRoot": "298dfc2e94bba1f7ad219900f6d21295a13bf51f55f519ffea4b6b1d39d78b66",
-      "reviewDigest": "49de01d8592be39bfdfd8223c128949be29b674f092359c4bb739b40ab3fa833",
-      "createdAt": "2026-11-09T10:48:55.591Z",
+      "payoutRoot": "809110e57d543bbe610730136af1f8127394727a72d00c10116deaf0d3bc571e",
+      "reviewDigest": "a92c9dd123b2bd10c8560013e1e16b95ea653b41d1feb75c881f805688286480",
+      "createdAt": "2026-11-10T07:20:26.234Z",
       "rows": [
         {
           "index": 0,
-          "receiver": "recipient1.gajian-payroll.testnet",
+          "receiver": "recipient1.sentfund-payroll.testnet",
           "amount": "10000"
         }
       ],
       "events": [
         {
-          "txHash": "C32vGB2kaT5QWsvCYq9vLDPQdv3x4bQcZSXdPf1Eg6hQ",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "44y8FYv4273e23GLuuZhmGfUZvJ9T6mHUnp93ghqEitZ",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "create_run",
-          "at": "2026-11-09T10:48:55.591Z",
+          "at": "2026-11-10T07:20:26.234Z",
           "success": true,
           "error": null,
           "args": {
@@ -690,10 +344,10 @@
           }
         },
         {
-          "txHash": "3uW7d5P6WzxYLnv7HQHDEvY5N1a8yAYa7XabKN8M3n7g",
-          "signer": "approver1.gajian-payroll.testnet",
+          "txHash": "6dQVxBRUXWqXtRg3nSA9xgQNnsuF9To2Kume9xCHvKdz",
+          "signer": "approver1.sentfund-payroll.testnet",
           "method": "reject",
-          "at": "2026-11-09T10:48:59.747Z",
+          "at": "2026-11-10T07:20:30.434Z",
           "success": true,
           "error": null,
           "args": {
@@ -701,103 +355,15 @@
           }
         },
         {
-          "txHash": "FB58uo5UpWCLiGaypv2Eurr3hkRFXAehsqTTRPyb1Fen",
-          "signer": "maker.gajian-payroll.testnet",
+          "txHash": "2xdpe83TvAA2uqpTUb5Xksbw4kGfAiTbr49jZMz8Mnqv",
+          "signer": "maker.sentfund-payroll.testnet",
           "method": "start_release",
-          "at": "2026-11-09T10:49:04.094Z",
+          "at": "2026-11-10T07:20:34.704Z",
           "success": false,
           "error": "Run is not approved for release",
           "args": {
             "index": null
           }
-        }
-      ]
-    },
-    {
-      "runId": "p16-migrate-202611091439",
-      "vault": "vault.gajian-payroll.testnet",
-      "vaultGeneration": "phase-04 (retired in Phase 16)",
-      "title": "Vault migration: funds moved to the final vault (via the admin)",
-      "category": "operations",
-      "kind": "two_sequential",
-      "releaseMode": "automatic",
-      "approvers": [
-        "approver1.gajian-payroll.testnet",
-        "approver2.gajian-payroll.testnet"
-      ],
-      "status": "paid",
-      "rejectionReason": null,
-      "maker": "maker.gajian-payroll.testnet",
-      "total": "700000",
-      "rowCount": 1,
-      "payoutRoot": "6ba0482b8f689df839cc4b6db5cb5e84045134382adca82fe881bc0f2c45f5ea",
-      "reviewDigest": "2cf49eca55e598e593f8e8e119560099e17c2514a5e747f0b742650d3ae775f7",
-      "createdAt": "2026-11-09T14:39:57.255Z",
-      "rows": [
-        {
-          "index": 0,
-          "receiver": "admin.gajian-payroll.testnet",
-          "amount": "700000",
-          "paidTxHash": "7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ",
-          "paidAt": "2026-11-09T14:40:19.086Z"
-        }
-      ],
-      "events": [
-        {
-          "txHash": "3s3fNvETpko2aHD7oAow7Nc1YF2pRbCHHbGBmtDyebyn",
-          "signer": "maker.gajian-payroll.testnet",
-          "method": "create_run",
-          "at": "2026-11-09T14:39:57.255Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "3ywfE8xJUpUht7ivbCFS3vm7JcbFz2xH3ubUsBdJUouJ",
-          "signer": "approver1.gajian-payroll.testnet",
-          "method": "approve",
-          "at": "2026-11-09T14:40:02.834Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "HvjeydQCTHqo2KY69kRbdTmzHxPd5aexj1GxJZZLVq3G",
-          "signer": "approver2.gajian-payroll.testnet",
-          "method": "approve",
-          "at": "2026-11-09T14:40:08.870Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "Eci9LLv469KAxE6x3rLXhSDnGZeGryLnNAc6Lv66aFfR",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "start_release",
-          "at": "2026-11-09T14:40:14.250Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": null
-          }
-        },
-        {
-          "txHash": "7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ",
-          "signer": "worker.gajian-payroll.testnet",
-          "method": "pay_row",
-          "at": "2026-11-09T14:40:19.086Z",
-          "success": true,
-          "error": null,
-          "args": {
-            "index": 0
-          },
-          "paidReturned": true
         }
       ]
     }

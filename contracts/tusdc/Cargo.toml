@@ -1,6 +1,6 @@
 [package]
 name = "gajian-tusdc"
-description = "tUSDC: GAJIAN's zero-value NEP-141 test token (6 decimals, owner-only mint, NEAR testnet only)"
+description = "tUSDC: SentFund's zero-value NEP-141 test token (6 decimals, owner-only mint, NEAR testnet only)"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true

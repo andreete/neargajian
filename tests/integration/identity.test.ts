@@ -39,7 +39,7 @@ let deps: IdentityDeps;
 let h: DatabaseHandle;
 let k = 0;
 const id = (account: string) => h.db.select().from(recipients).where(eq(recipients.nearAccountId, account)).get()!;
-const EMMA = 'recipient1.gajian-payroll.testnet', DANIEL = 'recipient2.gajian-payroll.testnet', GRACE = 'recipient3.gajian-payroll.testnet';
+const EMMA = 'recipient1.sentfund-payroll.testnet', DANIEL = 'recipient2.sentfund-payroll.testnet', GRACE = 'recipient3.sentfund-payroll.testnet';
 
 beforeAll(() => { engine = createFaceEngine(); });
 beforeEach(async () => {

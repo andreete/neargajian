@@ -5,7 +5,7 @@ export type SeedEnv = Readonly<Record<string, string | undefined>>;
 
 export const DEMO_PASSWORD = '12345678';
 /** The testnet master account (on-chain name, unchanged by the SentFund rebrand). */
-export const MASTER = 'gajian-payroll.testnet';
+export const MASTER = 'sentfund-payroll.testnet';
 
 export interface DemoUser { id: string; email: string; displayName: string; role: Role; chainAccountId: string }
 

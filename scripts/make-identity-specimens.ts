@@ -24,9 +24,9 @@ const SOURCES = {
 
 interface Person { key: 'emma' | 'daniel' | 'grace'; account: string; name: string; nik: string; birthPlace: string; birthDate: string; gender: 'LAKI-LAKI' | 'PEREMPUAN'; blood: string; address: string; rtrw: string; village: string }
 const PEOPLE: Person[] = [
-  { key: 'emma', account: 'recipient1.gajian-payroll.testnet', name: 'EMMA CLARK', nik: '3174995203940001', birthPlace: 'JAKARTA', birthDate: '12-03-1994', gender: 'PEREMPUAN', blood: 'O', address: 'JL. CONTOH RAYA NO. 1', rtrw: '001/002', village: 'CONTOH BARU' },
-  { key: 'daniel', account: 'recipient2.gajian-payroll.testnet', name: 'DANIEL HALL', nik: '3174992507900002', birthPlace: 'BANDUNG', birthDate: '25-07-1990', gender: 'LAKI-LAKI', blood: 'A', address: 'JL. SPESIMEN NO. 22', rtrw: '004/007', village: 'CONTOH LAMA' },
-  { key: 'grace', account: 'recipient3.gajian-payroll.testnet', name: 'GRACE LEWIS', nik: '3174994411880003', birthPlace: 'SURABAYA', birthDate: '04-11-1988', gender: 'PEREMPUAN', blood: 'B', address: 'JL. UJI COBA NO. 3', rtrw: '010/003', village: 'CONTOH TENGAH' },
+  { key: 'emma', account: 'recipient1.sentfund-payroll.testnet', name: 'EMMA CLARK', nik: '3174995203940001', birthPlace: 'JAKARTA', birthDate: '12-03-1994', gender: 'PEREMPUAN', blood: 'O', address: 'JL. CONTOH RAYA NO. 1', rtrw: '001/002', village: 'CONTOH BARU' },
+  { key: 'daniel', account: 'recipient2.sentfund-payroll.testnet', name: 'DANIEL HALL', nik: '3174992507900002', birthPlace: 'BANDUNG', birthDate: '25-07-1990', gender: 'LAKI-LAKI', blood: 'A', address: 'JL. SPESIMEN NO. 22', rtrw: '004/007', village: 'CONTOH LAMA' },
+  { key: 'grace', account: 'recipient3.sentfund-payroll.testnet', name: 'GRACE LEWIS', nik: '3174994411880003', birthPlace: 'SURABAYA', birthDate: '04-11-1988', gender: 'PEREMPUAN', blood: 'B', address: 'JL. UJI COBA NO. 3', rtrw: '010/003', village: 'CONTOH TENGAH' },
 ];
 
 const OUT = 'public/specimens';

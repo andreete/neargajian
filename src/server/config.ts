@@ -42,8 +42,8 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
     network: 'testnet',
     explorerTxUrl: env.NEAR_EXPLORER_TX_URL ?? 'https://testnet.nearblocks.io/txns/',
     explorerAccountUrl: 'https://testnet.nearblocks.io/address/',
-    vaultContractId: env.VAULT_CONTRACT_ID ?? 'vault2.gajian-payroll.testnet',
-    tokenContractId: env.TUSDC_CONTRACT_ID ?? 'tusdc.gajian-payroll.testnet',
+    vaultContractId: env.VAULT_CONTRACT_ID ?? 'vault.sentfund-payroll.testnet',
+    tokenContractId: env.TUSDC_CONTRACT_ID ?? 'tusdc.sentfund-payroll.testnet',
     chainWritesEnabled: ['MAKER', 'APPROVER1', 'APPROVER2', 'WORKER'].every((r) => Boolean(env[`${r}_SIGNER_PRIVATE_KEY`])),
     adminWritesEnabled: Boolean(env.ADMIN_SIGNER_PRIVATE_KEY),
   };

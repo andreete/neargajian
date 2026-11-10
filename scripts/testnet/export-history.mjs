@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Exports the real Phase 02 / Phase 04 testnet runs into db/seed/testnet-history.json for
+// Exports the real testnet runs of the SentFund deployment (Phase 22) into db/seed/testnet-history.json for
 // the demo seed. EVERY value (signer, method, arguments, success, block time, transferred
 // amounts and receivers) is read from NEAR testnet RPC; nothing is typed in by hand except
 // the list of public transaction hashes (from docs/TESTNET.md). Payout roots are recomputed
@@ -12,53 +12,30 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
 const OUT = new URL('../../db/seed/testnet-history.json', import.meta.url);
-const M = 'gajian-payroll.testnet';
+const M = 'sentfund-payroll.testnet';
 
-// Public transaction hashes, in order, per run (docs/TESTNET.md).
+// Public transaction hashes, in order, per run (docs/TESTNET.md, Phase 22). The SentFund deployment's
+// own history: the Phase 04 policy scenarios run on vault.sentfund-payroll.testnet by
+// scripts/testnet/phase22-live.ts. (The earlier gajian-payroll.testnet runs stay in
+// docs/evidence/testnet-runs.json and are re-checked by npm run judge:verify.)
 const RUNS = [
   {
-    runId: 'p02-run-1', vault: `vault.${M}`, vaultGeneration: 'phase-02 (deleted in Phase 04)',
-    title: 'First contract-controlled payout', kind: 'one', releaseMode: 'automatic', approvers: [`approver1.${M}`],
-    txs: ['9nPkiwHz86SU6E6b9Yr4PWMHq3QSdmnhWFETE3gsV3WV', 'BtkgTjy5sKh2rg7uNnU5XrRKp97ZcovQmH9v63pzaymL', 'CaPgWr2khsPp4oJqXTsYxYwyJj36UTy8N1WNX8MzontM',
-      'EYSLrascnRZ4gUT8ikYm2k9WmCWVDKHd47EYkWk11snb', '7DwmqekZtpB7u2L3JU4wEv9DoXKTdYhaQKaDXWnt5xwL', '6Hg4aX2qC3cHWQwNZPVa7oBeZG9HqzMH3EVB8VtAMeXq'],
-  },
-  {
-    runId: 'p02-drain', vault: `vault.${M}`, vaultGeneration: 'phase-02 (deleted in Phase 04)',
-    title: 'Vault retirement: funds returned to the admin', category: 'operations', kind: 'one', releaseMode: 'automatic', approvers: [`approver1.${M}`],
-    txs: ['BZNkzBYvvzKE3fiCeoq4rqWbAi9LBVWofuZwzZgnL1uM', '71wbYGD2wXdhQFcxD1w3ywAiN8TJ8ZsacRqYWikUSovG', 'cVv7s38hiQ33ErYTukK83QR3u7vsYrnrLq49nXtA2Mi',
-      'Fet8zYwNr1DC9DDiwycHrANWd2CMwRYmitxkazVJ7zCL', '58sZkJPpUviztiSGx83wugtw9bx89pP5HMpR5ChetxWR', 'J4xBVnczPdX9N4VTqdCw3gUZKTXRWvQ9mcLcBhqkq6iH',
-      '9ZRizR2yyCxM8GdoCsghwcpBMRgSYHK9d1LkunpsbUEC', 'G2GzToeS7dsQMgfEKtrsccPptwxSQ2aBJxfGWvahcFTw', '2nBWGQWfTvzmDUmvGJ7FywATPoxHCDgL6Jw2qSqyxUVD',
-      'FHqgiUZPtgtn5shuxf6favvYMMPnNnynLWmVjTGssDDZ', 'AQKMPmbzz39Na7GvbDS6zVPeRvRFCBn6fjZoaxg24ZS4', '3hhUC3v8b113rJPSZZtQfS9TAFk7Bc9XGFERRRBcwF1V',
-      'EaqSFT61e1vXPatfps9cDz38yhcarRqqdfieteHcHrGn'],
-  },
-  {
-    runId: 'p04-seq-202611091047', vault: `vault.${M}`, vaultGeneration: 'phase-04',
+    runId: 'p22-seq-202611100718', vault: `vault.${M}`, vaultGeneration: 'sentfund (Phase 22)',
     title: 'Two approvers in sequence, automatic release', kind: 'two_sequential', releaseMode: 'automatic', approvers: [`approver1.${M}`, `approver2.${M}`],
-    txs: ['GzCjK9KhBSehhiQ6t2uKjfcpenWc3r5S632P9h2eu7tF', 'GJcGj4WPT4GhtNDowQ8N5QfrE34yHK1EiJBabPVgfNrp', '5JjWMB3D7SxqFozzQ38psj88YpygnQcDkbpAzoyzJMES',
-      'CZsAPrnuYM8n6VN6PhzAmtXfSPAWsJVau79Qsgnn7hpv', '3idDNziFG1Y2tWcjUba5uYfD9SNP5ohsabNGkVTN8xty', '5EbiJBsWgSgrYQ3jtoGzAwFngZDhEkbgtQJbN9jYRoEy',
-      'CW1asRBq6tJB89tJzoLFiikKMvP5H1nUe8ovxarJJc34', '3JxCtfXomzLrGvSwsFT3AVXB9HnzxLWgEBzAGRkCMKPF', 'GDd9YWkE44AJLptJQ98EdJ7Kmz5fnBio4wwKtQmm9Ff',
-      '9DKhPivdPHpMPi82UhA5C3ri9Zr2SygdEiCptHM1euZR', '9rXgzDWGdaFv99rEgw9vdR7cBq3vp4NwRQc6Eck6JKhq'],
+    txs: ['2MdYti3zCUfRvwPPZ2n2TNSesmB5odATbSZ8XYTutLqD', 'A2neNKRW7tnSRUofR4bmx72BkFZ7Hvc4Arc73KMEAUcN', '9dH6hHfo3PFaJYaBjZMx9ZyrbNrtFGhPVsDFniGNrpZc', '5w5bYf2bGZvgub5RkpMM7TemsEx8HRH9s5J9DWXuTN7K', '9z7wQ6WWyYy4vtmfSi6yvhU5r23ALvRbesgbUNhcLNFK', 'FyY6qrbad9ZKTv5McmbNCHiF9m1wHvPSAzJFVLGps3nd', 'HwrDLPNq6myNu6iqE5ErP7z8CuDV4rX8Wvqg7ApFaYuk', 'UEJ1PEDzaYxXxWQWez4LAassLT93Beje7jzDbS9S8fP', 'CbQSNZo8YkXVSVtfiQ8x5NNcK46s2PLc2NFtveg7KRM4', 'DMrHt1TcQAZjkKbuNh4RwX66wA25d7cmD5Nxa84Mf4Mc', 'BYpZkcQe7td5FnYHk1sqEm3M39oPQ9QjqBqWVhixX8Gv'],
   },
   {
-    runId: 'p04-par-202611091047', vault: `vault.${M}`, vaultGeneration: 'phase-04',
+    runId: 'p22-par-202611100718', vault: `vault.${M}`, vaultGeneration: 'sentfund (Phase 22)',
     title: 'Two approvers in parallel, maker release', kind: 'two_parallel', releaseMode: 'maker', approvers: [`approver1.${M}`, `approver2.${M}`],
-    txs: ['HcuQ6rrGrdH5sbhG38CTNm8QL4JwxVDzmP9qqyLVfkxg', '2aRhtrQWy8QcTgLLFtCU3FQkwiu3khPax3Qs34CFQ8Ym', 'EFkkJudvRe9FWy7Y2ihGx1CTGhrwXCmnskhKstRisMwt',
-      'G9sgA8X9JJ7wGJZFoqLn6wa36F4Goga2jxhmNRajE8XA', '4av69XHLUMRKrWeXWYF3x8vKGbPMv5wnXgov7RbGZCoe', '7TUUMNJTvUTGTzngZUDqKATiN69PKQCFNdbEph5DU1Tn',
-      '8bZ6chcLc6RRAQKpo6ZPyDxSYnLqwph8AiSjhzt2fAVY', 'EnfLJSx231Yo2r42pHRtXPLGBp8H3LF6A4tidP79xuGF'],
+    txs: ['3nkcd5kKpUB4M6vTtXFVfwX5bAuu9EHzrKud1uQ8qRcM', '7qrHVTvtHfi46MWBS8MZ4nYdQkyBrYaKo6x4pFvWYRKY', 'G94g4x3AKPKFVLCrL4rTnmgfciSjMW8x3j4TpizxpQmS', 'Cooy8qEoNipQZhY5HM3DTJnEnWxFmrr1HjNYUxFFxTYg', 'ZnpShgXjikEr5qzNRmBua9EEyPN4A4tMGfznFZQFdhL', 'GNMH8SJteSD6F836PvcAqobCatVXLBc1hxpdVeZze8sZ', 'huhHZnhiXea9pK9WF9rgmHZzmbMXReRiztMdM3XNptU', 'F3DdLKT6deizv9Aq3dYbSBRSodAoyiyYscEZfcnmKgF8'],
   },
   {
-    runId: 'p04-rej-202611091047', vault: `vault.${M}`, vaultGeneration: 'phase-04',
+    runId: 'p22-rej-202611100718', vault: `vault.${M}`, vaultGeneration: 'sentfund (Phase 22)',
     title: 'Rejected by approver 1', kind: 'two_parallel', releaseMode: 'maker', approvers: [`approver1.${M}`, `approver2.${M}`],
     // The rejected run never paid, so its single row is not in any transaction. It is
     // declared here and accepted only if its leaf hash reproduces the on-chain payout_root.
     declaredRows: [{ index: 0, receiver: `recipient1.${M}`, amount: '10000' }],
-    txs: ['C32vGB2kaT5QWsvCYq9vLDPQdv3x4bQcZSXdPf1Eg6hQ', '3uW7d5P6WzxYLnv7HQHDEvY5N1a8yAYa7XabKN8M3n7g', 'FB58uo5UpWCLiGaypv2Eurr3hkRFXAehsqTTRPyb1Fen'],
-  },
-  {
-    runId: 'p16-migrate-202611091439', vault: `vault.${M}`, vaultGeneration: 'phase-04 (retired in Phase 16)',
-    title: 'Vault migration: funds moved to the final vault (via the admin)', category: 'operations', kind: 'two_sequential', releaseMode: 'automatic', approvers: [`approver1.${M}`, `approver2.${M}`],
-    txs: ['3s3fNvETpko2aHD7oAow7Nc1YF2pRbCHHbGBmtDyebyn', '3ywfE8xJUpUht7ivbCFS3vm7JcbFz2xH3ubUsBdJUouJ', 'HvjeydQCTHqo2KY69kRbdTmzHxPd5aexj1GxJZZLVq3G',
-      'Eci9LLv469KAxE6x3rLXhSDnGZeGryLnNAc6Lv66aFfR', '7wgi6HNZMq1McJTFLXi2xbeFturVzqNXcq26zFE2fPhQ'],
+    txs: ['44y8FYv4273e23GLuuZhmGfUZvJ9T6mHUnp93ghqEitZ', '6dQVxBRUXWqXtRg3nSA9xgQNnsuF9To2Kume9xCHvKdz', '2xdpe83TvAA2uqpTUb5Xksbw4kGfAiTbr49jZMz8Mnqv'],
   },
 ];
 

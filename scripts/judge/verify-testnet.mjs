@@ -57,9 +57,8 @@ for (const op of ev.operations ?? []) {
   const failed = JSON.stringify(out.status).includes('Failure') || out.receipts_outcome.some((o) => 'Failure' in (o.outcome.status ?? {}));
   check(!failed && out.transaction.signer_id === op.signer && (!op.receiver || out.transaction.receiver_id === op.receiver), `${op.step} ${op.hash.slice(0, 8)}… final, signed by ${out.transaction.signer_id}`);
 }
-if (ev.finalVault) {
-  const fv = ev.finalVault;
-  console.log(`\n== Final vault ${fv.account} (release commit ${fv.releaseCommit.slice(0, 7)})`);
+for (const [i, fv] of [ev.finalVault, ...(ev.earlierVaults ?? [])].filter(Boolean).entries()) {
+  console.log(`\n== ${i === 0 ? 'Final vault' : 'Earlier vault'} ${fv.account} (release commit ${fv.releaseCommit.slice(0, 7)})`);
   const acc = await rpc('query', { request_type: 'view_account', finality: 'final', account_id: fv.account });
   check(acc.code_hash === fv.codeHashBase58, `code_hash ${acc.code_hash} = base58(sha256) of the release Wasm (sha256 ${fv.wasmSha256.slice(0, 12)}…)`);
   const { keys } = await rpc('query', { request_type: 'view_access_key_list', finality: 'final', account_id: fv.account });
@@ -96,7 +95,7 @@ const blockSecond = async (hash, signer) => {
 console.log('\n== Exported paid times equal the chain block time of each payout');
 const byRef = new Map();
 for (const { reference, paid_at_utc: paidAt, tx_hash: txHash } of csv('recipients.csv')) {
-  const b = await blockSecond(txHash, 'worker.gajian-payroll.testnet');
+  const b = await blockSecond(txHash, ev.exportsWorker ?? 'worker.gajian-payroll.testnet'); // exports of the earlier deployment's runs
   byRef.set(reference, b.at);
   check(paidAt === b.at, `recipient CSV ${reference}: ${paidAt} = block ${b.height} at ${b.at} (${txHash.slice(0, 8)}…)`);
 }

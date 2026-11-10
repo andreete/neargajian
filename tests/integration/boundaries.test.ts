@@ -122,7 +122,7 @@ beforeAll(async () => {
   (await import('@/server/assistant/factory')).setAssistantModelForTests((await import('@/server/assistant/stub-model')).stubModel());
   (await import('@/server/recipients/readiness')).setReadinessCheckerForTests({ check: async () => 'ready' });
   (await import('@/server/identity/ktp-reader')).setKtpReaderForTests((await import('@/server/identity/ktp-reader')).stubKtpReader());
-  EMMA = (sqlite.prepare("select id from recipients where near_account_id = 'recipient1.gajian-payroll.testnet'").get() as { id: string }).id;
+  EMMA = (sqlite.prepare("select id from recipients where near_account_id = 'recipient1.sentfund-payroll.testnet'").get() as { id: string }).id;
   const { users } = await import('@/server/db/schema');
   const hash = sqlite.prepare("select password_hash as h from users where id = 'usr_maker'").get() as { h: string };
   db.insert(users).values([

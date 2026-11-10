@@ -69,6 +69,7 @@ async function view<T>(contract: string, method: string, args: object): Promise<
 const tusdc = (s: string) => { const p = parseAmount(s, 10_000_000n); if (!p.ok) throw new Error(p.message); return p.value; };
 
 async function migrate() {
+  throw new Error('refused: migrate was the one-time Phase 16 move between the gajian-payroll.testnet vaults (done); the current deployment is sentfund-payroll.testnet');
   const bal = await view<{ available: string; reserved: string }>(LEGACY_VAULT, 'get_balances', {});
   const amount = BigInt(bal.available);
   if (bal.reserved !== '0' || amount <= 0n) throw new Error(`legacy vault not idle: ${JSON.stringify(bal)}`);

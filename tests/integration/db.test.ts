@@ -22,12 +22,12 @@ const ENV = { DEMO_MODE: 'true' };
 const NOW = new Date('2026-11-10T03:00:00Z');
 const WORKFLOW: WorkflowSnapshot = {
   revision: 3, kind: 'two_sequential', releaseMode: 'automatic',
-  approvers: [{ userId: 'usr_app1', chainAccountId: 'approver1.gajian-payroll.testnet' }, { userId: 'usr_app2', chainAccountId: 'approver2.gajian-payroll.testnet' }],
+  approvers: [{ userId: 'usr_app1', chainAccountId: 'approver1.sentfund-payroll.testnet' }, { userId: 'usr_app2', chainAccountId: 'approver2.sentfund-payroll.testnet' }],
   maxRowAmount: '1000000', maxRunTotal: '100000000',
 };
 const ROWS = [
-  { accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Emma', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+447700900101', email: 'emma@example.com' },
-  { accountId: 'recipient2.gajian-payroll.testnet', receiverName: 'Daniel', currency: 'tUSDC', amount: 70_000n, mobilePhone: '+447700900102', email: 'daniel@example.com' },
+  { accountId: 'recipient1.sentfund-payroll.testnet', receiverName: 'Emma', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+447700900101', email: 'emma@example.com' },
+  { accountId: 'recipient2.sentfund-payroll.testnet', receiverName: 'Daniel', currency: 'tUSDC', amount: 70_000n, mobilePhone: '+447700900102', email: 'daniel@example.com' },
 ];
 
 let dir: string;
@@ -74,7 +74,7 @@ describe('uniqueness and constraints', () => {
     const base = { displayName: 'X', role: 'maker' as const, passwordHash: 'x', createdAt: NOW };
     expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u1', email: 'maker@sentfund.my.id' }).run(), /UNIQUE/);
     expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u2', email: 'Upper@sentfund.my.id' }).run(), /CHECK/);
-    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u3', email: 'x@sentfund.my.id', chainAccountId: 'maker.gajian-payroll.testnet' }).run(), /UNIQUE/);
+    expectSqlError(() => h.db.insert(users).values({ ...base, id: 'u3', email: 'x@sentfund.my.id', chainAccountId: 'maker.sentfund-payroll.testnet' }).run(), /UNIQUE/);
   });
 
   it('enforces workflow shape and a single active revision', () => {
@@ -82,7 +82,7 @@ describe('uniqueness and constraints', () => {
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w1', revision: 4, kind: 'two_sequential', approver1UserId: 'usr_app1', approver2UserId: 'usr_app1', chainStatus: 'pending' }).run(), /CHECK/);
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w2', revision: 5, kind: 'one', approver1UserId: 'usr_app1', approver2UserId: 'usr_app2', chainStatus: 'pending' }).run(), /CHECK/);
     expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w3', revision: 6, kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'active' }).run(), /UNIQUE/);
-    expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w4', revision: 3, vaultContractId: 'vault2.gajian-payroll.testnet', kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run(), /UNIQUE/);
+    expectSqlError(() => h.db.insert(workflowConfigs).values({ ...base, id: 'w4', revision: 3, vaultContractId: 'vault.sentfund-payroll.testnet', kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'pending' }).run(), /UNIQUE/);
     // Revisions restart in a new vault: the same number in another vault is a different revision.
     h.db.insert(workflowConfigs).values({ ...base, id: 'w4b', revision: 3, vaultContractId: 'vault.gajian-payroll.testnet', kind: 'one', approver1UserId: 'usr_app1', chainStatus: 'superseded' }).run();
     // A failed attempt does not block a retry of the same revision.

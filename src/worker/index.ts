@@ -30,7 +30,7 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
-logLine('started', { intervalMs, vault: process.env.VAULT_CONTRACT_ID ?? 'vault2.gajian-payroll.testnet' });
+logLine('started', { intervalMs, vault: process.env.VAULT_CONTRACT_ID ?? 'vault.sentfund-payroll.testnet' });
 const db = getDb();
 const client = getVaultClient();
 if (!client.canSign('worker')) {

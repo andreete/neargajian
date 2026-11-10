@@ -1,4 +1,4 @@
-//! tUSDC: a zero-value NEP-141 test token for the GAJIAN payroll prototype (NEAR testnet only).
+//! tUSDC: a zero-value NEP-141 test token for the SentFund payroll prototype (NEAR testnet only).
 //!
 //! - NEP-141 (fungible token), NEP-145 (storage management) and NEP-148 (metadata) from
 //!   `near-contract-standards`.
@@ -157,7 +157,7 @@ impl FungibleTokenMetadataProvider for Contract {
     fn ft_metadata(&self) -> FungibleTokenMetadata {
         FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
-            name: "GAJIAN test USDC (zero value, testnet only)".to_string(),
+            name: "SentFund test USDC (zero value, testnet only)".to_string(),
             symbol: SYMBOL.to_string(),
             icon: None,
             reference: None,

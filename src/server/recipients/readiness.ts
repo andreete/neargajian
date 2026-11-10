@@ -32,7 +32,7 @@ async function rpc(url: string, params: Record<string, unknown>): Promise<{ resu
 export function rpcReadinessChecker(env: Readonly<Record<string, string | undefined>> = process.env): ReadinessChecker {
   const url = env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
   if (!/testnet/.test(url)) throw new Error('NEAR_RPC_URL must be a testnet endpoint');
-  const token = env.TUSDC_CONTRACT_ID ?? 'tusdc.gajian-payroll.testnet';
+  const token = env.TUSDC_CONTRACT_ID ?? 'tusdc.sentfund-payroll.testnet';
   return {
     async check(accountId) {
       try {

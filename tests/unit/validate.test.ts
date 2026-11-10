@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { emptyRow, validateRow, validateRows, type RawRow } from '@/server/payroll/validate';
 
 const LIMITS = { maxRowAmount: 1_000_000n, maxRunTotal: 100_000_000n };
-const ok: RawRow = { near_account_id: 'recipient1.gajian-payroll.testnet', receiver_name: 'Emma Clark', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 'Emma.Clark@Example.com' };
+const ok: RawRow = { near_account_id: 'recipient1.sentfund-payroll.testnet', receiver_name: 'Emma Clark', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 'Emma.Clark@Example.com' };
 const errs = (r: Partial<RawRow>) => validateRow({ ...ok, ...r }, 0, LIMITS).errors.map((e) => `${e.field}: ${e.message}`);
 
 describe('row validation', () => {
   it('accepts a valid row and normalizes it exactly', () => {
     const r = validateRow({ ...ok, receiver_name: '  Emma Clark  ' }, 0, LIMITS);
     expect(r.errors).toEqual([]);
-    expect(r.valid).toEqual({ accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Emma Clark', currency: 'tUSDC', amount: 50_000n, mobilePhone: '+44 7700 900101', email: 'emma.clark@example.com' });
+    expect(r.valid).toEqual({ accountId: 'recipient1.sentfund-payroll.testnet', receiverName: 'Emma Clark', currency: 'tUSDC', amount: 50_000n, mobilePhone: '+44 7700 900101', email: 'emma.clark@example.com' });
   });
 
   it('keeps amount precision exact and refuses anything ambiguous', () => {
@@ -51,7 +51,7 @@ describe('run validation', () => {
   it('flags the same wallet on two rows as a warning, not an error', () => {
     const s = validateRows([ok, { ...ok, near_account_id: 'other.testnet' }, ok], LIMITS);
     expect(s.invalidCount).toBe(0);
-    expect([...s.duplicateWallets]).toEqual([['recipient1.gajian-payroll.testnet', [0, 2]]]);
+    expect([...s.duplicateWallets]).toEqual([['recipient1.sentfund-payroll.testnet', [0, 2]]]);
   });
 
   it('enforces the run cap and the row limit', () => {

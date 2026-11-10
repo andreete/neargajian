@@ -96,9 +96,9 @@ test('Pay registered recipients only: an upload row outside the directory or abo
   await expect(page.getByTestId('directory-rule')).toContainText('Pay registered recipients only is on');
   const csv = [
     'near_account_id,receiver_name,currency,amount,mobile_phone,email',
-    'recipient1.gajian-payroll.testnet,Emma Clark,tUSDC,0.05,+44 7700 900101,emma.clark@example.com',
+    'recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,0.05,+44 7700 900101,emma.clark@example.com',
     'stranger.testnet,Sam Stranger,tUSDC,0.05,+44 7700 900888,sam@example.com',
-    'recipient2.gajian-payroll.testnet,Daniel Hall,tUSDC,0.25,+44 7700 900102,daniel.hall@example.com',
+    'recipient2.sentfund-payroll.testnet,Daniel Hall,tUSDC,0.25,+44 7700 900102,daniel.hall@example.com',
   ].join('\r\n');
   await page.getByLabel('Choose a payroll file').setInputFiles({ name: 'with-stranger.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
   const panel = page.getByTestId('error-panel');

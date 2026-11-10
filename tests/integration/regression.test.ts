@@ -49,7 +49,7 @@ async function approve(who: typeof app1) {
 function policy(kind: 'one' | 'two_parallel') {
   h.db.update(workflowConfigs).set({ kind, ...(kind === 'one' ? { approver2UserId: null } : {}) }).where(eq(workflowConfigs.chainStatus, 'active')).run();
   fake.wf.kind = kind === 'one' ? 'One' : 'TwoParallel';
-  if (kind === 'one') fake.wf.approvers = ['approver1.gajian-payroll.testnet'];
+  if (kind === 'one') fake.wf.approvers = ['approver1.sentfund-payroll.testnet'];
 }
 
 beforeEach(async () => {
@@ -66,7 +66,7 @@ describe('imported file integrity', () => {
     expect(version.sourceSha256).toBe(createHash('sha256').update(FILE).digest('hex'));
     const rows = h.sqlite.prepare('select row_index as i, near_account_id as a, amount, source_line as line from version_rows where version_id = ? order by row_index').all(version.id) as { i: number; a: string; amount: string; line: number }[];
     expect(rows.map((r) => [r.line, r.a, r.amount])).toEqual([
-      [2, 'recipient1.gajian-payroll.testnet', '40000'], [3, 'recipient2.gajian-payroll.testnet', '60000'], [4, 'recipient3.gajian-payroll.testnet', '20000'],
+      [2, 'recipient1.sentfund-payroll.testnet', '40000'], [3, 'recipient2.sentfund-payroll.testnet', '60000'], [4, 'recipient3.sentfund-payroll.testnet', '20000'],
     ]);
     const root = toHex(buildPayoutTree(rows.map((r) => ({ index: r.i, accountId: r.a, amount: BigInt(r.amount) }))).root);
     expect(root).toBe(version.payoutRoot);
@@ -154,9 +154,9 @@ describe('vault switch', () => {
     await approve(app1);
     const other = new FakeVault();
     other.vaultId = 'vault.gajian-payroll.testnet'; // the previous vault
-    expect(v().vaultContractId).toBe('vault2.gajian-payroll.testnet');
+    expect(v().vaultContractId).toBe('vault.sentfund-payroll.testnet');
     expect((await reconcileVersion(h.db, other, v().id)).status).toBe('pending_approval');
-    await expect(decide(h.db, other, app2, RUN, { versionId: v().id, decision: 'approve' })).rejects.toThrow(/submitted to vault2\.gajian-payroll\.testnet/);
+    await expect(decide(h.db, other, app2, RUN, { versionId: v().id, decision: 'approve' })).rejects.toThrow(/submitted to vault\.sentfund-payroll\.testnet/);
     await workerTick(h.db, other, { workerId: 'w' });
     expect(other.calls).toEqual([]);
     expect(await approve(app2)).toBe('approved'); // its own vault still works
@@ -195,6 +195,6 @@ describe('transfer idempotency', () => {
     const args = fake.calls.find((c) => c.method === 'pay_row')!.args;
     const again = await fake.call('worker', 'pay_row', args);
     expect(again).toMatchObject({ status: 'failure', error: 'Row is already paid' });
-    expect(fake.paidTo.get('recipient1.gajian-payroll.testnet')).toBe(40_000n);
+    expect(fake.paidTo.get('recipient1.sentfund-payroll.testnet')).toBe(40_000n);
   });
 });

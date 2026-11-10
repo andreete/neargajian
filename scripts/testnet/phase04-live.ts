@@ -10,8 +10,9 @@ import {
 } from '../../src/server/commitments.ts';
 import { formatAmount, parseAmount } from '../../src/server/money.ts';
 // @ts-expect-error plain .mjs helper without type declarations
-import { MASTER, ROLES, LEGACY_VAULT as VAULT, rpc, vaultKey as finalVaultKey } from './signer-keys.mjs';
-// Historical Phase 04 script: it always targets the Phase 04 vault (now LEGACY_VAULT).
+import { GAJIAN_MASTER as MASTER, GAJIAN_ROLES as ROLES, LEGACY_VAULT as VAULT, rpc, vaultKey as finalVaultKey } from './signer-keys.mjs';
+// Historical Phase 04 script: it always targets the Phase 04 vault of the gajian-payroll.testnet
+// deployment (LEGACY_VAULT). The same scenarios on the SentFund vault: phase22-live.ts.
 const vaultKey = (account: string) => finalVaultKey(account, VAULT);
 
 type Role = keyof typeof ROLES;

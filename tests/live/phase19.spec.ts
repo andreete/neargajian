@@ -62,9 +62,9 @@ test('p19-directory: the directory and a refused upload row', async ({ browser }
   await maker.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
   const csv = [
     'near_account_id,receiver_name,currency,amount,mobile_phone,email',
-    'recipient1.gajian-payroll.testnet,Emma Clark,tUSDC,0.05,+44 7700 900101,emma.clark@example.com',
+    'recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,0.05,+44 7700 900101,emma.clark@example.com',
     'unknown-payee.testnet,Sam Stranger,tUSDC,0.05,+44 7700 900888,sam.stranger@example.com',
-    'recipient2.gajian-payroll.testnet,Daniel Hall,tUSDC,0.25,+44 7700 900102,daniel.hall@example.com',
+    'recipient2.sentfund-payroll.testnet,Daniel Hall,tUSDC,0.25,+44 7700 900102,daniel.hall@example.com',
   ].join('\r\n');
   await maker.getByLabel('Choose a payroll file').setInputFiles({ name: 'november-with-unknown-payee.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
   await expect(maker.getByTestId('error-panel')).toContainText('File rejected: 2 problems');

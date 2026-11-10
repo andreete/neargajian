@@ -54,7 +54,7 @@ describe('release worker', () => {
     expect(version().status).toBe('paid');
     expect(payCalls().map((c) => c.args.index)).toEqual([0, 1, 2]);
     expect([...fake.paidTo]).toEqual([
-      ['recipient1.gajian-payroll.testnet', 30_000n], ['recipient2.gajian-payroll.testnet', 70_000n], ['recipient3.gajian-payroll.testnet', 50_000n],
+      ['recipient1.sentfund-payroll.testnet', 30_000n], ['recipient2.sentfund-payroll.testnet', 70_000n], ['recipient3.sentfund-payroll.testnet', 50_000n],
     ]);
     expect(fake.balance).toBe(850_000n);
     expect(fake.reserved).toBe(0n);
@@ -82,7 +82,7 @@ describe('release worker', () => {
     later(31_000);
     await tick();
     expect(version().status).toBe('paid');
-    expect(fake.paidTo.get('recipient1.gajian-payroll.testnet')).toBe(30_000n);
+    expect(fake.paidTo.get('recipient1.sentfund-payroll.testnet')).toBe(30_000n);
   });
 
   it('an unknown outcome that landed is reconciled from the vault, not paid again', async () => {
@@ -106,7 +106,7 @@ describe('release worker', () => {
     later(31_000);
     await tick();
     expect(version().status).toBe('paid');
-    expect(fake.paidTo.get('recipient1.gajian-payroll.testnet')).toBe(30_000n);
+    expect(fake.paidTo.get('recipient1.sentfund-payroll.testnet')).toBe(30_000n);
     expect(h.db.select().from(payoutActions).all().filter((a) => a.rowIndex === 0).map((a) => a.status)).toEqual(['failed', 'succeeded']);
   });
 
@@ -127,12 +127,12 @@ describe('release worker', () => {
 
   it('a proven transfer failure is retried a bounded number of times, then needs attention; never false Paid', async () => {
     await approved();
-    fake.unregistered.add('recipient2.gajian-payroll.testnet');
+    fake.unregistered.add('recipient2.sentfund-payroll.testnet');
     for (let i = 0; i < MAX_ROW_ATTEMPTS + 2; i++) { await tick(); later(31_000); }
     expect(version().status).toBe('releasing');
     expect(displayStatus(runDetail(h.db, maker, DEMO_DRAFT_RUN_ID))).toBe('needs_attention');
     expect(payCalls().filter((c) => c.args.index === 1)).toHaveLength(MAX_ROW_ATTEMPTS);
-    expect(fake.paidTo.has('recipient2.gajian-payroll.testnet')).toBe(false);
+    expect(fake.paidTo.has('recipient2.sentfund-payroll.testnet')).toBe(false);
     expect(h.db.select().from(reportEntries).all()).toHaveLength(0);
   });
 

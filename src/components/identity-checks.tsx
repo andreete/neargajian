@@ -361,7 +361,7 @@ export function BulkIdentityCheck({ csrfToken, disabled }: { csrfToken: string; 
   return (
     <section className="card card-pad" aria-labelledby="bulk-id-h">
       <h2 id="bulk-id-h" className="panel-h">Check many employees</h2>
-      <p className="hint">Choose image files named <code>&lt;NEAR account&gt;.ktp.jpg</code> and <code>&lt;NEAR account&gt;.face.jpg</code> (PNG and WebP work too), for example <code>recipient1.gajian-payroll.testnet.ktp.jpg</code>. Each employee is checked in turn (at most 30 per hour per admin).</p>
+      <p className="hint">Choose image files named <code>&lt;NEAR account&gt;.ktp.jpg</code> and <code>&lt;NEAR account&gt;.face.jpg</code> (PNG and WebP work too), for example <code>recipient1.sentfund-payroll.testnet.ktp.jpg</code>. Each employee is checked in turn (at most 30 per hour per admin).</p>
       <input ref={input} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" id="bulk-id-files" onChange={(e) => pick(e.target.files)} />
       <div className="toolbar-row">
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => input.current?.click()} disabled={running || Boolean(disabled)}><UploadIcon size={16} />Choose files</button>

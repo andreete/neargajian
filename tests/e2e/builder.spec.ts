@@ -24,7 +24,7 @@ test('maker builds a manual run, sees inline errors and keeps only the valid row
     for (const [i, label] of labels.entries()) await page.getByLabel(`Row ${row} ${label}`).fill(values[i] ?? '');
     await page.getByLabel(`Row ${row} Email`).blur();
   };
-  await fill(1, ['recipient1.gajian-payroll.testnet', 'Emma Clark', '0.05', '+44 7700 900101', 'emma@example.com']);
+  await fill(1, ['recipient1.sentfund-payroll.testnet', 'Emma Clark', '0.05', '+44 7700 900101', 'emma@example.com']);
   await page.getByRole('button', { name: 'Add row' }).click();
   await fill(2, ['Not A Wallet', 'Daniel Hall', '0.07', '+44 7700 900102', 'daniel@example.com']);
   await expect(page.getByTestId('row-2').getByText('Invalid NEAR account ID.')).toBeVisible();
@@ -50,7 +50,7 @@ test('builder fits the container at 1280x720 and 1440x900: full account IDs, rem
   await page.getByText('Enter rows manually').click();
   await page.getByRole('button', { name: 'Create draft run' }).click();
   await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
-  await page.getByLabel('Row 1 NEAR account ID').fill('recipient1.gajian-payroll.testnet');
+  await page.getByLabel('Row 1 NEAR account ID').fill('recipient1.sentfund-payroll.testnet');
   await page.getByLabel('Row 1 Email').fill('emma.clark@example.com');
   for (const [width, height] of [[1280, 720], [1440, 900]] as const) {
     await page.setViewportSize({ width, height });

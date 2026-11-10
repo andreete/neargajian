@@ -18,7 +18,7 @@ const events = sqlite.prepare("select step, chain_tx_hash as h from approval_eve
 const actions = sqlite.prepare("select kind, row_index as i, tx_hash as h from payout_actions where version_id = ? and status = 'succeeded' order by kind = 'pay_row', row_index").all(v.id) as { kind: string; i: number | null; h: string }[];
 if (actions.filter((a) => a.kind === 'pay_row').length !== rows.length) throw new Error('not every payout is confirmed');
 const maker = (sqlite.prepare("select chain_account_id as c from users u join payroll_runs r on r.maker_user_id = u.id where r.id = ?").get(runId) as { c: string }).c;
-const worker = process.env.WORKER_ACCOUNT_ID ?? 'worker.gajian-payroll.testnet';
+const worker = process.env.WORKER_ACCOUNT_ID ?? 'worker.sentfund-payroll.testnet';
 const releaser = snapshot.releaseMode === 'maker' ? maker : worker;
 closeDatabase();
 

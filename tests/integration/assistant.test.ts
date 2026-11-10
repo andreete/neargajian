@@ -41,10 +41,10 @@ describe('payroll assistant', () => {
     expect(reply.kind).toBe('preview');
     if (reply.kind !== 'preview') return;
     expect(reply.preview).toMatchObject({ scope: 'Sales division', count: 2, amountPerPerson: '0.05', total: '0.10', title: 'November commissions', postingMode: 'consolidated', postingDefaulted: true });
-    expect(reply.preview.rows.map((r) => [r.name, r.accountId])).toEqual([['Daniel Hall', 'recipient2.gajian-payroll.testnet'], ['Emma Clark', 'recipient1.gajian-payroll.testnet']]);
+    expect(reply.preview.rows.map((r) => [r.name, r.accountId])).toEqual([['Daniel Hall', 'recipient2.sentfund-payroll.testnet'], ['Emma Clark', 'recipient1.sentfund-payroll.testnet']]);
     // Privacy: the model got the request text and the division names, nothing from the directory.
     expect(model.seen).toEqual([{ turns: say(EXAMPLE), divisions: ['Customer Support', 'Engineering', 'Logistics', 'Operations', 'Sales'] }]);
-    expect(JSON.stringify(model.seen)).not.toMatch(/gajian-payroll|gjn-emp|@example|\+44|Emma|Daniel/);
+    expect(JSON.stringify(model.seen)).not.toMatch(/payroll\.testnet|gjn-emp|@example|\+44|Emma|Daniel/);
 
     const created = createDraftFromPreview(h.db, maker, reply.requestId, NOW);
     const run = h.db.select().from(payrollRuns).where(eq(payrollRuns.id, created.runId)).get()!;

@@ -20,9 +20,9 @@ class FakeVault implements VaultClient {
   vaultId = 'vault.test';
   mode: 'ok' | 'fail' | 'unknown-landed' | 'unknown-lost' = 'ok';
   calls = 0;
-  wf: ChainWorkflow = { revision: 5, kind: 'TwoSequential', approvers: ['approver1.gajian-payroll.testnet', 'approver2.gajian-payroll.testnet'], release_mode: 'Automatic', maker: 'maker.gajian-payroll.testnet', worker: 'worker.gajian-payroll.testnet', max_row_amount: '1000000', max_run_total: '100000000' };
+  wf: ChainWorkflow = { revision: 5, kind: 'TwoSequential', approvers: ['approver1.sentfund-payroll.testnet', 'approver2.sentfund-payroll.testnet'], release_mode: 'Automatic', maker: 'maker.sentfund-payroll.testnet', worker: 'worker.sentfund-payroll.testnet', max_row_amount: '1000000', max_run_total: '100000000' };
   lastHash = '';
-  accountFor(role: ChainRole) { return `${role}.gajian-payroll.testnet`; }
+  accountFor(role: ChainRole) { return `${role}.sentfund-payroll.testnet`; }
   async view<T>(): Promise<T> { return structuredClone(this.wf) as T; }
   async call(role: ChainRole, method: string, args: Record<string, unknown>, opts: { onSigned?: (h: string) => void } = {}): Promise<TxOutcome> {
     this.calls += 1;
@@ -131,7 +131,7 @@ describe('workflow changes', () => {
     const before = svc.activeSnapshot(db)!;
     const v = createVersion(db, {
       runId: 'run_demo_november', makerUserId: 'usr_maker', postingMode: 'detailed', now: new Date(), workflow: before,
-      rows: [{ accountId: 'recipient1.gajian-payroll.testnet', receiverName: 'Emma', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+447700900101', email: 'emma@example.com' }],
+      rows: [{ accountId: 'recipient1.sentfund-payroll.testnet', receiverName: 'Emma', currency: 'tUSDC', amount: 30_000n, mobilePhone: '+447700900101', email: 'emma@example.com' }],
     });
     await svc.updateWorkflow(db, fake, 'usr_admin', parallelMaker);
     const stored = db.select().from(schema.runVersions).where(eq(schema.runVersions.id, v.id)).get()!;

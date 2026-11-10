@@ -39,8 +39,8 @@ beforeEach(async () => {
 
 const HEADER = 'near_account_id,receiver_name,currency,amount,mobile_phone,email';
 const csv = (...rows: string[]) => new TextEncoder().encode([HEADER, ...rows].join('\n'));
-const emma = (amount = '0.05') => `recipient1.gajian-payroll.testnet,Emma Clark,tUSDC,${amount},+44 7700 900101,emma.clark@example.com`;
-const daniel = (amount = '0.04') => `recipient2.gajian-payroll.testnet,Daniel Hall,tUSDC,${amount},+44 7700 900102,daniel.hall@example.com`;
+const emma = (amount = '0.05') => `recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,${amount},+44 7700 900101,emma.clark@example.com`;
+const daniel = (amount = '0.04') => `recipient2.sentfund-payroll.testnet,Daniel Hall,tUSDC,${amount},+44 7700 900102,daniel.hall@example.com`;
 const uploadRun = (bytes: Uint8Array, name = 'p.csv') => {
   const id = createRun(h.db, { makerUserId: maker.id, title: 'Directory test', postingMode: 'detailed', source: 'upload', now: NOW });
   return { id, out: uploadToDraft(h.db, maker, id, { filename: name, bytes, expectedRevision: 0, now: NOW }) };
@@ -54,7 +54,7 @@ describe('seeded directory', () => {
     expect(all).toHaveLength(1003);
     const live = all.filter((r) => !r.sample).map((r) => [r.name, r.division, r.nearAccountId]);
     expect(live).toEqual(expect.arrayContaining([
-      ['Emma Clark', 'Sales', 'recipient1.gajian-payroll.testnet'], ['Daniel Hall', 'Sales', 'recipient2.gajian-payroll.testnet'], ['Grace Lewis', 'Operations', 'recipient3.gajian-payroll.testnet'],
+      ['Emma Clark', 'Sales', 'recipient1.sentfund-payroll.testnet'], ['Daniel Hall', 'Sales', 'recipient2.sentfund-payroll.testnet'], ['Grace Lewis', 'Operations', 'recipient3.sentfund-payroll.testnet'],
     ]));
     expect(new Set(all.filter((r) => r.sample).map((r) => r.division))).toEqual(new Set(['Engineering', 'Customer Support', 'Logistics']));
     for (const f of ['sentfund-payroll-sample-1000.csv', 'sentfund-payroll-uniform-1000.csv', 'sentfund-payroll-sample-1000.txt']) {
@@ -66,7 +66,7 @@ describe('seeded directory', () => {
 
 describe('Pay registered recipients only', () => {
   it('rejects an upload row that is not in the directory, inactive, or above the recipient maximum, with file row and column', () => {
-    setRecipientActive(h.db, admin, recipientId('recipient2.gajian-payroll.testnet'), false, NOW);
+    setRecipientActive(h.db, admin, recipientId('recipient2.sentfund-payroll.testnet'), false, NOW);
     const { out } = uploadRun(csv(emma(), daniel(), 'hacker.testnet,Mallory,tUSDC,0.05,+44 7700 900999,m@example.com', emma('0.50')));
     expect(out.result.ok).toBe(false);
     if (out.result.ok) return;
@@ -79,7 +79,7 @@ describe('Pay registered recipients only', () => {
 
   it('flags manual rows the same way, and accepts anything valid when the setting is off', () => {
     saveManualDraft(h.db, maker, DEMO_DRAFT_RUN_ID, { expectedRevision: 1, now: NOW, rows: [
-      { near_account_id: 'recipient1.gajian-payroll.testnet', receiver_name: 'Emma Clark', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 'e@example.com' },
+      { near_account_id: 'recipient1.sentfund-payroll.testnet', receiver_name: 'Emma Clark', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 'e@example.com' },
       { near_account_id: 'someone.testnet', receiver_name: 'Someone', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 's@example.com' },
     ] });
     const on = draftView(h.db, maker, DEMO_DRAFT_RUN_ID).summary;
@@ -92,7 +92,7 @@ describe('Pay registered recipients only', () => {
   it('re-checks on the server at submit time: a recipient deactivated after upload blocks submission and nothing is sent', async () => {
     const { id, out } = uploadRun(csv(emma(), daniel()));
     expect(out.result.ok).toBe(true);
-    setRecipientActive(h.db, admin, recipientId('recipient2.gajian-payroll.testnet'), false, NOW);
+    setRecipientActive(h.db, admin, recipientId('recipient2.sentfund-payroll.testnet'), false, NOW);
     const fake = new FakeVault();
     await expect(submitRun(h.db, fake, maker, id, { expectedRevision: 1, now: NOW })).rejects.toThrow(/Pay registered recipients only: 1 row \(row 3\)/);
     expect(fake.calls).toEqual([]);
@@ -105,9 +105,9 @@ describe('Pay registered recipients only', () => {
     await submitRun(h.db, fake, maker, id, { expectedRevision: 1, now: NOW });
     const v = latestVersion(h.db, id)!;
     expect(JSON.parse(v.directoryCheck!)).toEqual({ enforced: true, matched: 2, rows: 2, identity: { enforced: true, verified: 2 } });
-    const rows = [{ accountId: 'recipient1.gajian-payroll.testnet', amount: 50_000n }, { accountId: 'recipient2.gajian-payroll.testnet', amount: 40_000n }];
+    const rows = [{ accountId: 'recipient1.sentfund-payroll.testnet', amount: 50_000n }, { accountId: 'recipient2.sentfund-payroll.testnet', amount: 40_000n }];
     expect(directoryDrift(h.db, rows)).toBe(0);
-    updateRecipient(h.db, admin, recipientId('recipient2.gajian-payroll.testnet'), { name: 'Daniel Hall', division: 'Sales', email: 'daniel.hall@example.com', mobilePhone: '+44 7700 900102', maxAmount: '0.03' }, CAP, NOW);
+    updateRecipient(h.db, admin, recipientId('recipient2.sentfund-payroll.testnet'), { name: 'Daniel Hall', division: 'Sales', email: 'daniel.hall@example.com', mobilePhone: '+44 7700 900102', maxAmount: '0.03' }, CAP, NOW);
     expect(directoryDrift(h.db, rows)).toBe(1);
     expect(() => h.sqlite.prepare('update run_versions set directory_check = ? where id = ?').run('{"enforced":false}', v.id)).toThrow(/immutable/);
   });
@@ -145,7 +145,7 @@ describe('directory changes', () => {
 
   it('records the read-only testnet check (stand-in checker) and logs a changed result', async () => {
     const answers: Record<string, 'ready' | 'no_account' | 'not_registered'> = {
-      'recipient1.gajian-payroll.testnet': 'ready', 'recipient2.gajian-payroll.testnet': 'not_registered', 'recipient3.gajian-payroll.testnet': 'no_account',
+      'recipient1.sentfund-payroll.testnet': 'ready', 'recipient2.sentfund-payroll.testnet': 'not_registered', 'recipient3.sentfund-payroll.testnet': 'no_account',
     };
     const checker: ReadinessChecker = { check: async (a) => answers[a] ?? 'check_failed' };
     const ids = Object.keys(answers).map(recipientId);
@@ -174,17 +174,17 @@ describe('bulk import', () => {
   });
 
   it('adds new accounts, updates existing ones field by field (keeping their status) and logs the source', () => {
-    setRecipientActive(h.db, admin, recipientId('recipient3.gajian-payroll.testnet'), false, NOW);
+    setRecipientActive(h.db, admin, recipientId('recipient3.sentfund-payroll.testnet'), false, NOW);
     const r = importRecipientFile({ filename: 'd.csv', perRowCap: CAP, bytes: file(
       'b1.testnet,Ben One,tUSDC,0.05,+44 7700 900310,b1@example.com,Engineering',
-      'recipient1.gajian-payroll.testnet,Emma Clark,tUSDC,0.10,+44 7700 900101,emma.clark@example.com,Sales',
-      'recipient3.gajian-payroll.testnet,Grace Lewis,tUSDC,0.20,+44 7700 900103,grace.lewis@example.com,Operations',
+      'recipient1.sentfund-payroll.testnet,Emma Clark,tUSDC,0.10,+44 7700 900101,emma.clark@example.com,Sales',
+      'recipient3.sentfund-payroll.testnet,Grace Lewis,tUSDC,0.20,+44 7700 900103,grace.lewis@example.com,Operations',
     ) });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const applied = applyImport(h.db, admin, r.rows.map(({ line: _l, ...x }) => x), NOW);
     expect(applied).toMatchObject({ created: 1, updated: 1, unchanged: 1, inactiveKept: 1 });
-    const grace = h.db.select().from(recipients).where(eq(recipients.nearAccountId, 'recipient3.gajian-payroll.testnet')).get()!;
+    const grace = h.db.select().from(recipients).where(eq(recipients.nearAccountId, 'recipient3.sentfund-payroll.testnet')).get()!;
     expect([grace.active, grace.maxAmount]).toEqual([false, 200_000n]);
     expect(recentDirectoryEvents(h.db, 1, grace.id)[0]).toMatchObject({ action: 'updated', source: 'import', changes: { maxAmount: ['100000', '200000'] } });
   });

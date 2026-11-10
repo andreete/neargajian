@@ -11,7 +11,7 @@ set -eu
 here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 root=$(CDPATH='' cd -- "$here/../.." && pwd)
 NEAR="$here/near.sh"
-M=${SentFund_MASTER:-gajian-payroll.testnet}
+M=gajian-payroll.testnet   # historical (Phase 02); the SentFund deployment: phase22-setup.sh
 TOKEN=tusdc.$M VAULT=vault.$M ADMIN=admin.$M MAKER=maker.$M APPROVER=approver1.$M WORKER=worker.$M
 RECIPIENT=recipient1.$M
 RUN_ID=${RUN_ID:-p02-run-1}

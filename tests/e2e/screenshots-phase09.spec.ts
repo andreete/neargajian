@@ -34,9 +34,9 @@ test('manual builder with one invalid row', async ({ page }) => {
   await page.waitForURL('**/maker');
   await newRun(page, 'January contractors', 'manual');
   const rows = [
-    ['recipient1.gajian-payroll.testnet', 'Emma Clark', '0.05', '+44 7700 900101', 'emma.clark@example.com'],
-    ['recipient2.gajian-payroll.testnet', 'Daniel Hall', '0,07', '+44 7700 900102', 'daniel.hall@example.com'],
-    ['recipient3.gajian-payroll.testnet', 'Grace Lewis', '0.03', '+44 7700 900103', 'grace.lewis@example.com'],
+    ['recipient1.sentfund-payroll.testnet', 'Emma Clark', '0.05', '+44 7700 900101', 'emma.clark@example.com'],
+    ['recipient2.sentfund-payroll.testnet', 'Daniel Hall', '0,07', '+44 7700 900102', 'daniel.hall@example.com'],
+    ['recipient3.sentfund-payroll.testnet', 'Grace Lewis', '0.03', '+44 7700 900103', 'grace.lewis@example.com'],
   ];
   for (const [i, values] of rows.entries()) {
     if (i > 0) await page.getByRole('button', { name: 'Add row' }).click();

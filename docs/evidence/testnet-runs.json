@@ -1,11 +1,125 @@
 {
-  "$comment": "Public testnet evidence only (account IDs, run IDs, tx hashes, amounts in tUSDC base units, 6 decimals). Checked by `npm run judge:verify` with read-only RPC calls; no keys.",
+  "$comment": "Public testnet evidence only (account IDs, run IDs, tx hashes, amounts in tUSDC base units, 6 decimals). Checked by `npm run judge:verify` with read-only RPC calls; no keys. Phase 22 moved the live deployment to sentfund-payroll.testnet; the gajian-payroll.testnet evidence stays re-checkable.",
   "network": "testnet",
-  "token": "tusdc.gajian-payroll.testnet",
+  "token": "tusdc.sentfund-payroll.testnet",
   "runs": [
     {
+      "phase": "22",
+      "label": "SentFund vault: two approvers in sequence, automatic release (3 recipients)",
+      "vault": "vault.sentfund-payroll.testnet",
+      "runId": "p22-seq-202611100718",
+      "status": "Paid",
+      "total": "150000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient1.sentfund-payroll.testnet",
+          "amount": "30000"
+        },
+        {
+          "index": 1,
+          "receiver": "recipient2.sentfund-payroll.testnet",
+          "amount": "70000"
+        },
+        {
+          "index": 2,
+          "receiver": "recipient3.sentfund-payroll.testnet",
+          "amount": "50000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "hash": "2MdYti3zCUfRvwPPZ2n2TNSesmB5odATbSZ8XYTutLqD",
+          "signer": "maker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 1)",
+          "hash": "9dH6hHfo3PFaJYaBjZMx9ZyrbNrtFGhPVsDFniGNrpZc",
+          "signer": "approver1.sentfund-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 2)",
+          "hash": "9z7wQ6WWyYy4vtmfSi6yvhU5r23ALvRbesgbUNhcLNFK",
+          "signer": "approver2.sentfund-payroll.testnet"
+        },
+        {
+          "step": "start_release (worker)",
+          "hash": "HwrDLPNq6myNu6iqE5ErP7z8CuDV4rX8Wvqg7ApFaYuk",
+          "signer": "worker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "hash": "UEJ1PEDzaYxXxWQWez4LAassLT93Beje7jzDbS9S8fP",
+          "signer": "worker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "pay_row 1 (worker)",
+          "hash": "CbQSNZo8YkXVSVtfiQ8x5NNcK46s2PLc2NFtveg7KRM4",
+          "signer": "worker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "pay_row 2 (worker)",
+          "hash": "DMrHt1TcQAZjkKbuNh4RwX66wA25d7cmD5Nxa84Mf4Mc",
+          "signer": "worker.sentfund-payroll.testnet"
+        }
+      ]
+    },
+    {
+      "phase": "22",
+      "label": "SentFund vault: two approvers in parallel, maker release (2 recipients)",
+      "vault": "vault.sentfund-payroll.testnet",
+      "runId": "p22-par-202611100718",
+      "status": "Paid",
+      "total": "30000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient2.sentfund-payroll.testnet",
+          "amount": "20000"
+        },
+        {
+          "index": 1,
+          "receiver": "recipient3.sentfund-payroll.testnet",
+          "amount": "10000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "hash": "3nkcd5kKpUB4M6vTtXFVfwX5bAuu9EHzrKud1uQ8qRcM",
+          "signer": "maker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 2)",
+          "hash": "7qrHVTvtHfi46MWBS8MZ4nYdQkyBrYaKo6x4pFvWYRKY",
+          "signer": "approver2.sentfund-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 1)",
+          "hash": "G94g4x3AKPKFVLCrL4rTnmgfciSjMW8x3j4TpizxpQmS",
+          "signer": "approver1.sentfund-payroll.testnet"
+        },
+        {
+          "step": "start_release (maker)",
+          "hash": "ZnpShgXjikEr5qzNRmBua9EEyPN4A4tMGfznFZQFdhL",
+          "signer": "maker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "pay_row 0 (maker)",
+          "hash": "huhHZnhiXea9pK9WF9rgmHZzmbMXReRiztMdM3XNptU",
+          "signer": "maker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "pay_row 1 (worker)",
+          "hash": "F3DdLKT6deizv9Aq3dYbSBRSodAoyiyYscEZfcnmKgF8",
+          "signer": "worker.sentfund-payroll.testnet"
+        }
+      ]
+    },
+    {
       "phase": "13",
-      "label": "Complete flow through the app (detailed posting, automatic release)",
+      "label": "[earlier deployment] Complete flow through the app (detailed posting, automatic release)",
       "vault": "vault.gajian-payroll.testnet",
       "runId": "gjn-c042c3e14af142669ce4-v1",
       "status": "Paid",
@@ -67,7 +181,7 @@
     },
     {
       "phase": "16a",
-      "label": "Fund migration: approved run of the Phase 04 vault pays the admin (then the admin funds vault2)",
+      "label": "[earlier deployment] Fund migration: approved run of the Phase 04 vault pays the admin (then the admin funds vault2)",
       "vault": "vault.gajian-payroll.testnet",
       "runId": "p16-migrate-202611091439",
       "status": "Paid",
@@ -109,7 +223,7 @@
     },
     {
       "phase": "16e",
-      "label": "Rehearsal through the app: detailed posting, automatic release (final vault)",
+      "label": "[earlier deployment] Rehearsal through the app: detailed posting, automatic release (final vault)",
       "vault": "vault2.gajian-payroll.testnet",
       "runId": "gjn-b3bbdf502fcd477d958b-v1",
       "status": "Paid",
@@ -171,7 +285,7 @@
     },
     {
       "phase": "16c",
-      "label": "Rehearsal through the app: maker release, consolidated posting (final vault)",
+      "label": "[earlier deployment] Rehearsal through the app: maker release, consolidated posting (final vault)",
       "vault": "vault2.gajian-payroll.testnet",
       "runId": "gjn-b8686812506e46a58811-v1",
       "status": "Paid",
@@ -233,7 +347,7 @@
     },
     {
       "phase": "16d",
-      "label": "Rehearsal through the app: Awaiting funding, funded by the admin, then paid automatically (final vault)",
+      "label": "[earlier deployment] Rehearsal through the app: Awaiting funding, funded by the admin, then paid automatically (final vault)",
       "vault": "vault2.gajian-payroll.testnet",
       "runId": "gjn-648622d67c1e4c47a8b3-v1",
       "status": "Paid",
@@ -295,7 +409,7 @@
     },
     {
       "phase": "19",
-      "label": "Payroll assistant draft for the Sales division (0.03 tUSDC each), approved by both approvers in the browser, paid automatically (final vault)",
+      "label": "[earlier deployment] Payroll assistant draft for the Sales division (0.03 tUSDC each), approved by both approvers in the browser, paid automatically (final vault)",
       "vault": "vault2.gajian-payroll.testnet",
       "runId": "gjn-6e2922fcf5cd4d0f91f1-v1",
       "status": "Paid",
@@ -347,6 +461,62 @@
     }
   ],
   "expectedFailures": [
+    {
+      "phase": "22",
+      "step": "run1 approver2 before approver1",
+      "hash": "A2neNKRW7tnSRUofR4bmx72BkFZ7Hvc4Arc73KMEAUcN",
+      "signer": "approver2.sentfund-payroll.testnet",
+      "error": "Approver 2 can act only after approver 1 approved"
+    },
+    {
+      "phase": "22",
+      "step": "run1 worker release before final approval",
+      "hash": "5w5bYf2bGZvgub5RkpMM7TemsEx8HRH9s5J9DWXuTN7K",
+      "signer": "worker.sentfund-payroll.testnet",
+      "error": "Run is not approved for release"
+    },
+    {
+      "phase": "22",
+      "step": "run1 maker release in automatic mode",
+      "hash": "FyY6qrbad9ZKTv5McmbNCHiF9m1wHvPSAzJFVLGps3nd",
+      "signer": "maker.sentfund-payroll.testnet",
+      "error": "Only the release worker can release this run (automatic release"
+    },
+    {
+      "phase": "22",
+      "step": "run1 duplicate payout of row 0",
+      "hash": "BYpZkcQe7td5FnYHk1sqEm3M39oPQ9QjqBqWVhixX8Gv",
+      "signer": "worker.sentfund-payroll.testnet",
+      "error": "Run is not releasing"
+    },
+    {
+      "phase": "22",
+      "step": "run2 create at stale revision 1",
+      "hash": "EATjDLd8GSg4HeGkesWL2NPiXQ26DHb5WsAru69ujzvc",
+      "signer": "maker.sentfund-payroll.testnet",
+      "error": "Workflow changed since review: reload and confirm again"
+    },
+    {
+      "phase": "22",
+      "step": "run2 worker release in maker mode",
+      "hash": "Cooy8qEoNipQZhY5HM3DTJnEnWxFmrr1HjNYUxFFxTYg",
+      "signer": "worker.sentfund-payroll.testnet",
+      "error": "Only the maker can release this run (maker release"
+    },
+    {
+      "phase": "22",
+      "step": "run2 tampered amount",
+      "hash": "GNMH8SJteSD6F836PvcAqobCatVXLBc1hxpdVeZze8sZ",
+      "signer": "maker.sentfund-payroll.testnet",
+      "error": "Payout proof does not match the approved run"
+    },
+    {
+      "phase": "22",
+      "step": "run3 maker release after rejection",
+      "hash": "2xdpe83TvAA2uqpTUb5Xksbw4kGfAiTbr49jZMz8Mnqv",
+      "signer": "maker.sentfund-payroll.testnet",
+      "error": "Run is not approved for release"
+    },
     {
       "phase": "04",
       "step": "out-of-order approval (approver 2 first, sequence)",
@@ -405,7 +575,7 @@
     }
   ],
   "finalVault": {
-    "account": "vault2.gajian-payroll.testnet",
+    "account": "vault.sentfund-payroll.testnet",
     "releaseCommit": "cf4d9a1017adbe27c7a2865923660f42abcade6b",
     "wasmSha256": "38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0",
     "codeHashBase58": "4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP",
@@ -413,6 +583,180 @@
     "build": "npm run contracts:build (cargo-near 0.23.0, Rust 1.95.0, --locked, path remaps in scripts/build-contracts.sh)"
   },
   "operations": [
+    {
+      "step": "22 create admin.sentfund-payroll.testnet (0.5 NEAR from sentfund-payroll.testnet)",
+      "hash": "BfkAUdWyQM1oeNksLQUUdXUHPP7bbBroZiLgi5nJbFDB",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "admin.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create maker.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet)",
+      "hash": "22ZX8Amvrv944wG1GbwPXhLzi4bxt17YbyzTVK3z3XPP",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "maker.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create approver1.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet)",
+      "hash": "363KyWCCFoKr5wSWz8gSPsQkjYWs8xZCmLHJpKhkhkU1",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "approver1.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create approver2.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet)",
+      "hash": "HEMHPT9d1JNQ4xk3hfv3VG3xobPmcSb5qwGEsW9dQqpo",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "approver2.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create worker.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet)",
+      "hash": "3rXi85QXdcs2Asj6w8FQSS3b8PBED5VtYsXhhf37Hzxv",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "worker.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create recipient1.sentfund-payroll.testnet (0.05 NEAR from sentfund-payroll.testnet)",
+      "hash": "956v2XwosXf68FaeSrpKYc9R5c1kw6xBM5jzjCtoZYzd",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "recipient1.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create recipient2.sentfund-payroll.testnet (0.05 NEAR from sentfund-payroll.testnet)",
+      "hash": "C23tXN7tsV1JVHYqnrjMb7YX8TPRQUBYoR7wqyEt2zL6",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "recipient2.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create recipient3.sentfund-payroll.testnet (0.05 NEAR from sentfund-payroll.testnet)",
+      "hash": "7T79CymGjVbNgpXCvibhde1ML3X4NtqC4TWxnBapVEnV",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "recipient3.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create tusdc.sentfund-payroll.testnet (2.2 NEAR from sentfund-payroll.testnet)",
+      "hash": "HQbB5dfV7xd2ZUkbspTzenndpagDebZWyYZRdTdoQnwC",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 create vault.sentfund-payroll.testnet (2.4 NEAR from sentfund-payroll.testnet)",
+      "hash": "7yPDWX8hbftNrnsczu6wZAnF79vmXxPPuv2wGvPV1Cs3",
+      "signer": "sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 deploy tUSDC + new(owner_id = admin)",
+      "hash": "C8iPMftBHAgb6ihY526bfidfkR1KQGmhmJERTddP8asX",
+      "signer": "tusdc.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 redeploy tUSDC with the SentFund display name (889ee816\u2026, no init)",
+      "hash": "6xm2JGfrobxgosVNqn2Avu5YdtoPXvSNZxkKhHtyUEqz",
+      "signer": "tusdc.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 deploy release Wasm 38953891\u2026 + init (revision 1)",
+      "hash": "81kemp2nqB2WUx62M1PbbRgScNc18UbQGEyEFB9dEo71",
+      "signer": "vault.sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 register the vault with tUSDC",
+      "hash": "ebJ9jqro3ZKDeYJH9dst44Nxy5kXAbpyv3u8BbsVVmT",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 delete the vault's only full-access key (code locked)",
+      "hash": "6Q6m9yGHhmFNr5huKLEJv6ShJbtSL2nZ8iAmDqaem9Uz",
+      "signer": "vault.sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 restricted key: create_run, cancel_run, close_partial, start_release, pay_row (allowance 0.25 NEAR) for maker",
+      "hash": "4U91zPcw7W7FGCEVHM6X1Ymog4nwi9BwLdeeFgZkk7hy",
+      "signer": "maker.sentfund-payroll.testnet",
+      "receiver": "maker.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 restricted key: approve, reject (allowance 0.25 NEAR) for approver2",
+      "hash": "81pXCwuW2jnrWBx9xeQKNwWF5xpmsQ3ueVoE4WTZteMx",
+      "signer": "approver2.sentfund-payroll.testnet",
+      "receiver": "approver2.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 restricted key: start_release, pay_row (allowance 0.5 NEAR) for worker",
+      "hash": "E4eqeTzvSLTFC6cBzwyN3aikrEXeuRX2gfc4Sud3ENQn",
+      "signer": "worker.sentfund-payroll.testnet",
+      "receiver": "worker.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 restricted key: update_workflow, resolve_in_flight (allowance 0.25 NEAR) for admin",
+      "hash": "Q87kQkXTUeW9erpGWU6SDMMLFmwnYMxw1YcvVHdccFa",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "admin.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 restricted key: approve, reject for approver1 (retry after an expired tx)",
+      "hash": "BKMxAa1LdTw2KmeSLz5KKauSE1C3RmMW6UfnwyiHr58R",
+      "signer": "approver1.sentfund-payroll.testnet",
+      "receiver": "approver1.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 register recipient1 with tUSDC",
+      "hash": "Ap1Ff3r76JAMrFhnWei8pBWZJT8Z3E2wL1b6MjisZhDW",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 register recipient2 with tUSDC",
+      "hash": "BESMaq96VjbXnDU3uifUUTfnGxfQRtxnUz8JLy5V1LuN",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 register recipient3 with tUSDC",
+      "hash": "DCKL8gcHLyn69Uvow8tze2XastX9TJjsFxWbG3qJARKg",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 admin mints 2.18 test tUSDC",
+      "hash": "9kYiJKKRYLzhUGTFf1mhFhU1K5dU8QykMCE9QY3z3Asv",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 admin funds the vault 2.18 tUSDC (ft_transfer_call)",
+      "hash": "4MJdm5fiT39quzkamSKpZpNZaX42r5FmVLwEUAscovJU",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "tusdc.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 admin: 2 in parallel + maker release (revision 2)",
+      "hash": "E3FJyBKUSgfgM1c51EkgFHQjHzMyLNQaShHMmvBcSgD2",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 admin: back to 2 in sequence + automatic (revision 3)",
+      "hash": "5PFiMDhdSRdg4fjjNBJaL28RMoq14BNwwXGKRHQuHxT3",
+      "signer": "admin.sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 rejected run p22-rej-202611100718: create",
+      "hash": "44y8FYv4273e23GLuuZhmGfUZvJ9T6mHUnp93ghqEitZ",
+      "signer": "maker.sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
+    {
+      "step": "22 rejected run p22-rej-202611100718: approver1 rejects",
+      "hash": "6dQVxBRUXWqXtRg3nSA9xgQNnsuF9To2Kume9xCHvKdz",
+      "signer": "approver1.sentfund-payroll.testnet",
+      "receiver": "vault.sentfund-payroll.testnet"
+    },
     {
       "step": "16a create vault2 (2.4 NEAR)",
       "hash": "FFUnH2wUUeR5XVKsZzZyfyM6QUEQAu4L21gsjWuyMJ6B",
@@ -478,6 +822,18 @@
       "receiver": "tusdc.gajian-payroll.testnet",
       "signer": "admin.gajian-payroll.testnet",
       "step": "19 admin funds vault2 with 1.76 tUSDC (ft_transfer_call): vault2 2.00 tUSDC"
+    }
+  ],
+  "earlierToken": "tusdc.gajian-payroll.testnet",
+  "earlierVaults": [
+    {
+      "account": "vault2.gajian-payroll.testnet",
+      "releaseCommit": "cf4d9a1017adbe27c7a2865923660f42abcade6b",
+      "wasmSha256": "38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0",
+      "codeHashBase58": "4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP",
+      "fullAccessKeys": 0,
+      "build": "npm run contracts:build (cargo-near 0.23.0, Rust 1.95.0, --locked, path remaps in scripts/build-contracts.sh)",
+      "note": "gajian-payroll.testnet deployment (Phases 16-21), retired in Phase 22; still locked, holds 1.94 tUSDC of the earlier token"
     }
   ]
 }

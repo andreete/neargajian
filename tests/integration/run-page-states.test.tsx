@@ -30,7 +30,7 @@ vi.mock('next/navigation', () => ({
   redirect: () => { throw new Error('NEXT_REDIRECT'); },
   forbidden: () => { throw new Error('NEXT_FORBIDDEN'); },
 }));
-const viewer = { current: { id: 'usr_maker', email: 'maker@sentfund.my.id', displayName: 'Maya Maker', role: 'maker' as const, chainAccountId: 'maker.gajian-payroll.testnet' } };
+const viewer = { current: { id: 'usr_maker', email: 'maker@sentfund.my.id', displayName: 'Maya Maker', role: 'maker' as const, chainAccountId: 'maker.sentfund-payroll.testnet' } };
 vi.mock('@/server/web/page-auth', () => ({
   requireRole: async () => ({ user: viewer.current, csrfToken: 'csrf', expiresAt: new Date(Date.now() + 3_600_000) }),
   currentSession: async () => null,
@@ -123,7 +123,7 @@ describe('run page payout states (one consistent state)', () => {
     expect([r.badge, r.paid, r.paidAmount, r.timeline]).toEqual(['Releasing', 1, '0.03', [1, 3]]);
     consistent(r);
 
-    fake.unregistered.add('recipient2.gajian-payroll.testnet'); // proven transfer failure
+    fake.unregistered.add('recipient2.sentfund-payroll.testnet'); // proven transfer failure
     await pay();
     r = await render();
     expect([r.badge, r.paid, r.paidAmount, r.timeline]).toEqual(['Needs attention', 1, '0.03', [1, 3]]);

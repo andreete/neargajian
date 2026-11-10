@@ -12,7 +12,7 @@ import { closeDatabase, getDatabase } from '../../src/server/db/client.ts';
 import { auditEvents, payoutActions, runVersions } from '../../src/server/db/schema.ts';
 import { setChainBlockTime } from '../../src/server/payouts/actions.ts';
 // @ts-expect-error plain .mjs helper without type declarations
-import { ROLES, rpc } from './signer-keys.mjs';
+import { GAJIAN_ROLES as ROLES, rpc } from './signer-keys.mjs'; // historical (Phase 16b, gajian-payroll.testnet)
 
 const dryRun = process.argv.includes('--dry-run');
 const { db, file } = getDatabase();

@@ -44,7 +44,7 @@ async function as(email: string) {
   return { req };
 }
 const ctx = (runId: string) => ({ params: Promise.resolve({ runId }) });
-const row = (over: Record<string, string> = {}) => ({ near_account_id: 'recipient1.gajian-payroll.testnet', receiver_name: 'Emma Clark', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 'emma@example.com', ...over });
+const row = (over: Record<string, string> = {}) => ({ near_account_id: 'recipient1.sentfund-payroll.testnet', receiver_name: 'Emma Clark', currency: 'tUSDC', amount: '0.05', mobile_phone: '+44 7700 900101', email: 'emma@example.com', ...over });
 
 describe('manual builder API', () => {
   it('maker creates a run, saves rows (invalid ones kept), and confirms the valid subset explicitly', async () => {
@@ -55,13 +55,13 @@ describe('manual builder API', () => {
 
     const saved = await draft.PUT(maker.req(`/api/runs/${id}/draft`, 'PUT', {
       expectedRevision: 0, postingMode: 'consolidated',
-      rows: [row(), row({ amount: '0,07', near_account_id: 'recipient2.gajian-payroll.testnet' }), row({ amount: '0.03' })],
+      rows: [row(), row({ amount: '0,07', near_account_id: 'recipient2.sentfund-payroll.testnet' }), row({ amount: '0.03' })],
     }), ctx(id));
     expect(saved.status).toBe(200);
     const s1 = (await saved.json()) as { revision: number; summary: { validCount: number; invalidCount: number; validTotal: string; duplicateWallets: unknown[]; rows: { errors: { field: string; message: string }[] }[] } };
     expect(s1).toMatchObject({ revision: 1, summary: { validCount: 2, invalidCount: 1, validTotal: '0.080000' } });
     expect(s1.summary.rows[1]?.errors).toEqual([{ field: 'amount', message: 'Use a dot as the decimal separator, e.g. 1500.50' }]);
-    expect(s1.summary.duplicateWallets).toEqual([{ accountId: 'recipient1.gajian-payroll.testnet', indexes: [0, 2] }]);
+    expect(s1.summary.duplicateWallets).toEqual([{ accountId: 'recipient1.sentfund-payroll.testnet', indexes: [0, 2] }]);
 
     // Stale revision and a mismatched removal set are refused; nothing is dropped silently.
     expect((await draft.PUT(maker.req(`/api/runs/${id}/draft`, 'PUT', { expectedRevision: 0, rows: [row()] }), ctx(id))).status).toBe(409);

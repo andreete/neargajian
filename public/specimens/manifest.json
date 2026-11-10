@@ -3,7 +3,7 @@
   "people": [
     {
       "key": "emma",
-      "account": "recipient1.gajian-payroll.testnet",
+      "account": "recipient1.sentfund-payroll.testnet",
       "nameOnKtp": "EMMA CLARK",
       "nik": "3174995203940001",
       "birthPlace": "JAKARTA",
@@ -13,7 +13,7 @@
     },
     {
       "key": "daniel",
-      "account": "recipient2.gajian-payroll.testnet",
+      "account": "recipient2.sentfund-payroll.testnet",
       "nameOnKtp": "DANIEL HALL",
       "nik": "3174992507900002",
       "birthPlace": "BANDUNG",
@@ -23,7 +23,7 @@
     },
     {
       "key": "grace",
-      "account": "recipient3.gajian-payroll.testnet",
+      "account": "recipient3.sentfund-payroll.testnet",
       "nameOnKtp": "GRACE LEWIS",
       "nik": "3174994411880003",
       "birthPlace": "SURABAYA",

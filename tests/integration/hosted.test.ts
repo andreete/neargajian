@@ -97,7 +97,7 @@ describe('public demo submit gate', () => {
     expect(r.status).toBe('submitting');
     expect(fake.calls.map((c) => c.method)).toEqual(['create_run']);
 
-    const grace = (sqlite.prepare("select id from recipients where near_account_id = 'recipient3.gajian-payroll.testnet'").get() as { id: string }).id;
+    const grace = (sqlite.prepare("select id from recipients where near_account_id = 'recipient3.sentfund-payroll.testnet'").get() as { id: string }).id;
     const { recordReadiness } = await import('@/server/recipients/directory');
     recordReadiness(db, 'usr_admin', grace, 'check_failed', NOW);
     const blocked = await uploadRun('tests/live/live-3-rows.csv', 'Hosted with an unverified recipient');
@@ -125,7 +125,7 @@ describe('directory and settings are read-only in the public demo', () => {
     const check = await load('@/app/api/admin/recipients/[recipientId]/check/route');
     const imp = await load('@/app/api/admin/recipients/import/route');
     const settings = await load('@/app/api/admin/settings/route');
-    const emma = (sqlite.prepare("select id from recipients where near_account_id = 'recipient1.gajian-payroll.testnet'").get() as { id: string }).id;
+    const emma = (sqlite.prepare("select id from recipients where near_account_id = 'recipient1.sentfund-payroll.testnet'").get() as { id: string }).id;
     const ctx = { params: Promise.resolve({ recipientId: emma }) };
     const before = JSON.stringify(sqlite.prepare('select * from recipients order by id').all()) + JSON.stringify(sqlite.prepare('select * from app_settings').all());
     const form = () => { const f = new FormData(); f.set('file', new File(['near_account_id,receiver_name,currency,amount,mobile_phone,email,division\nx.testnet,X Y,tUSDC,0.05,+44 7700 900400,x@example.com,Sales\n'], 'd.csv')); return f; };

@@ -4,9 +4,9 @@
 //            git-ignored .hosting/host-keys.env (mode 600) for pasting into Railway; public keys to
 //            .hosting/host-keys.public.json. Refuses if the files exist. Prints public keys only.
 //   plan     print, one line per role, "account<TAB>allowance<TAB>methods<TAB>publicKey" (public data)
-//   status   read-only: every vault2 function-call key of the hosted roles, marked local / host / other
+//   status   read-only: every vault function-call key of the hosted roles, marked local / host / other
 // Never the admin, master or any full-access key: the hosted roles are maker, approver1,
-// approver2 and worker, each limited to its vault2 methods and a small NEAR allowance.
+// approver2 and worker, each limited to its vault methods and a small NEAR allowance.
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -31,7 +31,7 @@ if (!VAULT.endsWith('.testnet')) throw new Error('testnet only');
 if (cmd === 'gen') {
   if (existsSync(PRIVATE) || existsSync(PUBLIC)) throw new Error(`refused: ${DIR} already holds host keys. Delete them on-chain first (hosting-keys.sh delete --yes).`);
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
-  const lines = ['# SentFund hosted demo signer keys (vault2, function-call only). Paste each value into Railway', '# Variables. Never commit, print or share. Delete on-chain after the event: hosting-keys.sh delete --yes'];
+  const lines = ['# SentFund hosted demo signer keys (vault.sentfund-payroll.testnet, function-call only). Paste each value into Railway', '# Variables. Never commit, print or share. Delete on-chain after the event: hosting-keys.sh delete --yes'];
   const pub = {};
   for (const [role, h] of Object.entries(HOSTED)) {
     const kp = KeyPair.fromRandom('ed25519');

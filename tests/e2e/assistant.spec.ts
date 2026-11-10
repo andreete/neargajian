@@ -35,14 +35,14 @@ test('preview from the directory, then Create draft: a draft with the maker\'s w
   const preview = page.getByTestId('assistant-preview');
   await expect(preview).toContainText('Sales division, 2 recipients, 0.05 tUSDC each, total 0.10 tUSDC, consolidated posting (default)');
   await expect(preview).toContainText('Run title: November commissions');
-  await expect(preview.getByRole('row', { name: /Emma Clark Sales recipient1\.gajian-payroll\.testnet 0\.05/ })).toBeVisible();
-  await expect(preview.getByRole('row', { name: /Daniel Hall Sales recipient2\.gajian-payroll\.testnet 0\.05/ })).toBeVisible();
+  await expect(preview.getByRole('row', { name: /Emma Clark Sales recipient1\.sentfund-payroll\.testnet 0\.05/ })).toBeVisible();
+  await expect(preview.getByRole('row', { name: /Daniel Hall Sales recipient2\.sentfund-payroll\.testnet 0\.05/ })).toBeVisible();
   await preview.getByRole('button', { name: 'Create draft' }).click();
   await page.waitForURL(/\/maker\/runs\/(?!new$)[^/]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('November commissions');
   await expect(page.getByTestId('assistant-note')).toContainText(`Drafted by the payroll assistant from:“${EXAMPLE}”`);
-  await expect(page.getByLabel('Row 1 NEAR account ID')).toHaveValue('recipient2.gajian-payroll.testnet');
-  await expect(page.getByLabel('Row 2 NEAR account ID')).toHaveValue('recipient1.gajian-payroll.testnet');
+  await expect(page.getByLabel('Row 1 NEAR account ID')).toHaveValue('recipient2.sentfund-payroll.testnet');
+  await expect(page.getByLabel('Row 2 NEAR account ID')).toHaveValue('recipient1.sentfund-payroll.testnet');
   await expect(page.getByTestId('directory-rule')).toBeVisible();
   // Still a draft: the maker reviews and submits it by hand.
   await page.goto('/maker');

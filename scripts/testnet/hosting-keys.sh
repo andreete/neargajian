@@ -1,10 +1,10 @@
 #!/bin/sh
 # Restricted function-call keys for the HOSTED demo (Railway), separate from this server's keys.
-#   scripts/testnet/hosting-keys.sh status              read-only: list the vault2 keys of the hosted roles
+#   scripts/testnet/hosting-keys.sh status              read-only: list the vault keys of the hosted roles
 #   scripts/testnet/hosting-keys.sh add --yes           create 4 new keypairs and add them on testnet
 #   scripts/testnet/hosting-keys.sh delete --yes        delete exactly those keys on testnet (after the event)
 # Roles: maker (create_run, cancel_run), approver1 and approver2 (approve, reject), worker
-# (start_release, pay_row), all on vault2.gajian-payroll.testnet with a small NEAR allowance.
+# (start_release, pay_row), all on vault.sentfund-payroll.testnet (the current vault) with a small NEAR allowance.
 # NEVER the admin, the master or any full-access key: the public demo cannot change the workflow.
 # Private keys are written only to the git-ignored .hosting/host-keys.env (mode 600) and never
 # printed (near.sh also redacts anything key-like). Each add/delete is signed by the role account's
@@ -26,9 +26,9 @@ case "$cmd" in
     [ "$confirm" = "--yes" ] || { echo "refused: sends 4 testnet transactions. Run with --yes only after Andre's explicit yes." >&2; exit 2; }
     node scripts/testnet/hosting-keys.mjs gen
     node scripts/testnet/hosting-keys.mjs plan | while IFS="$(printf '\t')" read -r account allowance methods pk; do
-      echo "== add host key for $account on vault2: $methods (allowance $allowance)"
+      echo "== add host key for $account on vault.sentfund-payroll.testnet: $methods (allowance $allowance)"
       "$NEAR" account add-key "$account" grant-function-call-access --allowance "$allowance" \
-        --contract-account-id vault2.gajian-payroll.testnet --function-names "$methods" \
+        --contract-account-id vault.sentfund-payroll.testnet --function-names "$methods" \
         use-manually-provided-public-key "$pk" network-config testnet sign-with-legacy-keychain send 2>&1 \
         | grep -E "Transaction ID|Error|error" || true
     done

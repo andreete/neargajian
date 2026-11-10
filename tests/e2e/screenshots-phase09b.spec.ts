@@ -14,7 +14,7 @@ test('09b fixes', async ({ page }) => {
   await page.locator('#ops-title').scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${OUT}/01-maker-operations-transfer-separate.png` });
   await newRun(page, 'Fit check', 'manual');
-  const rows = [['recipient1.gajian-payroll.testnet', 'Emma Clark', '0.05', '+44 7700 900101', 'emma.clark@example.com'], ['recipient2.gajian-payroll.testnet', 'Daniel Hall', '0,07', '+44 7700 900102', 'daniel.hall@example.com']];
+  const rows = [['recipient1.sentfund-payroll.testnet', 'Emma Clark', '0.05', '+44 7700 900101', 'emma.clark@example.com'], ['recipient2.sentfund-payroll.testnet', 'Daniel Hall', '0,07', '+44 7700 900102', 'daniel.hall@example.com']];
   for (const [i, values] of rows.entries()) {
     if (i > 0) await page.getByRole('button', { name: 'Add row' }).click();
     for (const [k, label] of ['NEAR account ID', 'Receiver name', 'Amount', 'Mobile phone', 'Email'].entries()) await page.getByLabel(`Row ${i + 1} ${label}`).fill(values[k] ?? '');
