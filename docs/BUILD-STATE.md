@@ -65,7 +65,15 @@ Andre approved Phases 21 and 22 (verified on testnet himself) and asked for five
 | `npm run secret-scan` | clean (working tree + 37 commits) |
 | `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
 
-Release and hosted results: see NEXT-STEPS (filled in after the deploy).
+**Release:** `a29c514` pushed to `origin`, `sentfund/main` and `sentfund/release` (Andre's yes); Railway deployment `c0d48f67…` WAITING (about 30 s) → BUILDING → **SUCCESS** at 10:24 UTC. CI result on GitHub not readable from here (Andre checks Actions).
+
+| Hosted check (no transaction) | Result |
+| --- | --- |
+| `curl https://sentfund.my.id/api/health` | `status ok`, `db ok`, `hostedDemo true`, `readOnly false`, `faceModels true` |
+| Landing on the hosted copy | "3 paid testnet runs · 1 repeat refused"; first payout by this vault `UEJ1PEDz…`; "6 payouts in 3 runs, 0 paid twice, as of 10 Nov 2026, 07:37 UTC" (the two history runs + the hosted smoke run); `7Dwmqek…` absent |
+| `npx playwright test -c playwright.hosted-live.config.ts --grep-invert "0.01 tUSDC run"` | **2 passed** (health, banner, read-only admin, identity notice; the 1,000-row sample refused, "Nothing was sent"); screenshot 03 refreshed |
+
+Not run: the hosted 0.01 run (sends a transaction); live testnet flows (no on-chain change).
 
  to `sentfund-payroll.testnet`; the hosted demo goes live (10 Nov 2026)
 
