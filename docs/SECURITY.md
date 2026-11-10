@@ -18,7 +18,7 @@ Source of truth: `src/server/auth/policy.ts` (`can(principal, action, run?)`). R
 | `report.company` (opaque references, no recipient fields) | yes | yes | yes | no |
 | `recipients.manage` (directory: list, add, edit, deactivate/reactivate, testnet check, import) | no | no | yes | no |
 | `settings.update` ("Pay registered recipients only") | no | no | yes | no |
-| `advance.self_service` (own monthly net pay, offer, request with consent, own requests, schedule and paid lines) | no | no | no | **own linked recipient only** |
+| `advance.self_service` (own monthly net pay, offer, request with consent, withdraw own request while Requested, own requests, schedule and paid lines) | no | no | no | **own linked recipient only** |
 | `advance.handle` (Payroll Advance requests: decline with a reason, submit as a one-row run) | yes | no | no | no |
 | `advance.policy` (Payroll Advance policy; read-only in the public demo) | no | no | yes | no |
 | `assistant.use` (payroll assistant: preview, create a **draft** for oneself) | yes | no | no |
@@ -28,10 +28,11 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 ## Employee role (Phase 23)
 
 - An employee login is linked to exactly one directory recipient (`users.recipient_id`, unique; a database CHECK requires it for the employee role and forbids it for every other role). The employee never has a chain account or a signer key.
-- Every employee read and write resolves the recipient **from the session**, never from the request: there is no recipient or user ID in the employee route (`POST /api/employee/advances`) or page (`/employee`). An employee sees only their own monthly net pay, offer, requests, outstanding advance and schedule, and the paid lines to their own NEAR account with explorer links.
+- Every employee read and write resolves the recipient **from the session**, never from the request: there is no recipient or user ID in the employee routes (`POST /api/employee/advances`; `POST /api/employee/advances/[advanceId]/withdraw` takes only the advance ID, which must belong to the session's own recipient, else 404 like a missing one) or page (`/employee`). An employee sees only their own monthly net pay, offer, requests, outstanding advance and schedule, and the paid lines to their own NEAR account with explorer links.
 - Employees reach no other page (`/maker`, `/approver`, `/admin/*`, `/history`, `/runs/*` answer 403 or 404) and no other API route (refused with 403; a run ID answers 404). `tests/integration/boundaries.test.ts` calls every route as the employee and checks that nothing changes.
 - A request needs the explicit consent flag (the text "I agree to these N salary deductions" is stored with the time). The terms and the consent cannot change afterwards (trigger); requests are never deleted (trigger); the ledger and the instalments frozen with a version are append-only (triggers).
 - Eligibility and the money rules are re-checked on the server at the request, at the maker's submit and at the approval (an approval of an advance that is no longer eligible is refused before anything is signed). Two requests at the same moment cannot both succeed: an immediate transaction plus the partial unique index `payroll_advances_one_open_uq` (one open advance per recipient).
+- Withdraw (Phase 23b) only while Requested and never after the maker has sent it to the vault: the status check and update run in an immediate transaction guarded by `status = 'requested'`, so a withdrawal and the maker's submit at the same moment cannot both succeed (409 for the loser).
 - The maker cannot edit an advance run's draft or submit it as payroll; its kind and advance link are fixed (trigger).
 - The company CSV and the admin's company view never show an employee's name: an advance run appears as "Payroll Advance, <month year>".
 - The public demo caps an advance at 0.30 tUSDC (live recipients only, through the existing "Ready to receive tUSDC" submit gate); the policy is read-only there; the kill switch refuses requests (503) and pauses the worker.

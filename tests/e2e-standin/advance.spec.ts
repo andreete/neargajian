@@ -3,6 +3,8 @@
  * (playwright.standin.config.ts; nothing is sent to NEAR testnet): the employee requests with
  * consent → the maker submits → both approvers approve → paid → the next payroll shows the
  * instalment (gross 0.10, instalment 0.05, net 0.05) → paid → balance 0.25 with 5 left.
+ * Phase 23b: the "25%", "50%" and "Max" shortcuts, the "Estimated" month tiles everywhere, and
+ * withdrawing a request (possible while "Requested", refused once the maker has submitted it).
  */
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { sweep, watch } from '../e2e/layout';
@@ -57,6 +59,21 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   await expect(offer.getByTestId('advance-receive')).toHaveText('0.294 tUSDC');
   await expect(offer.getByTestId('advance-instalment')).toContainText('0.05 tUSDC for 6 months');
   await expect(offer.getByTestId('advance-months').locator('li')).toHaveCount(6);
+  await expect(offer.getByTestId('advance-months').locator('li').first()).toContainText('Estimated');
+  await expect(offer.getByTestId('advance-months-note')).toContainText('which may still be this month');
+  // Shortcuts: that share of the maximum (0.30), rounded down to 0.01.
+  const amountField = offer.getByLabel('Amount (tUSDC)');
+  const shortcuts = offer.getByRole('group', { name: 'Amount shortcuts' });
+  await shortcuts.getByRole('button', { name: '25%' }).click();
+  await expect(amountField).toHaveValue('0.07');
+  await expect(offer.getByTestId('advance-receive')).toHaveText('0.0686 tUSDC');
+  await expect(shortcuts.getByRole('button', { name: '25%' })).toHaveAttribute('aria-pressed', 'true');
+  await shortcuts.getByRole('button', { name: '50%' }).click();
+  await expect(amountField).toHaveValue('0.15');
+  await expect(offer.getByTestId('advance-receive')).toHaveText('0.147 tUSDC');
+  await shortcuts.getByRole('button', { name: 'Max' }).click();
+  await expect(amountField).toHaveValue('0.30');
+  await expect(shortcuts.getByRole('button', { name: '25%' })).toHaveAttribute('aria-pressed', 'false');
   const request = offer.getByRole('button', { name: 'Request 0.30 tUSDC' });
   await expect(request).toBeDisabled(); // consent not ticked yet
   await offer.getByLabel('Reason (optional)').fill('Car repair');
@@ -78,6 +95,9 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   const card = maker.getByTestId('advance-request').filter({ hasText: 'Emma Clark' });
   await expect(card.getByTestId('advance-eligibility')).toContainText('Eligible');
   await expect(card.getByTestId('advance-terms')).toContainText('0.294 tUSDC');
+  await expect(card.getByTestId('advance-months').locator('li')).toHaveCount(6);
+  await expect(card.getByTestId('advance-months').locator('li').first()).toContainText('Estimated');
+  await expect(card.getByTestId('advance-months-note')).toBeVisible();
   problems.push(...watch(maker));
   await sweep(maker, 'maker-advance-queue', '/maker/advances');
   await card.getByRole('button', { name: 'Submit for approval' }).click();
@@ -86,8 +106,16 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   const advanceRun = maker.url().split('/').pop()!;
   await expect(maker.getByRole('heading', { name: /^Payroll Advance: Emma Clark, [A-Z][a-z]+ \d{4}$/, level: 1 })).toBeVisible();
   await expect(maker.getByTestId('advance-run-note')).toBeVisible();
+  // Submitted: the employee can no longer withdraw it, and is told so.
+  await emma.goto('/employee');
+  await expect(emma.getByTestId('advance-no-withdraw')).toContainText('can no longer be withdrawn');
+  await expect(emma.getByRole('button', { name: 'Withdraw request' })).toHaveCount(0);
   const reviewer = await session(browser, 'app1@sentfund.my.id');
   problems.push(...watch(reviewer));
+  await reviewer.goto(`/runs/${advanceRun}`);
+  const note = reviewer.getByTestId('advance-run-note');
+  await expect(note.getByTestId('advance-months').locator('li').first()).toContainText('Estimated');
+  await expect(note.getByTestId('advance-months-note')).toContainText('first payroll after the advance is paid');
   await sweep(reviewer, 'approver-advance-run', `/runs/${advanceRun}`);
   await reviewer.context().close();
 
@@ -154,4 +182,48 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   await sweep(grace, 'employee-offer', '/employee');
   expect(problems).toEqual([]);
   for (const p of [emma, maker, admin, grace]) await p.context().close();
+});
+
+test('Payroll Advance: the employee withdraws a request while it is "Requested"; the maker no longer sees it; a new request is possible', async ({ browser }) => {
+  const daniel = await session(browser, 'daniel@sentfund.my.id');
+  const problems = watch(daniel);
+  const offer = daniel.getByTestId('advance-offer');
+  await offer.getByRole('group', { name: 'Amount shortcuts' }).getByRole('button', { name: '50%' }).click();
+  await expect(offer.getByLabel('Amount (tUSDC)')).toHaveValue('0.15');
+  await offer.getByLabel('I agree to these 6 salary deductions').check();
+  await offer.getByRole('button', { name: 'Request 0.15 tUSDC' }).click();
+  const current = daniel.getByTestId('advance-current');
+  await expect(current.getByTestId('advance-status')).toHaveText('Requested');
+
+  const maker = await session(browser, 'maker@sentfund.my.id');
+  problems.push(...watch(maker));
+  await maker.goto('/maker/advances');
+  await expect(maker.getByTestId('advance-request').filter({ hasText: 'Daniel Hall' })).toBeVisible();
+  await sweep(daniel, 'employee-requested', '/employee');
+
+  // Withdraw needs a confirmation; "Keep the request" changes nothing.
+  await current.getByRole('button', { name: 'Withdraw request' }).click();
+  const confirm = daniel.getByRole('dialog', { name: 'Withdraw your Payroll Advance request?' });
+  await expect(confirm).toContainText('0.15 tUSDC');
+  await confirm.getByRole('button', { name: 'Keep the request' }).click();
+  await expect(confirm).toBeHidden();
+  await expect(current.getByTestId('advance-status')).toHaveText('Requested');
+  await current.getByRole('button', { name: 'Withdraw request' }).click();
+  await confirm.getByRole('button', { name: 'Yes, withdraw request' }).click();
+  await expect(daniel.getByTestId('advance-current')).toHaveCount(0);
+  await expect(daniel.getByTestId('advance-requests').getByTestId('advance-status').first()).toHaveText('Withdrawn');
+  await expect(daniel.getByTestId('advance-requests')).toContainText('You withdrew this request');
+  // A new request is possible right away.
+  await expect(daniel.getByTestId('advance-offer')).toBeVisible();
+  await expect(daniel.getByTestId('advance-available')).toContainText('0.30');
+
+  // The maker's queue no longer has it; it is listed as handled, Withdrawn.
+  await maker.reload();
+  await expect(maker.getByTestId('advance-request').filter({ hasText: 'Daniel Hall' })).toHaveCount(0);
+  const handled = maker.getByTestId('advance-handled').locator('tr').filter({ hasText: 'Daniel Hall' });
+  await expect(handled.getByTestId('advance-status')).toHaveText('Withdrawn');
+  await sweep(daniel, 'employee-withdrawn', '/employee');
+  await sweep(maker, 'maker-advance-handled', '/maker/advances');
+  expect(problems).toEqual([]);
+  for (const p of [daniel, maker]) await p.context().close();
 });

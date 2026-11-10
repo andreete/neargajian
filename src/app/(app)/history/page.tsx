@@ -12,8 +12,9 @@ import { AdvanceKindChip } from '@/components/advance-bits';
 
 /** Under a net amount: how it was made (payroll gross − instalment, or advance − fee). */
 function Breakdown({ gross, instalment, advance, fee }: { gross: bigint; instalment: bigint; advance: bigint; fee: bigint }) {
-  if (advance > 0n) return <div className="sub nowrap" data-testid="breakdown">advance {displayAmount(advance)} − fee {displayAmount(fee)}</div>;
-  if (instalment > 0n) return <div className="sub nowrap" data-testid="breakdown">gross {displayAmount(gross)} − instalment {displayAmount(instalment)}</div>;
+  // Two short lines (each kept whole), so the breakdown never widens the narrow name/reference column.
+  if (advance > 0n) return <div className="sub breakdown" data-testid="breakdown"><span>advance {displayAmount(advance)}</span>{' '}<span>− fee {displayAmount(fee)}</span></div>;
+  if (instalment > 0n) return <div className="sub breakdown" data-testid="breakdown"><span>gross {displayAmount(gross)}</span>{' '}<span>− instalment {displayAmount(instalment)}</span></div>;
   return null;
 }
 const sumOf = (r: HistoryRun) => ({ gross: r.lines.reduce((s, l) => s + l.gross, 0n), instalment: r.lines.reduce((s, l) => s + l.instalment, 0n), advance: r.lines.reduce((s, l) => s + l.advance, 0n), fee: r.lines.reduce((s, l) => s + l.fee, 0n) });

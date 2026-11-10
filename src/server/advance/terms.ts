@@ -52,6 +52,17 @@ export function termsFor(amount: bigint, policy: Pick<AdvancePolicy, 'feeBps' | 
   return { amount, fee, net: amount - fee, schedule: scheduleFor(amount, policy.instalments) };
 }
 
+/** Employee shortcuts (Phase 23b): "25%", "50%" and "Max" of the employee's maximum. */
+export const AMOUNT_SHORTCUTS = [{ label: '25%', percent: 25 }, { label: '50%', percent: 50 }, { label: 'Max', percent: 100 }] as const;
+const CENT = 10_000n; // 0.01 tUSDC
+
+/** That share of the maximum, rounded DOWN to 0.01 tUSDC (never above the maximum). */
+export function shareOfMax(max: bigint, percent: number): bigint {
+  if (!Number.isInteger(percent) || percent < 0 || percent > 100) throw new RangeError('percent must be an integer from 0 to 100');
+  if (max <= 0n) return 0n;
+  return ((max * BigInt(percent)) / 100n / CENT) * CENT;
+}
+
 /** The largest advance: policy share of the monthly net pay, capped by the recipient's and the workflow's per-payout caps. */
 export function maxAdvanceFor(input: { monthlyNetPay: bigint; maxPercent: number; recipientMax: bigint; perRowCap: bigint; hosted?: boolean }): bigint {
   const share = (input.monthlyNetPay * BigInt(input.maxPercent)) / 100n;

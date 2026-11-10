@@ -3,13 +3,15 @@
 /**
  * Employee: the Payroll Advance offer (Phase 23). The terms are previewed here with the same pure
  * money rules the server uses (advance/terms.ts); the server checks everything again when the
- * request is sent. Requesting needs the explicit consent tick.
+ * request is sent. Requesting needs the explicit consent tick. Phase 23b: "25%", "50%" and "Max"
+ * fill in that share of the maximum, rounded down to 0.01; the deduction months are estimates.
  */
 import { useRouter } from 'next/navigation';
 import { useId, useState, type FormEvent } from 'react';
-import { parseAmount } from '@/server/money';
-import { CONSENT_TEXT, MIN_ADVANCE, monthLabel, termsFor } from '@/server/advance/terms';
+import { formatAmountShort, parseAmount } from '@/server/money';
+import { AMOUNT_SHORTCUTS, CONSENT_TEXT, MIN_ADVANCE, shareOfMax, termsFor } from '@/server/advance/terms';
 import { displayAmount } from '@/lib/format';
+import { MonthsList } from './advance-bits';
 import { AlertIcon, CheckIcon, WalletIcon } from './icons';
 
 export function AdvanceRequestForm({ max, feeBps, instalments, months, csrfToken }: {
@@ -53,7 +55,20 @@ export function AdvanceRequestForm({ max, feeBps, instalments, months, csrfToken
     <form onSubmit={submit} noValidate className="advance-form" data-testid="advance-offer">
       <div className="field">
         <label htmlFor="adv-amount">Amount (tUSDC)</label>
-        <input id="adv-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={valueError ? true : undefined} aria-describedby={amountErr} />
+        <div className="amount-row">
+          <input id="adv-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={valueError ? true : undefined} aria-describedby={amountErr} />
+          <div className="amount-shortcuts" role="group" aria-label="Amount shortcuts" data-testid="advance-shortcuts">
+            {AMOUNT_SHORTCUTS.map((sc) => {
+              const v = shareOfMax(maxUnits, sc.percent);
+              const usable = v >= MIN_ADVANCE;
+              return (
+                <button key={sc.label} type="button" className="btn btn-secondary btn-sm" disabled={!usable} aria-pressed={usable && parsed.ok && parsed.value === v}
+                  title={usable ? `${sc.percent}% of your maximum, rounded down to 0.01: ${formatAmountShort(v)} tUSDC` : 'Below the 0.01 tUSDC minimum'}
+                  onClick={() => { setAmount(formatAmountShort(v)); setError(null); }}>{sc.label}</button>
+              );
+            })}
+          </div>
+        </div>
         <span id={amountErr} className={valueError ? 'field-error' : 'hint'}>{valueError ?? `From 0.01 up to ${displayAmount(maxUnits)} tUSDC.`}</span>
       </div>
       <div className="field">
@@ -69,8 +84,7 @@ export function AdvanceRequestForm({ max, feeBps, instalments, months, csrfToken
             <dt>You receive</dt><dd className="num"><strong data-testid="advance-receive">{displayAmount(terms.net)} tUSDC</strong></dd>
             <dt>Monthly instalment</dt><dd className="num" data-testid="advance-instalment">{displayAmount(terms.schedule.regular)} tUSDC{terms.schedule.last !== terms.schedule.regular ? ` (last one ${displayAmount(terms.schedule.last)})` : ''} for {instalments} months</dd>
           </dl>
-          <p className="hint">Expected salary deductions (the first one is taken from the first payroll after the advance is paid):</p>
-          <ol className="months-list" data-testid="advance-months">{months.map((m, i) => <li key={m}><span>{monthLabel(m)}</span><span className="num">{displayAmount(terms.schedule.amounts[i] ?? 0n)} tUSDC</span></li>)}</ol>
+          <MonthsList months={months} amounts={terms.schedule.amounts} title="Estimated salary deductions" />
         </div>
       ) : null}
       <label className="consent">

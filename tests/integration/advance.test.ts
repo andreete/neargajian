@@ -1,6 +1,6 @@
 /**
  * Phase 23 · Payroll Advance end to end against the contract-faithful stand-in vault: eligibility,
- * consent, concurrent requests, decline, maker submit (one-row run through create_run), approver
+ * consent, concurrent requests, decline, withdraw (Phase 23b; also at the same moment as the maker's submit), maker submit (one-row run through create_run), approver
  * re-check, reject, payout and ledger, repayment through payroll (50% rule, carry-over, one
  * deduction per month, released on cancel), reports that reconcile, settle-outside, policy log.
  */
@@ -18,7 +18,7 @@ import { saveManualDraft } from '@/server/runs/draft-service';
 import { cancelVersion, decide, latestVersion, reconcileVersion, submitRun } from '@/server/runs/lifecycle';
 import { payRows, requestRelease } from '@/server/payouts/release';
 import {
-  advanceForRun, advanceQueue, declineAdvance, employeeView, outstandingAdvances, requestAdvance, submitAdvance,
+  advanceForRun, advanceQueue, declineAdvance, employeeView, openRequestCount, outstandingAdvances, requestAdvance, submitAdvance, withdrawAdvance,
 } from '@/server/advance/service';
 import { planDeductions, planFingerprint } from '@/server/advance/ledger';
 import { policyLog, setPolicy } from '@/server/advance/policy';
@@ -187,6 +187,66 @@ describe('maker and approvers', () => {
     await reconcileVersion(h.db, fake, latestVersion(h.db, runId)!.id, NOW);
     await cancelVersion(h.db, fake, maker, runId, NOW);
     expect(h.db.select().from(payrollAdvances).get()).toMatchObject({ status: 'cancelled' });
+  });
+});
+
+describe('withdraw (Phase 23b)', () => {
+  it('the employee withdraws their own requested advance: Withdrawn, gone from the maker queue, and a new request is possible', () => {
+    const a = requestAdvance(h.db, emma, { amount: '0.20', consent: true }, NOW);
+    expect(openRequestCount(h.db)).toBe(1);
+    expect(() => withdrawAdvance(h.db, daniel, a.id, NOW)).toThrow(/not found/); // another employee: like a missing request
+    expect(() => withdrawAdvance(h.db, maker, a.id, NOW)).toThrow(/Only employees/);
+    expect(() => withdrawAdvance(h.db, emma, 'nope', NOW)).toThrow(/not found/);
+    expect(withdrawAdvance(h.db, emma, a.id, NOW)).toMatchObject({ status: 'withdrawn', decidedByUserId: emma.id });
+    expect(advanceQueue(h.db, maker, NOW).open).toEqual([]);
+    expect(advanceQueue(h.db, maker, NOW).done.map((e) => e.advance.status)).toEqual(['withdrawn']);
+    expect(openRequestCount(h.db)).toBe(0);
+    expect(employeeView(h.db, emma, NOW)).toMatchObject({ current: null, eligibility: { eligible: true } });
+    expect(() => withdrawAdvance(h.db, emma, a.id, NOW)).toThrow(/withdrawn, so there is nothing to withdraw/);
+    expect(() => declineAdvance(h.db, maker, a.id, 'Too late now', NOW)).toThrow(/withdrawn, so it cannot be declined/);
+    expect(requestAdvance(h.db, emma, { amount: '0.10', consent: true }, NOW).status).toBe('requested');
+    expect(h.sqlite.prepare("select action from audit_events where entity_id = ? order by id").all(a.id)).toEqual([{ action: 'advance.requested' }, { action: 'advance.withdrawn' }]);
+    expect(fake.calls).toEqual([]);
+  });
+
+  it('once the maker has submitted it, withdrawing is no longer possible', async () => {
+    const a = requestAdvance(h.db, emma, { amount: '0.30', consent: true }, NOW);
+    await submitAdvance(h.db, fake, maker, a.id, NOW);
+    expect(() => withdrawAdvance(h.db, emma, a.id, NOW)).toThrow(/already submitted this request, so it can no longer be withdrawn/);
+    expect(h.db.select().from(payrollAdvances).get()!.status).toBe('submitted');
+  });
+
+  it('withdraw at the same moment as the maker submits: exactly one wins, in either order', async () => {
+    for (const first of ['submit', 'withdraw'] as const) {
+      k += 1;
+      h = openDatabase(join(dir, `race-${first}-${k}.sqlite`));
+      await seedDemo(h.db, { env: { DEMO_MODE: 'true' }, now: at('2026-11-01T00:00:00Z'), recipientDirectory: true, testnetHistory: false, demoDraft: false });
+      recordReadiness(h.db, 'usr_admin', rid(EMMA).id, 'ready', at('2026-11-01T00:00:00Z'));
+      fake = new FakeVault();
+      const a = requestAdvance(h.db, emma, { amount: '0.30', consent: true }, NOW);
+      const submit = () => submitAdvance(h.db, fake, maker, a.id, NOW);
+      const withdraw = async () => withdrawAdvance(h.db, emma, a.id, NOW);
+      const results = await Promise.allSettled(first === 'submit' ? [submit(), withdraw()] : [withdraw(), submit()]);
+      expect(results.map((r) => r.status), first).toEqual(['fulfilled', 'rejected']);
+      const loser = (results[1] as PromiseRejectedResult).reason as DomainError;
+      expect(loser.code).toBe('conflict');
+      const status = h.db.select().from(payrollAdvances).get()!.status;
+      const creates = fake.calls.filter((c) => c.method === 'create_run').length;
+      if (first === 'submit') expect([status, creates, loser.message]).toEqual(['submitted', 1, 'The payroll maker has already submitted this request, so it can no longer be withdrawn.']);
+      else expect([status, creates, h.db.select().from(payrollRuns).all().length, loser.message]).toEqual(['withdrawn', 0, 0, 'This request is withdrawn; only a requested advance can be submitted.']);
+    }
+  });
+
+  it('a withdrawal while the submission is still on its way to NEAR is refused; the submission completes', async () => {
+    const a = requestAdvance(h.db, emma, { amount: '0.30', consent: true }, NOW);
+    const call = fake.call.bind(fake);
+    let open!: () => void;
+    const gate = new Promise<void>((resolve) => { open = resolve; });
+    fake.call = async (...args: Parameters<FakeVault['call']>) => { await gate; return call(...args); };
+    const submitting = submitAdvance(h.db, fake, maker, a.id, NOW);
+    expect(() => withdrawAdvance(h.db, emma, a.id, NOW)).toThrow(/can no longer be withdrawn/);
+    open();
+    expect((await submitting).advance.status).toBe('submitted');
   });
 });
 

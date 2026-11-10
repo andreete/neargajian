@@ -497,7 +497,7 @@ export const identityChecks = sqliteTable('identity_checks', {
 
 // ------------------------------------------------------------------ Payroll Advance (Phase 23)
 
-export const ADVANCE_STATUSES = ['requested', 'declined', 'submitted', 'approved', 'paid', 'repaid', 'rejected', 'cancelled', 'failed'] as const;
+export const ADVANCE_STATUSES = ['requested', 'declined', 'submitted', 'approved', 'paid', 'repaid', 'rejected', 'cancelled', 'failed', 'withdrawn'] as const;
 export type AdvanceStatus = (typeof ADVANCE_STATUSES)[number];
 /** Statuses that block a new request (one advance at a time; partial unique index). */
 export const OPEN_ADVANCE_STATUSES = ['requested', 'submitted', 'approved', 'paid'] as const;
@@ -533,7 +533,7 @@ export const payrollAdvances = sqliteTable('payroll_advances', {
   /** JSON: the eligibility re-check when the maker submitted. */
   eligibilityAtSubmit: text('eligibility_at_submit'),
   status: text('status', { enum: ADVANCE_STATUSES }).notNull(),
-  /** Decline / rejection reason or a note on a failed submission (no PII). */
+  /** Decline / rejection reason or a note on a failed submission (no PII). "withdrawn": the employee withdrew it while still "requested" (Phase 23b). */
   statusDetail: text('status_detail'),
   decidedByUserId: text('decided_by_user_id').references(() => users.id),
   decidedAt: ms('decided_at'),

@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
 
-// LIVE smoke test of the public hosted demo (docs/HOSTING.md step 6). Sends real testnet
+// LIVE smoke test of the public hosted demo (docs/HOSTING.md step 6). hosted-smoke.spec.ts sends real testnet
 // transactions on the hosted site: run only on purpose. HOSTED_URL defaults to the demo.
 export default defineConfig({
   testDir: './tests/live',
-  testMatch: 'hosted-smoke.spec.ts',
+  testMatch: ['hosted-smoke.spec.ts', 'hosted-check.spec.ts'],
   outputDir: './.tmp/playwright-hosted-live',
   workers: 1,
   timeout: 600_000,

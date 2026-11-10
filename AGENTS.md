@@ -18,7 +18,7 @@ The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex incl
 - No secrets in git, logs, chat or docs. Keys stay in `~/.near-credentials` and `.env`. Never read, print or log `ANTHROPIC_API_KEY`; never rewrite `.env` in a way that drops lines you did not write.
 - No public repo, X post, submission or force-push without Andre's explicit yes.
 - No PII on-chain or in logs.
-- Payroll Advance (Phase 23) is an app feature on top of the frozen vault: never change the contract for it. The stand-in vault mode (`VAULT_STANDIN=browser-tests`) is for browser tests under `.tmp/` only.
+- Payroll Advance (Phase 23, 23b) is an app feature on top of the frozen vault: never change the contract for it. The stand-in vault mode (`VAULT_STANDIN=browser-tests`) is for browser tests under `.tmp/` only.
 - `nice -n 19` for heavy commands, `CARGO_BUILD_JOBS=2`, never a Rust build and a Node install/build/test at the same time.
 - Temp files go to the repo's git-ignored `.tmp/`, never the shared `/tmp` tmpfs: use the npm scripts (they run through `scripts/with-tmp.sh`), or prefix other commands with `./scripts/with-tmp.sh` or `TMPDIR=$PWD/.tmp`.
 

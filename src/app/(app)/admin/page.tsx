@@ -20,6 +20,9 @@ const ACTION_LABEL: Record<string, string> = {
   'recipient.created': 'Recipient added', 'recipient.updated': 'Recipient edited', 'recipient.deactivated': 'Recipient deactivated',
   'recipient.reactivated': 'Recipient reactivated', 'recipients.imported': 'Recipients imported',
   'settings.registered_only_on': '"Pay registered recipients only" turned on', 'settings.registered_only_off': '"Pay registered recipients only" turned off',
+  'settings.payroll_advance': 'Payroll Advance settings changed', 'advance.requested': 'Payroll Advance requested', 'advance.withdrawn': 'Payroll Advance request withdrawn',
+  'advance.declined': 'Payroll Advance request declined', 'advance.submit_requested': 'Payroll Advance submitted for approval', 'advance.paid': 'Payroll Advance paid out',
+  'advance.repaid': 'Payroll Advance fully repaid',
 };
 
 export default async function AdminDashboard() {

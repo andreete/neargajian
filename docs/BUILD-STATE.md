@@ -35,8 +35,33 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 22 Testnet migration to `sentfund-payroll.testnet` + hosted demo live | Done: https://sentfund.my.id live and smoke-tested; all suites green | **Yes**: new accounts, token, locked vault (same release Wasm), 3 policy runs, assistant app run, hosted smoke run; `judge:verify` 221/221 |
 | 22b Review fixes (tunnel command, third-party licenses, live landing facts, online scope) | Done, released to https://sentfund.my.id | none (no transaction; read-only hosted checks) |
 | 23 Hosted Claude key + Payroll Advance (employee role) | Done locally, all suites green; pushed to `main` on both remotes; **not released** to the hosted site (Andre reviews first). Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
+| 23b Employee form: withdraw, estimated months, amount shortcuts | Done, all suites green; pushed to `main`; release: see the Phase 23b section | see the Phase 23b section |
 
 ---
+
+## Phase 23b · Employee form: withdraw, estimated months, amount shortcuts (11 Nov 2026)
+
+Andre approved Phase 23 (all ten transactions of the two runs verified on testnet, vault 1.586, recipient1 0.414, vault without access keys; D-130..D-134 accepted) and asked for three improvements before the release, then the release and a vault top-up (decisions D-135 to D-137).
+
+### Built
+- **Withdraw** (D-135): `withdrawAdvance` in `src/server/advance/service.ts`, `POST /api/employee/advances/[advanceId]/withdraw` (employee only; own linked recipient only, else 404), new status **Withdrawn**, `src/components/advance-withdraw.tsx` (button "Withdraw request" + confirmation dialog), employee page note "can no longer be withdrawn" once submitted, maker "Handled requests" shows Withdrawn; audit `advance.withdrawn` (labels for the advance audit actions on the admin dashboard). Migration `0011_phase23b_withdraw.sql` rebuilds `payroll_advances` for the new status (tested on a copy of the local DB first).
+- **Estimated months** (D-136): `MonthsList` in `advance-bits.tsx` labels every tile "Estimated" and adds the one-line note; used by the employee form, the maker queue and the approver's run note.
+- **Amount shortcuts** (D-136): `AMOUNT_SHORTCUTS` + `shareOfMax` in `terms.ts` (rounded down to 0.01); buttons 25% / 50% / Max next to the amount (`aria-pressed` shows the active one; disabled below 0.01).
+- **History breakdown** on two lines (D-137) after the layout check caught a 5 px overflow at 1280x720.
+- **Tests**: unit +1 (shortcuts), integration +4 (withdraw rules; withdraw vs submit in both orders; withdraw while the submission is on its way to NEAR), `boundaries.test.ts` +4 refusals (116) and a cross-employee withdraw test (404, nothing changes; the owner can), `tests/e2e-standin/advance.spec.ts` (shortcuts, Estimated in all three places, "can no longer be withdrawn" after the maker's submit; new withdraw test with a layout sweep), `tests/hosted/hosted.spec.ts` (withdraw in the public demo), `tests/live/hosted-check.spec.ts` (new, read-only hosted check after a release).
+
+### Checks (11 Nov 2026, before the release)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **28 files, 246 tests passed** |
+| `npm run samples:check` | no diff |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 2.6–3.3 GB |
+| `npm run test:e2e` | **31 passed**, then the stand-in tests **2 passed** (whole flow + withdraw) |
+| `npm run test:judge-mode` / `test:hosted` | **1** / **4 + 2** passed |
+| `npm run secret-scan` | clean (working tree + 40 commits) |
+| `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
+| contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (0 keys; contracts unchanged) |
 
 ## Phase 23 · Hosted Claude key, then Payroll Advance (10 Nov 2026)
 

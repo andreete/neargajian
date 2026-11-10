@@ -36,7 +36,8 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       const bottoms = rects.map((x) => x.bottom);
       return Math.max(...bottoms) - Math.min(...bottoms) > minH * 0.9;
     };
-    const oneLine = 'td.amount, td.when, td.nowrap > *, .cv-text, .chip, a.tx, table.data th[scope="col"], .stat .value';
+    // The history breakdown is deliberately two lines; each of its lines must stay whole.
+    const oneLine = 'td.amount, td.when, td.nowrap > :not(.breakdown), .breakdown > span, .cv-text, .chip, a.tx, table.data th[scope="col"], .stat .value';
     document.querySelectorAll(oneLine).forEach((el) => {
       if (!(el as HTMLElement).offsetParent) return;
       if (wraps(el)) out.push(`wraps: ${el.tagName.toLowerCase()}.${(el as HTMLElement).className} "${(el.textContent ?? '').trim().slice(0, 40)}"`);

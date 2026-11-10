@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AdvanceRequestForm } from '@/components/advance-request';
+import { AdvanceWithdraw } from '@/components/advance-withdraw';
 import { AdvanceKindChip, AdvanceStatusChip, DISCLOSURE, EligibilityList, ScheduleTable, TermsList } from '@/components/advance-bits';
 import { AlertIcon, InfoIcon, WalletIcon } from '@/components/icons';
 import { getDb } from '@/server/db/client';
@@ -47,7 +48,7 @@ export default async function EmployeePage() {
             {canRequest ? (
               <AdvanceRequestForm max={v.eligibility.max} feeBps={v.policy.feeBps} instalments={v.policy.instalments} months={v.expectedMonths} csrfToken={session.csrfToken} />
             ) : cur ? (
-              <div className="callout" role="note"><WalletIcon size={18} /><span>You have a Payroll Advance {cur.status === 'paid' ? 'to repay' : 'in progress'}. A new one is possible once it is fully repaid{cur.status === 'paid' ? '' : ', declined or rejected'}.</span></div>
+              <div className="callout" role="note"><WalletIcon size={18} /><span>You have a Payroll Advance {cur.status === 'paid' ? 'to repay' : 'in progress'}. A new one is possible once {cur.status === 'paid' ? 'it is fully repaid' : cur.status === 'requested' ? 'you withdraw it, or once it is declined, rejected or fully repaid' : 'it is rejected or fully repaid'}.</span></div>
             ) : (
               <>
                 <div className="callout callout-warn" role="note" data-testid="advance-not-eligible"><AlertIcon size={18} /><span>You are not eligible for a Payroll Advance right now. The checks below say why.</span></div>
@@ -64,7 +65,9 @@ export default async function EmployeePage() {
               <TermsList amount={cur.amount} fee={cur.fee} net={cur.net} instalment={cur.instalment} last={cur.lastInstalment} count={cur.instalmentCount} feeBps={(JSON.parse(cur.policySnapshot) as { feeBps: number }).feeBps} />
               {cur.status === 'paid' ? (
                 <p data-testid="advance-progress"><strong>{displayAmount(cur.schedule.repaid)} of {displayAmount(cur.amount)} tUSDC repaid</strong>, {displayAmount(cur.schedule.balance)} tUSDC outstanding, {cur.schedule.left} instalment{cur.schedule.left === 1 ? '' : 's'} left.{cur.schedule.firstMonth ? ` Repayment started in ${monthLabel(cur.schedule.firstMonth)}.` : ' Repayment starts with your next payroll.'}</p>
-              ) : <p className="hint">Requested {formatDateTime(cur.createdAt)}. The schedule starts with the first payroll after the advance is paid.</p>}
+              ) : <p className="hint">Requested {formatDateTime(cur.createdAt)}. The schedule starts with the first payroll after the advance is paid; the months below are estimates.</p>}
+              {cur.status === 'requested' ? <AdvanceWithdraw id={cur.id} amount={displayAmount(cur.amount)} csrfToken={session.csrfToken} />
+                : cur.status === 'submitted' || cur.status === 'approved' ? <div className="callout" role="note" data-testid="advance-no-withdraw"><InfoIcon size={18} /><span>The payroll maker has submitted this request, so it can no longer be withdrawn.</span></div> : null}
             </div>
             <ScheduleTable items={cur.schedule.items} caption="Repayment schedule" />
           </section>
@@ -83,7 +86,7 @@ export default async function EmployeePage() {
                     <td className="amount">{displayAmount(a.fee)}</td>
                     <td className="amount">{displayAmount(a.net)}</td>
                     <td><AdvanceStatusChip status={a.status} /></td>
-                    <td className="sub">{a.statusDetail ?? (a.status === 'requested' ? 'Waiting for the payroll maker' : a.status === 'submitted' ? 'Waiting for the approvers' : a.status === 'approved' ? 'Approved: being paid by the vault' : a.status === 'paid' ? 'Paid out; repaid through payroll' : a.status === 'repaid' ? 'Fully repaid' : '')}</td>
+                    <td className="sub">{a.statusDetail ?? (a.status === 'requested' ? 'Waiting for the payroll maker' : a.status === 'submitted' ? 'Waiting for the approvers' : a.status === 'approved' ? 'Approved: being paid by the vault' : a.status === 'paid' ? 'Paid out; repaid through payroll' : a.status === 'repaid' ? 'Fully repaid' : a.status === 'withdrawn' ? 'You withdrew this request' : '')}</td>
                   </tr>
                 ))}</tbody>
               </table>

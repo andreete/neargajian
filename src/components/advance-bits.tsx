@@ -21,6 +21,7 @@ const STATUS: Record<AdvanceStatus, { label: string; tone: string; icon: ReactNo
   rejected: { label: 'Rejected', tone: 'danger', icon: <XIcon size={13} /> },
   cancelled: { label: 'Cancelled', tone: 'neutral', icon: <XIcon size={13} /> },
   failed: { label: 'Payout failed', tone: 'danger', icon: <AlertIcon size={13} /> },
+  withdrawn: { label: 'Withdrawn', tone: 'neutral', icon: <XIcon size={13} /> },
 };
 
 export function AdvanceStatusChip({ status }: { status: AdvanceStatus }) {
@@ -62,9 +63,20 @@ export function ScheduleTable({ items, caption }: { items: ScheduleItem[]; capti
   );
 }
 
-/** Expected months as plain items (offer, maker queue, approver note). */
-export function MonthsList({ months, amounts }: { months: string[]; amounts: bigint[] }) {
-  return <ol className="months-list">{months.map((m, i) => <li key={m}><span>{monthLabel(m)}</span><span className="num">{displayAmount(amounts[i] ?? 0n)} tUSDC</span></li>)}</ol>;
+export const ESTIMATED_MONTHS_NOTE = 'Estimated: the first instalment is taken from the first payroll after the advance is paid, which may still be this month.';
+
+/**
+ * The deduction months as tiles, each labelled "Estimated" (Phase 23b), with the one-line note.
+ * Used by the employee's offer (a client component), the maker queue and the approver's run note.
+ */
+export function MonthsList({ months, amounts, title }: { months: string[]; amounts: bigint[]; title: string }) {
+  return (
+    <div className="months-block" data-testid="advance-months">
+      <p className="hint">{title}</p>
+      <ol className="months-list">{months.map((m, i) => <li key={m}><span className="months-est">Estimated</span><span>{monthLabel(m)}</span><span className="num">{displayAmount(amounts[i] ?? 0n)} tUSDC</span></li>)}</ol>
+      <p className="hint" data-testid="advance-months-note"><InfoIcon size={14} /> {ESTIMATED_MONTHS_NOTE}</p>
+    </div>
+  );
 }
 
 export function EligibilityList({ e, title }: { e: Eligibility; title: string }) {
@@ -124,7 +136,7 @@ export function AdvanceRunNote({ view }: { view: import('@/server/advance/servic
         <div className="grid-2">
           <div className="stack">
             <TermsList amount={a.amount} fee={a.fee} net={a.net} instalment={a.instalment} last={a.lastInstalment} count={a.instalmentCount} feeBps={feeBps} />
-            <div><p className="hint">Repayment schedule (expected months; it starts with the first payroll after the payout)</p><MonthsList months={view.months} amounts={amounts} /></div>
+            <MonthsList months={view.months} amounts={amounts} title="Estimated repayment months" />
           </div>
           <div className="stack">
             {view.eligibilityNow ? <EligibilityList e={view.eligibilityNow} title="Eligibility re-checked now" /> : null}

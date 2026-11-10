@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  addMonths, deductionFor, feeFor, HOSTED_ADVANCE_CAP, maxAdvanceFor, monthKey, monthLabel, monthsBetween, monthsFrom, scheduleFor, termsFor,
+  addMonths, AMOUNT_SHORTCUTS, deductionFor, feeFor, HOSTED_ADVANCE_CAP, maxAdvanceFor, monthKey, monthLabel, monthsBetween, monthsFrom, scheduleFor, shareOfMax, termsFor,
 } from '@/server/advance/terms';
 
 const T = (s: string) => BigInt(Math.round(Number(s) * 1e6)); // test helper only: "0.30" → 300000n
@@ -107,5 +107,22 @@ describe('deduction rule', () => {
       deducted += d.instalment;
     }
     expect(deducted).toBe(100_000n);
+  });
+});
+
+describe('amount shortcuts (Phase 23b)', () => {
+  it('"25%", "50%" and "Max" fill in that share of the maximum, rounded down to 0.01', () => {
+    expect(AMOUNT_SHORTCUTS.map((s) => s.label)).toEqual(['25%', '50%', 'Max']);
+    expect(AMOUNT_SHORTCUTS.map((s) => shareOfMax(T('0.30'), s.percent))).toEqual([70_000n, 150_000n, 300_000n]); // 0.075 → 0.07
+    expect(AMOUNT_SHORTCUTS.map((s) => shareOfMax(305_555n, s.percent))).toEqual([70_000n, 150_000n, 300_000n]); // a maximum of 0.305555 → Max 0.30
+    expect(shareOfMax(T('1.00'), 25)).toBe(250_000n);
+    expect(shareOfMax(T('0.03'), 25)).toBe(0n); // 0.0075 → below the 0.01 minimum: the button is disabled
+    expect(shareOfMax(0n, 100)).toBe(0n);
+    for (const max of [10_000n, 123_456n, 999_999n, 300_000n]) for (const p of [25, 50, 100]) {
+      const v = shareOfMax(max, p);
+      expect(v % 10_000n).toBe(0n);
+      expect(v <= max).toBe(true);
+    }
+    expect(() => shareOfMax(T('0.30'), 101)).toThrow(RangeError);
   });
 });

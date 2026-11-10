@@ -48,7 +48,7 @@ export default async function AdvanceRequestsPage() {
                 <div className="grid-2">
                   <div className="stack">
                     <TermsList amount={a.amount} fee={a.fee} net={a.net} instalment={a.instalment} last={a.lastInstalment} count={a.instalmentCount} feeBps={feeBps} />
-                    <div><p className="hint">Expected salary deductions</p><MonthsList months={e.months} amounts={amounts} /></div>
+                    <MonthsList months={e.months} amounts={amounts} title="Estimated salary deductions" />
                   </div>
                   <div className="stack">
                     <EligibilityList e={e.eligibilityNow} title="Eligibility re-checked now" />
@@ -70,7 +70,7 @@ export default async function AdvanceRequestsPage() {
                 <thead><tr><th scope="col">Employee</th><th scope="col">Requested (UTC)</th><th scope="col" className="amount">Advance</th><th scope="col" className="amount">Fee</th><th scope="col" className="amount">Net payout</th><th scope="col">Status</th><th scope="col">Run</th></tr></thead>
                 <tbody>{q.done.map((e) => (
                   <tr key={e.advance.id}>
-                    <td><div className="title">{e.name}</div><div className="sub">{e.advance.statusDetail ?? ''}</div></td>
+                    <td><div className="title">{e.name}</div><div className="sub">{e.advance.statusDetail ?? (e.advance.status === 'withdrawn' ? 'Withdrawn by the employee before submission' : '')}</div></td>
                     <td className="sub when">{formatUtcCell(e.advance.createdAt)}</td>
                     <td className="amount">{displayAmount(e.advance.amount)}</td>
                     <td className="amount">{displayAmount(e.advance.fee)}</td>

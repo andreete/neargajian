@@ -32,7 +32,7 @@ export const MAX_DECLINE_REASON = 500;
 
 export const ADVANCE_STATUS_LABEL: Record<AdvanceStatus, string> = {
   requested: 'Requested', declined: 'Declined', submitted: 'Submitted', approved: 'Approved', paid: 'Paid',
-  repaid: 'Repaid', rejected: 'Rejected', cancelled: 'Cancelled', failed: 'Payout failed',
+  repaid: 'Repaid', rejected: 'Rejected', cancelled: 'Cancelled', failed: 'Payout failed', withdrawn: 'Withdrawn',
 };
 
 function audit(db: Queryable, actor: string | null, action: string, id: string, detail: Record<string, unknown>, now: Date) {
@@ -86,10 +86,38 @@ export function requestAdvance(db: Db, principal: Principal, input: AdvanceReque
     }, { behavior: 'immediate' });
   } catch (error) {
     if (error instanceof Error && /UNIQUE constraint failed: payroll_advances\.recipient_id/.test(error.message)) {
-      throw new DomainError('conflict', 'You already have a Payroll Advance open. A new one is possible after it is declined, rejected or fully repaid.');
+      throw new DomainError('conflict', 'You already have a Payroll Advance open. A new one is possible after it is withdrawn, declined, rejected or fully repaid.');
     }
     throw error;
   }
+}
+
+/**
+ * Phase 23b: the employee withdraws their OWN request while it is still "requested". Once the maker
+ * has submitted it (or sent it to the vault once), withdrawing is no longer possible. The status
+ * guard runs in an immediate transaction, so a withdrawal and the maker's submit at the same moment
+ * cannot both succeed: whichever commits first wins and the other is refused with 409.
+ */
+export function withdrawAdvance(db: Db, principal: Principal, id: string, now = new Date()): Advance {
+  const recipient = employeeRecipient(db, principal);
+  return db.transaction((tx) => {
+    const a = tx.select().from(payrollAdvances).where(eq(payrollAdvances.id, id)).get();
+    // Another employee's request answers exactly like a missing one.
+    if (!a || a.recipientId !== recipient.id || a.employeeUserId !== principal.id) throw new DomainError('not_found', 'Payroll Advance request not found.');
+    if (a.status !== 'requested') {
+      throw new DomainError('conflict', ['submitted', 'approved', 'paid'].includes(a.status)
+        ? 'The payroll maker has already submitted this request, so it can no longer be withdrawn.'
+        : `This request is ${ADVANCE_STATUS_LABEL[a.status].toLowerCase()}, so there is nothing to withdraw.`);
+    }
+    if (a.runId && tx.select({ id: runVersions.id }).from(runVersions).where(eq(runVersions.runId, a.runId)).get()) {
+      throw new DomainError('conflict', 'The payroll maker already sent this request to the vault once, so it can no longer be withdrawn. Ask the maker to decline it.');
+    }
+    const changed = tx.update(payrollAdvances).set({ status: 'withdrawn', statusDetail: null, decidedByUserId: principal.id, decidedAt: now, updatedAt: now })
+      .where(and(eq(payrollAdvances.id, id), eq(payrollAdvances.status, 'requested'))).run();
+    if (changed.changes !== 1) throw new DomainError('conflict', 'This request changed in another window. Reload.');
+    audit(tx, principal.id, 'advance.withdrawn', id, {}, now);
+    return getAdvance(tx, id);
+  }, { behavior: 'immediate' });
 }
 
 // ------------------------------------------------------------------ maker

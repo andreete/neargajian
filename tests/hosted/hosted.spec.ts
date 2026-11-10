@@ -70,7 +70,7 @@ test('without the admin key the workflow is read-only, and the directory is read
   await expect(page.getByRole('region', { name: 'Directory' }).getByRole('row').filter({ hasText: 'Ready' })).toHaveCount(3);
 });
 
-test('Payroll Advance: an employee signs in and requests (at most 0.30, nothing sent); the policy is read-only', async ({ page, browser }) => {
+test('Payroll Advance: an employee signs in, requests (at most 0.30, nothing sent) and withdraws; the policy is read-only', async ({ page, browser }) => {
   await signIn(page, 'grace@sentfund.my.id', /\/employee$/);
   await expect(page.getByTestId('hosted-banner')).toBeVisible();
   await expect(page.getByTestId('advance-available')).toContainText('0.30');
@@ -81,6 +81,11 @@ test('Payroll Advance: an employee signs in and requests (at most 0.30, nothing 
   await offer.getByLabel('I agree to these 6 salary deductions').check();
   await offer.getByRole('button', { name: 'Request 0.10 tUSDC' }).click();
   await expect(page.getByTestId('advance-current').getByTestId('advance-status')).toHaveText('Requested');
+  // Phase 23b: withdrawing works in the public demo too (nothing is sent to NEAR).
+  await page.getByRole('button', { name: 'Withdraw request' }).click();
+  await page.getByRole('dialog', { name: 'Withdraw your Payroll Advance request?' }).getByRole('button', { name: 'Yes, withdraw request' }).click();
+  await expect(page.getByTestId('advance-requests').getByTestId('advance-status').first()).toHaveText('Withdrawn');
+  await expect(page.getByTestId('advance-offer').getByRole('group', { name: 'Amount shortcuts' }).getByRole('button')).toHaveCount(3);
   const admin = await browser.newPage();
   await signIn(admin, 'admin@sentfund.my.id', /\/admin$/);
   await admin.goto('/admin/payroll-advance');

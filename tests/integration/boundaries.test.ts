@@ -81,6 +81,7 @@ function operations(): { name: string; method: string; path: (id: string) => str
     { name: 'identity review', method: 'POST', path: () => '/api/admin/identity/review', h: () => route.idReview!.POST!, body: () => JSON.stringify({ recipientId: EMMA, decision: 'failed', reason: 'probe reason' }), run: () => '' },
     // Phase 23: Payroll Advance (employee self-service, maker handling, admin policy).
     { name: 'advance request', method: 'POST', path: () => '/api/employee/advances', h: () => route.advRequest!.POST!, body: j({ amount: '0.30', consent: true }), run: () => '' },
+    { name: 'advance withdraw', method: 'POST', path: (id) => `/api/employee/advances/${id}/withdraw`, h: () => route.advWithdraw!.POST!, body: () => '{}', run: () => 'adv-probe' },
     { name: 'advance decline', method: 'POST', path: (id) => `/api/advances/${id}/decline`, h: () => route.advDecline!.POST!, body: j({ reason: 'probe reason' }), run: () => 'adv-probe' },
     { name: 'advance submit', method: 'POST', path: (id) => `/api/advances/${id}/submit`, h: () => route.advSubmit!.POST!, body: () => null, run: () => 'adv-probe' },
     { name: 'admin payroll advance policy', method: 'POST', path: () => '/api/admin/payroll-advance', h: () => route.advPolicy!.POST!, body: j({ enabled: false, maxPercent: 100, feeBps: 100, instalments: 3, minDays: 30 }), run: () => '' },
@@ -89,18 +90,18 @@ function operations(): { name: string; method: string; path: (id: string) => str
 
 const ADMIN_DIRECTORY = ['admin recipients list', 'admin recipient add', 'admin recipient edit', 'admin recipient status', 'admin recipient check', 'admin recipients import', 'admin settings read', 'admin settings change', 'identity check', 'identity specimen', 'identity review'];
 
-const ADVANCE = ['advance request', 'advance decline', 'advance submit', 'admin payroll advance policy'];
-/** Everything an employee must never reach (all but its own request route; run detail answers 404). */
-const NOT_FOR_EMPLOYEES = () => operations().map((o) => o.name).filter((n) => n !== 'advance request' && n !== 'run detail');
+const ADVANCE = ['advance request', 'advance withdraw', 'advance decline', 'advance submit', 'admin payroll advance policy'];
+/** Everything an employee must never reach (all but its own request and withdraw routes; run detail and a request that is not theirs answer 404). */
+const NOT_FOR_EMPLOYEES = () => operations().map((o) => o.name).filter((n) => !['advance request', 'advance withdraw', 'run detail'].includes(n));
 
 /** Who must be refused where, and with which status. */
 const DENIED: [Who, string[], number][] = [
   // Phase 23: the employee role reaches nothing but its own Payroll Advance request.
   ['emp', NOT_FOR_EMPLOYEES(), 403],
-  ['emp', ['run detail'], 404],
-  ['maker', ['advance request', 'admin payroll advance policy'], 403],
+  ['emp', ['run detail', 'advance withdraw'], 404],
+  ['maker', ['advance request', 'advance withdraw', 'admin payroll advance policy'], 403],
   ['app1', ADVANCE, 403],
-  ['admin', ['advance request', 'advance decline', 'advance submit'], 403],
+  ['admin', ['advance request', 'advance withdraw', 'advance decline', 'advance submit'], 403],
   ['maker2', ['run detail', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'reconcile', 'cancel', 'release'], 404],
   ['app3', ['run detail', 'reconcile', 'decision'], 404],
   ['app1', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'cancel', 'release', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit', ...ADMIN_DIRECTORY, 'assistant', 'assistant draft'], 403],
@@ -192,6 +193,7 @@ beforeAll(async () => {
   route.idSpecimen = await load('@/app/api/admin/identity/specimen/route');
   route.idReview = await load('@/app/api/admin/identity/review/route');
   route.advRequest = await load('@/app/api/employee/advances/route');
+  route.advWithdraw = await load('@/app/api/employee/advances/[advanceId]/withdraw/route');
   route.advDecline = await load('@/app/api/advances/[advanceId]/decline/route');
   route.advSubmit = await load('@/app/api/advances/[advanceId]/submit/route');
   route.advPolicy = await load('@/app/api/admin/payroll-advance/route');
@@ -230,7 +232,7 @@ describe('API permission boundaries', () => {
         checked += 1;
       }
     }
-    expect(checked).toBe(112); // Phase 21: + 3 identity routes × (approver, maker); Phase 23: + 34 employee, + 9 advance routes × other roles
+    expect(checked).toBe(116); // Phase 21: + 3 identity routes × (approver, maker); Phase 23: + 34 employee, + 9 advance routes × other roles; Phase 23b: withdraw × (employee 404, maker, approver, admin)
     expect(state()).toBe(before);
     expect(fake.calls.length).toBe(calls);
   });
@@ -239,7 +241,7 @@ describe('API permission boundaries', () => {
     const before = state();
     const calls = fake.calls.length;
     for (const op of operations().filter((o) => o.method !== 'GET')) {
-      const who: Who = op.name.startsWith('admin') ? 'admin' : op.name === 'decision' ? 'app1' : op.name === 'advance request' ? 'emp' : 'maker';
+      const who: Who = op.name.startsWith('admin') ? 'admin' : op.name === 'decision' ? 'app1' : op.name === 'advance request' || op.name === 'advance withdraw' ? 'emp' : 'maker';
       const noCsrf = await call(who, op.method, op.path(op.run()), op.h(), op.run(), op.body(), { csrf: false });
       expect(noCsrf.status, `${op.name} without CSRF`).toBe(403);
       const foreign = await call(who, op.method, op.path(op.run()), op.h(), op.run(), op.body(), { origin: 'https://evil.example' });
@@ -279,5 +281,25 @@ describe('API permission boundaries', () => {
     // The assigned approver can read the run it must review; the owner can too.
     expect((await call('app1', 'GET', `/api/runs/${LIVE}`, route.run!.GET!, LIVE, null)).status).toBe(200);
     expect((await call('maker', 'GET', `/api/runs/${LIVE}`, route.run!.GET!, LIVE, null)).status).toBe(200);
+  });
+
+  it("Phase 23b: an employee cannot withdraw another employee's request (404, nothing changes); the owner can", async () => {
+    const { requestAdvance } = await import('@/server/advance/service');
+    const { recordReadiness } = await import('@/server/recipients/directory');
+    const daniel = (sqlite.prepare("select id from recipients where near_account_id = 'recipient2.sentfund-payroll.testnet'").get() as { id: string }).id;
+    recordReadiness(db, 'usr_admin', daniel, 'ready', new Date());
+    const theirs = requestAdvance(db, { id: 'usr_emp_daniel', role: 'employee' }, { amount: '0.10', consent: true });
+    const op = operations().find((o) => o.name === 'advance withdraw')!;
+    const before = state();
+    const res = await call('emp', 'POST', op.path(theirs.id), op.h(), theirs.id, op.body());
+    expect(res.status).toBe(404);
+    expect(state()).toBe(before);
+    // Daniel himself may withdraw it.
+    const { createSession, SESSION_COOKIE } = await import('@/server/auth/session');
+    const s = createSession(db, 'usr_emp_daniel', new Date());
+    const req = new Request(`${BASE}${op.path(theirs.id)}`, { method: 'POST', headers: new Headers({ origin: BASE, cookie: `${SESSION_COOKIE}=${s.token}`, 'x-csrf-token': s.csrfToken, 'content-type': 'application/json' }), body: '{}' });
+    const mine = await op.h()(req, { params: Promise.resolve({ runId: '', recipientId: '', advanceId: theirs.id }) });
+    expect(mine.status).toBe(200);
+    expect(((await mine.json()) as { advance: { status: string } }).advance.status).toBe('withdrawn');
   });
 });
