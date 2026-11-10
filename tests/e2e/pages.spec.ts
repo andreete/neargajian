@@ -187,7 +187,7 @@ test('detailed history: one line per payout, long values truncated with a copy a
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('recipient1.sentfund-payroll.testnet');
   await expect(table.getByText('NEAR account copied').first()).toBeAttached();
   const ref = table.locator('tbody tr:not(.group-row) .cv-text').first();
-  await expect(ref).toHaveAttribute('title', /^GJN-[A-Z2-9]{8}-0001$/);
+  await expect(ref).toHaveAttribute('title', /^SFD-[A-Z2-9]{8}-0001$/);
   // Truncated values keep the full value in the tooltip and the copy action.
   const account = table.locator('tbody tr:not(.group-row) td:nth-child(3) .cv-text').first();
   await expect(account).toHaveAttribute('title', 'recipient1.sentfund-payroll.testnet');

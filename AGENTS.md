@@ -14,7 +14,7 @@ The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex incl
 - Testnet only. Never mainnet.
 - No `sudo`, no Docker, nothing outside `/home/neargajian`; ask Andre for system packages.
 - Bind to 127.0.0.1 only (port 8092). No tunnels.
-- Hosting (Railway, `docs/HOSTING.md`): never run Docker here; push to the `release` branch, create accounts or add host keys on-chain only with Andre's explicit yes.
+- Hosting (live at https://sentfund.my.id; Railway + Cloudflare, `docs/HOSTING.md`): never run Docker here; push to `release` (remote `sentfund`), change Railway or Cloudflare settings, or add/delete host keys on-chain only with Andre's explicit yes. The Railway and Cloudflare tokens are in `.env`: never print them.
 - No secrets in git, logs, chat or docs. Keys stay in `~/.near-credentials` and `.env`. Never read, print or log `ANTHROPIC_API_KEY`; never rewrite `.env` in a way that drops lines you did not write.
 - No public repo, X post, submission or force-push without Andre's explicit yes.
 - No PII on-chain or in logs.

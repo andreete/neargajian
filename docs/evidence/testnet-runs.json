@@ -458,6 +458,100 @@
           "hash": "9CgyGev62WfbPd1DdQ6VPACRqbXVYvFHe1BAV6ehKN7r"
         }
       ]
+    },
+    {
+      "phase": "22",
+      "label": "SentFund vault: payroll assistant draft for the Sales division (0.03 \u00d7 2), approved by both in the browser, paid automatically",
+      "vault": "vault.sentfund-payroll.testnet",
+      "runId": "gjn-1dcfe59097104a6db4ab-v1",
+      "status": "Paid",
+      "total": "60000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient2.sentfund-payroll.testnet",
+          "amount": "30000"
+        },
+        {
+          "index": 1,
+          "receiver": "recipient1.sentfund-payroll.testnet",
+          "amount": "30000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "signer": "maker.sentfund-payroll.testnet",
+          "hash": "GN6CLdFBYBYaFd156d2crDgiwJhsUERYcbjVuswZzjov"
+        },
+        {
+          "step": "approve (approver 1)",
+          "signer": "approver1.sentfund-payroll.testnet",
+          "hash": "GUtrhvYoJwmNB2DNJDVRqWFArXJSBYBgzWbs4HzeSmM"
+        },
+        {
+          "step": "approve (approver 2)",
+          "signer": "approver2.sentfund-payroll.testnet",
+          "hash": "HG3MLgsns6GWdyPnJLKWsrSWbvBY3kHsmwjNo2rQrhAf"
+        },
+        {
+          "step": "start_release (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "DjHy3vQmjrxhZUs1QuEpXjjNmksye97DhfmeScRZ5s4Z"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "9JssGzw65SqLvc1gccZz6ik9J4yRP6a9GwxwiAe2QKCW"
+        },
+        {
+          "step": "pay_row 1 (worker)",
+          "signer": "worker.sentfund-payroll.testnet",
+          "hash": "3zd74WMJkK9KXwc97M2GgYJRFBqLgsyvLXCj9xcwfyyn"
+        }
+      ]
+    },
+    {
+      "phase": "22",
+      "label": "Hosted demo smoke test on https://sentfund.my.id: 0.01 tUSDC to Emma Clark, approved by both in the browser, paid by the hosted worker",
+      "vault": "vault.sentfund-payroll.testnet",
+      "runId": "gjn-540d7be58be945ac9438-v1",
+      "status": "Paid",
+      "total": "10000",
+      "rows": [
+        {
+          "index": 0,
+          "receiver": "recipient1.sentfund-payroll.testnet",
+          "amount": "10000"
+        }
+      ],
+      "txs": [
+        {
+          "step": "create_run (maker)",
+          "hash": "CavrPzQKNyENBTs7AezmezMkcD3MgAGk8DZG6yGHfpd2",
+          "signer": "maker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 1)",
+          "hash": "7P9hqL5Ht55GZQkueCU8PHpBZgCUpQCcSA13fn7wwieV",
+          "signer": "approver1.sentfund-payroll.testnet"
+        },
+        {
+          "step": "approve (approver 2)",
+          "hash": "Av52CbvbLdSzLKpT62JscF83T1YXszNn72x2SEGjor9R",
+          "signer": "approver2.sentfund-payroll.testnet"
+        },
+        {
+          "step": "start_release (worker)",
+          "hash": "EdiSVSomRGgqEJzobJDrV5y9PGzqHEMyWYhsTKjpCXUb",
+          "signer": "worker.sentfund-payroll.testnet"
+        },
+        {
+          "step": "pay_row 0 (worker)",
+          "hash": "DpjyXcLCVMdyKdUAFd6Y9a52JwQovN3dU7G6N1QQC8sM",
+          "signer": "worker.sentfund-payroll.testnet"
+        }
+      ]
     }
   ],
   "expectedFailures": [

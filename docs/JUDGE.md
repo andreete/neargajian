@@ -37,16 +37,18 @@ npm run judge:verify
 It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
 
 ```
-== Phase 13: Complete flow through the app (detailed posting, automatic release)
-   vault vault.gajian-payroll.testnet · run gjn-c042c3e14af142669ce4-v1
+== Phase 22: SentFund vault: two approvers in sequence, automatic release (3 recipients)
+   vault vault.sentfund-payroll.testnet · run p22-seq-202611100718
 PASS  run status Paid (expected Paid)
-PASS  run total 0.120000 tUSDC (expected 0.120000)
+PASS  run total 0.150000 tUSDC (expected 0.150000)
 PASS  rows 3, paid 3
-PASS  row 0: Paid 0.040000 tUSDC → recipient1.gajian-payroll.testnet
+PASS  row 0: Paid 0.030000 tUSDC → recipient1.sentfund-payroll.testnet
 ...
-PASS  pay_row 2 (worker): ft_transfer event 0.020000 tUSDC → recipient3.gajian-payroll.testnet
-PASS  pay_row 2 (worker) Ee67Kff6… final, signed by worker.gajian-payroll.testnet
-
+PASS  pay_row 0 (worker): ft_transfer event 0.030000 tUSDC → recipient1.sentfund-payroll.testnet
+...
+== Phase 13: [earlier deployment] Complete flow through the app (detailed posting, automatic release)
+   vault vault.gajian-payroll.testnet · run gjn-c042c3e14af142669ce4-v1
+...
 All testnet evidence checks passed.
 ```
 
@@ -60,10 +62,10 @@ sha256sum contracts/target/near/gajian_vault/gajian_vault.wasm
 # 38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0
 npm run judge:deployment
 # PASS  deployed code_hash equals the locally built Wasm
-# PASS  no full-access key on vault2.gajian-payroll.testnet (0 keys in total)
+# PASS  no full-access key on vault.sentfund-payroll.testnet (0 keys in total)
 ```
 
-`npm run judge:verify` (step 3) also checks the deployed `code_hash` against the recorded hash and the absence of full-access keys without building anything. It covers Phase 13 and every Phase 16 run (demo, maker release, Awaiting funding, fund migration), the deployment operations, eight on-chain refusals, the Phase 19 vault2 top-up (mint + `ft_transfer_call`, vault2 2.00 tUSDC) and every paid time in the exported CSVs (`docs/evidence/exports/`) against the block of its payout transaction, and the Phase 19b assistant-drafted run: 130 checks in total.
+`npm run judge:verify` (step 3) also checks the deployed `code_hash` against the recorded hash and the absence of full-access keys without building anything. It covers Phase 13 and every Phase 16 run (demo, maker release, Awaiting funding, fund migration), the deployment operations, eight on-chain refusals, the Phase 19 vault2 top-up (mint + `ft_transfer_call`, vault2 2.00 tUSDC) and every paid time in the exported CSVs (`docs/evidence/exports/`) against the block of its payout transaction, and the Phase 19b assistant-drafted run, and since Phase 22 the SentFund deployment (`sentfund-payroll.testnet`): its setup operations (accounts, token, vault deploy and lock, keys, registrations, funding), the policy runs and eight more on-chain refusals, the assistant-drafted app run, and the lock of both the SentFund vault and the earlier vault2: 211 checks in total.
 
 ## 4. Run the app locally (demo mode)
 

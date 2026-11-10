@@ -8,11 +8,11 @@ SentFund is a payroll approval and payout app on NEAR testnet. A finance team pr
 | --- | --- |
 | Track | Real-World Money (`realworld`): payroll |
 | Network | NEAR **testnet only** (no mainnet configuration exists in this repository) |
-| Token | `tUSDC`: our own NEP-141 test token, 6 decimals, zero value, at `tusdc.gajian-payroll.testnet` |
-| Vault contract (used by the app) | `vault2.gajian-payroll.testnet`: release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, **no access keys** (code cannot change) |
-| Earlier vault (retired, readable) | `vault.gajian-payroll.testnet` (Phases 04–13) |
+| Token | `tUSDC`: our own NEP-141 test token, 6 decimals, zero value, at `tusdc.sentfund-payroll.testnet` (display name "SentFund test USDC") |
+| Vault contract (used by the app) | `vault.sentfund-payroll.testnet` (since Phase 22, 10 Nov 2026): release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, **no access keys** (code cannot change) |
+| Earlier deployment (retired, readable) | `gajian-payroll.testnet` (the project's earlier name): `vault.gajian-payroll.testnet` (Phases 04–13) and `vault2.gajian-payroll.testnet` (Phases 16–21, same release Wasm, locked). Its runs stay in the evidence and are re-checked by `npm run judge:verify` |
 | Live proof | `docs/TESTNET.md`: every transaction with explorer links, balances before and after. Re-check without keys: `npm run judge:verify` |
-| Try it online | **`<HOSTED-URL>` (not live yet; planned at submission, online until at least 25 Nov 2026)**. See "Try it online" below |
+| Try it online | **https://sentfund.my.id** (live since 10 Nov 2026; online until at least 25 Nov 2026). See "Try it online" below |
 | Demo sign-in (demo mode) | `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, password `12345678` |
 | Stack | Next.js 16 + React 19 (TypeScript), SQLite (Drizzle), Rust contracts with near-sdk 5.30.1, near-api-js 7.4.0 |
 | Recipient directory | Admin page "Recipients": name, division, NEAR account, email, phone, maximum per payout, active/inactive, change log. With "Pay registered recipients only" on (the demo default), every payroll row must match an active recipient within its maximum. **Enforced by the app and the approvers, not by the vault contract** |
@@ -35,7 +35,7 @@ A small company paying staff or contractors in stablecoins usually has one perso
 
 ## Try it online
 
-**`<HOSTED-URL>`** (placeholder until the hosted demo is live; planned address `https://sentfund.my.id`, status in `docs/HOSTING.md`). It is a **public demo on NEAR testnet** with a zero-value test token and **shared demo data**: everyone uses the same four demo accounts (password `12345678`) and sees the same runs.
+**https://sentfund.my.id** (status in `docs/HOSTING.md`). It is a **public demo on NEAR testnet** with a zero-value test token and **shared demo data**: everyone uses the same four demo accounts (password `12345678`) and sees the same runs.
 
 **Use separate browser windows for the roles.** A sign-in belongs to one browser profile, so:
 - **Window 1, normal window:** `maker@sentfund.my.id`
@@ -81,7 +81,7 @@ npm run secret-scan                   # secret-scan: clean (working tree + N com
 npm run judge:verify
 ```
 
-See: about 130 lines starting with `PASS`, ending with `All testnet evidence checks passed.` It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
+See: about 210 lines starting with `PASS`, ending with `All testnet evidence checks passed.` It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
 - every run's status, total and paid rows;
 - every transaction's signer, receiver and success;
 - every payout's `ft_transfer` event (receiver and amount);
@@ -97,9 +97,9 @@ Every transaction is also linked to the NearBlocks testnet explorer in `docs/TES
 
 ```sh
 RPC=https://rpc.testnet.fastnear.com
-curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_account","finality":"final","account_id":"vault2.gajian-payroll.testnet"}}'
+curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_account","finality":"final","account_id":"vault.sentfund-payroll.testnet"}}'
 # "code_hash":"4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP"
-curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"vault2.gajian-payroll.testnet"}}'
+curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"vault.sentfund-payroll.testnet"}}'
 # "keys":[]
 ```
 
@@ -111,7 +111,7 @@ sha256sum contracts/target/near/gajian_vault/gajian_vault.wasm
 # 38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0
 npm run judge:deployment
 # PASS  deployed code_hash equals the locally built Wasm
-# PASS  no full-access key on vault2.gajian-payroll.testnet (0 keys in total)
+# PASS  no full-access key on vault.sentfund-payroll.testnet (0 keys in total)
 npm run contracts:test        # contract unit tests + a local nearcore sandbox flow
 ```
 

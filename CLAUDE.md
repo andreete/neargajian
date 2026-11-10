@@ -1,6 +1,6 @@
 # SentFund (formerly GAJIAN): standing rules for Claude sessions
 
-SentFund is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory** and runs **identity checks** (KTP read by Claude vision with the face covered, NIK rules offline, face match on this server with OpenCV YuNet + SFace; Phase 21, `docs/SECURITY.md`); "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo on Railway (`HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) is prepared for submission and kept online until 25 Nov 2026.
+SentFund is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance team prepares a payroll batch (manual rows, CSV/TXT up to 1,000 rows, or the maker's **payroll assistant** drafting from words or voice via the Claude API), routes it through 1 or 2 approvers (sequential or parallel), and a custom NEAR **testnet** vault contract enforces the approvals and pays recipients in our mock tUSDC token. The admin keeps a **recipient directory** and runs **identity checks** (KTP read by Claude vision with the face covered, NIK rules offline, face match on this server with OpenCV YuNet + SFace; Phase 21, `docs/SECURITY.md`); "Pay registered recipients only" is an app/approver guardrail, not a contract rule. Company reporting has consolidated and detailed posting modes. A public hosted demo runs at **https://sentfund.my.id** (Railway + Cloudflare, `HOSTED_DEMO=true`, runbook `docs/HOSTING.md`) and stays online until at least 25 Nov 2026.
 
 ## Start every session here
 
@@ -53,7 +53,7 @@ SentFund is a NEAR HACKATHON (Real-World Money) payroll prototype: a finance tea
 | near-cli-rs (`near`) | 0.31.1 | `~/.cargo/bin` |
 | near-sdk / near-contract-standards / near-sandbox | 5.30.1 / 5.30.1 / 0.4.0 (nearcore 2.14.0) | `contracts/Cargo.toml` |
 
-Testnet: accounts and contracts in `docs/TESTNET.md`. **The app uses the final vault `vault2.gajian-payroll.testnet`** (Phase 16: release build, no full-access key, cannot be redeployed); `vault.gajian-payroll.testnet` is retired. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`. App signers use the restricted function-call keys in `.env` (`node scripts/testnet/write-env.mjs` rewrites it; never print it). Recovery rules: `docs/RECOVERY.md`. Commitment format: `docs/COMMITMENTS.md`.
+Testnet: accounts and contracts in `docs/TESTNET.md`. **The app uses `vault.sentfund-payroll.testnet`** (Phase 22: the same release build as the earlier `vault2.gajian-payroll.testnet`, no access key at all, cannot be redeployed; token `tusdc.sentfund-payroll.testnet`); the `gajian-payroll.testnet` accounts are the retired earlier deployment, kept as evidence; `vault.gajian-payroll.testnet` is retired. Always go through `scripts/testnet/near.sh` (testnet-only guard, output redaction), never plain `near`. App signers use the restricted function-call keys in `.env` (`node scripts/testnet/write-env.mjs` rewrites it; never print it). Recovery rules: `docs/RECOVERY.md`. Commitment format: `docs/COMMITMENTS.md`.
 
 Server code (`src/server`) must stay runnable by Node directly: relative imports with `.ts` extensions, erasable TypeScript only (D-047).
 
@@ -81,11 +81,14 @@ node --env-file=.env scripts/testnet/record-run-evidence.ts <runId> <phase> "<la
 npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
 npm run demo:reset               # move data/sentfund.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)
 nice -n 19 npm run test:judge-mode  # Playwright: fresh demo DB and no signer keys (read-only copy)
-npm run judge:deployment         # read-only: vault2 code_hash = local release Wasm, no full-access key
+npm run judge:deployment         # read-only: the vault's code_hash = local release Wasm, no access key (run AFTER contracts:build; contracts:test leaves a non-remapped build in target/)
 npm run secret-scan              # credential scan: worktree + full Git history (--staged before commits)
 nice -n 19 npm run test:hosted   # Playwright: hosted demo mode, then the kill switch (fresh demo DB, no admin key)
 scripts/testnet/hosting-keys.sh status          # read-only; add --yes / delete --yes only with Andre's yes (real transactions)
-node scripts/testnet/phase16.ts top-up 2.00     # vault2 up to at most 2 tUSDC (real transactions, with Andre's yes)
+npx playwright test -c playwright.hosted-live.config.ts   # LIVE smoke test of https://sentfund.my.id (one real 0.01 run); on purpose only
+git -c core.sshCommand="ssh -i ~/.ssh/sentfund_deploy -o IdentitiesOnly=yes" push sentfund main main:release   # release to Railway (Andre's yes; CI green first)
+scripts/testnet/phase22-setup.sh <stage>        # how the SentFund deployment was built (done; do not rerun)
+node scripts/testnet/phase16.ts top-up 2.00     # the vault up to at most 2 tUSDC (real transactions, with Andre's yes)
 
 # Contracts (one at a time, never alongside Node work)
 nice -n 19 npm run contracts:build   # cargo near build non-reproducible-wasm (tusdc, vault)

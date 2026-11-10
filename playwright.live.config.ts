@@ -5,6 +5,7 @@ import { defineConfig } from '@playwright/test';
 // Sends real testnet transactions: run only on purpose (npm run live:phase13).
 export default defineConfig({
   testDir: './tests/live',
+  testIgnore: 'hosted-smoke.spec.ts', // the public demo's smoke test: playwright.hosted-live.config.ts
   outputDir: './.tmp/playwright-live',
   workers: 1,
   timeout: 600_000,

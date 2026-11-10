@@ -5,7 +5,8 @@
 const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!RPC.includes('testnet')) throw new Error('testnet RPC only');
 const master = process.argv[2] ?? 'sentfund-payroll.testnet';
-const roles = ['', 'tusdc', 'vault', 'vault2', 'admin', 'maker', 'approver1', 'approver2', 'worker',
+// vault2 exists only in the earlier gajian-payroll.testnet deployment (its final vault, Phases 16-21).
+const roles = ['', 'tusdc', 'vault', ...(master === 'gajian-payroll.testnet' ? ['vault2'] : []), 'admin', 'maker', 'approver1', 'approver2', 'worker',
   'recipient1', 'recipient2', 'recipient3'];
 
 async function rpc(method, params) {

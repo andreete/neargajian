@@ -18,8 +18,8 @@ For the team's **human QA pass** after Phase 19, and for an independent reviewer
 | Project | SentFund (formerly GAJIAN): payroll batches with approvals enforced by a NEAR vault contract; payouts in a test stablecoin on NEAR testnet (NEAR HACKATHON, Real-World Money track) |
 | Repository | `https://github.com/discoverateagency-ops/sentfund` (**private until submission**: Andre grants read access or sends a `git bundle`; the older `andreete/neargajian` holds the same history up to Phase 21) |
 | Release candidate | the **`phase-19: recipient directory and payroll assistant`** commit on `main` (`git log --oneline -1`). The previous candidate was `7483f51` (Phase 17). |
-| Final vault (live) | `vault2.gajian-payroll.testnet`: release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, on-chain `code_hash` `4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP`, no access keys |
-| Token | `tusdc.gajian-payroll.testnet` (NEP-141, 6 decimals, zero value, admin can mint) |
+| Final vault (live) | `vault.sentfund-payroll.testnet` (Phase 22; the earlier `vault2.gajian-payroll.testnet` runs the same Wasm and is retired): release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, on-chain `code_hash` `4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP`, no access keys |
+| Token | `tusdc.sentfund-payroll.testnet` ("SentFund test USDC", NEP-141, 6 decimals, zero value, admin can mint) |
 | Requirements | `docs/build/01-PRD.md` (acceptance checks A01–A08), `docs/build/00-KICKOFF.md` (decisions that override older docs); Phase 19 brief: A09 directory and A10 assistant below and in `docs/ACCEPTANCE.md` |
 | How it was built | `docs/BUILD-STATE.md` (per phase, with evidence), `docs/DECISIONS.md` |
 
@@ -54,13 +54,13 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm test` | `Test Files 23 passed (23)`, `Tests 179 passed (179)` |
 | `npm run samples:check` | regenerates the sample files; `git diff` is empty |
 | `npm run secret-scan` | `secret-scan: clean (working tree + N commits)` |
-| `npm run judge:verify` | about 130 `PASS` lines and `All testnet evidence checks passed.` |
+| `npm run judge:verify` | about 210 `PASS` lines and `All testnet evidence checks passed.` |
 | `npm audit --audit-level=high` | exit 0 (14 moderate advisories known; none high or critical) |
 | `npx playwright install chromium && npm run build && npm run test:e2e` | `29 passed` (isolated DB, test-only fixture, stand-in vault, labelled assistant test stub; no testnet writes, no API key) |
 | `npm run test:hosted` (after the build) | `3 passed`, then `1 passed` (hosted demo mode, then the kill switch; fresh database like the hosted service; no admin key; no transactions) |
 | `npm run test:judge-mode` | `1 passed` (fresh demo DB, no keys: read-only note, upload, review, submit refused, run stays a draft) |
 | `npm run contracts:build` then `sha256sum contracts/target/near/gajian_vault/gajian_vault.wasm` | `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0` (Linux x86-64, pinned toolchain) |
-| `npm run judge:deployment` (after the build) | `PASS deployed code_hash equals the locally built Wasm`, `PASS no full-access key on vault2.gajian-payroll.testnet (0 keys in total)` |
+| `npm run judge:deployment` (after the build) | `PASS deployed code_hash equals the locally built Wasm`, `PASS no full-access key on vault.sentfund-payroll.testnet (0 keys in total)` |
 | `npm run contracts:lint`, `npm run contracts:test` | pass; 3 + 49 unit tests and a sandbox flow (downloads nearcore 2.14.0 on first run) |
 
 Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, password `12345678`. Use separate browser profiles for different roles. All times are UTC.
@@ -97,7 +97,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 - Reference: `submission.test.ts`, `decisions.test.ts`.
 
 **A05: funded contract, verified transfers; early release, wrong signer, insufficient funding, tampered proof rejected**
-- Live: `npm run judge:verify` passes. NearBlocks links in `docs/TESTNET.md` show the transfers to `recipient1/2/3.gajian-payroll.testnet`.
+- Live: `npm run judge:verify` passes. NearBlocks links in `docs/TESTNET.md` show the transfers to `recipient1/2/3.sentfund-payroll.testnet` (and, for the earlier deployment, `recipient1/2/3.gajian-payroll.testnet`).
 - Refusals checked on-chain by `judge:verify`: early release, wrong signer, tampered amount, out-of-order approval, stale workflow, release after rejection, duplicate payment of a paid row, release beyond the balance.
 - Reference: contract sandbox tests, `release.test.ts`, `regression.test.ts`.
 
@@ -181,6 +181,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 - `docs/evidence/backfill-block-times-16b.json`: the paid-time correction log.
 - Screenshots: `docs/screenshots/phase-13/`, `docs/screenshots/phase-16/` (live); `docs/screenshots/phase-19/` (directory and refused upload row from a fresh demo database; assistant screenshots once the key is in place); `docs/screenshots/phase-14/` (test fixture data, labelled).
 - Phase 19: vault2 topped up to 2.00 tUSDC (`docs/TESTNET.md`, checked by `judge:verify`).
+- Phase 22: the SentFund deployment (`sentfund-payroll.testnet`): same release vault Wasm, locked; policy runs, the assistant run and the hosted smoke run (`docs/TESTNET.md`).
 - The project owner independently re-verified Phase 16 on testnet: code hash, no keys, all 32 transactions, balances.
 
 ## 5. Known issues and limitations (not bugs unless you find otherwise)
@@ -188,14 +189,14 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 1. **Trust model:** the server signs with restricted per-role keys on behalf of signed-in users. It is acceptable for a testnet prototype and is not production custody (README).
 2. **Paths proven only by tests, not live:** an unknown transaction outcome; two workers at once; a failed token transfer with retries; a worker crash between claim and signing (fault injection is not safe on testnet).
 3. **Reproducible build without Docker:** official `cargo near build reproducible-wasm` (NEP-330) needs Docker, which the build host forbids. Reproducibility is "same toolchain plus path remapping" (Linux x86-64). Other platforms may differ.
-4. **Retired vault** `vault.gajian-payroll.testnet` still has its full-access key (owner's choice). It holds 0 tUSDC and is not used by the app.
+4. **Retired deployment** `gajian-payroll.testnet`: `vault.gajian-payroll.testnet` still has its full-access key (owner's choice) and holds 0 tUSDC; `vault2.gajian-payroll.testnet` is locked and keeps 1.94 tUSDC of the earlier token (zero value; it can only leave through an approved run, never by an admin). Neither is used by the app.
 5. **tUSDC is a mintable zero-value test token.** The workflow caps are 1 tUSDC per row and 100 per run.
 6. **npm audit:** 14 moderate advisories (esbuild, minimatch and uuid chains, development tooling); none high or critical.
 7. **Desktop first:** checked at 1024, 1280 and 1440 px wide. Narrower screens work (top navigation, tables scroll inside their region) but are not optimised.
 8. **Historic export:** the company CSV downloaded during the Phase 16 rehearsal showed 14:44:29 for one line, from the worker clock. Since Phase 16b, paid times come from the chain (that line is 14:44:26, the block time). This is documented in `docs/TESTNET.md`; it is not a current defect.
 9. **CI status on GitHub was not checked from the build machine** (no GitHub CLI there). Locally, the same steps pass, including the browser tests with all keys blank. Since Phase 20b, CI also runs the judge-mode and hosted-mode browser tests and builds and boots the hosted image (job "Hosted image"; the image is never built on the build machine). Please check the Actions tab for the latest commit.
 10. **Demo passwords are public by design** (demo mode only). Failed sign-ins are rate-limited.
-11. **The recipient directory is an app guardrail, not a contract rule.** The vault does not know it (vault2 cannot change). A maker key used outside the app could commit rows outside the directory; approvers are the check (README, SECURITY).
+11. **The recipient directory is an app guardrail, not a contract rule.** The vault does not know it (the vault's code cannot change). A maker key used outside the app could commit rows outside the directory; approvers are the check (README, SECURITY).
 12. **The payroll assistant needs the team's `ANTHROPIC_API_KEY`;** the live assistant run was done in Phase 19b with the team's key (`docs/TESTNET.md`). Browser tests use a labelled stub model.
 13. **Sample employees share some names with the live recipients** (for example a second "Daniel Hall" in Engineering). The assistant asks which division instead of guessing.
 14. **Adding a recipient makes one read-only RPC call** to FastNEAR; offline it shows "Could not reach NEAR testnet: check again".

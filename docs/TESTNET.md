@@ -8,7 +8,9 @@ Public information only: account IDs, contract IDs, transaction hashes and explo
 - Keys: `~/.near-credentials/testnet/` on the dev server only (legacy keychain of near-cli-rs 0.31.1).
 - Read-only helpers: `node scripts/testnet/balances.mjs` (NEAR + tUSDC per account), `node scripts/testnet/tx-receipts.mjs <hash> <signer>` (receipt chain and logs).
 
-## Accounts (created 9 Nov 2026)
+> **Current deployment (since Phase 22, 10 Nov 2026): `sentfund-payroll.testnet`, vault `vault.sentfund-payroll.testnet`, token `tusdc.sentfund-payroll.testnet`** (section "Phase 22" below). The tables up to Phase 21 record the **earlier deployment** `gajian-payroll.testnet` (the project's earlier name); it stays on-chain as evidence.
+
+## Accounts of the earlier deployment (created 9 Nov 2026)
 
 One faucet-funded master; every role is a sub-account funded by the master (D-038). Reuse them for all later runs.
 
@@ -16,7 +18,7 @@ One faucet-funded master; every role is a sub-account funded by the master (D-03
 | --- | --- | --- | --- |
 | Master (faucet-funded, creates sub-accounts) | [`gajian-payroll.testnet`](https://testnet.nearblocks.io/address/gajian-payroll.testnet) | [`7U6z9xpb…`](https://testnet.nearblocks.io/txns/7U6z9xpboTrwrGXKi5DkxKNoYCDGbLezfJQNknLsqGUH) | 10 NEAR from the faucet service; full-access key |
 | tUSDC token contract | [`tusdc.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/tusdc.gajian-payroll.testnet) | [`7CkMT8dU…`](https://testnet.nearblocks.io/txns/7CkMT8dULfMh3xwtvUZ59yEA2NGQ51ed8AvKUCjde6s9) | funded 2.2 NEAR; NEP-141, 6 decimals, owner = admin |
-| **Final vault (Phase 16, used by the app)** | [`vault2.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/vault2.gajian-payroll.testnet) | [`FFUnH2wU…`](https://testnet.nearblocks.io/txns/FFUnH2wUUeR5XVKsZzZyfyM6QUEQAu4L21gsjWuyMJ6B) | funded 2.4 NEAR; release build, **no full-access key** (code locked) |
+| **Final vault of the earlier deployment (Phases 16–21; retired in Phase 22)** | [`vault2.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/vault2.gajian-payroll.testnet) | [`FFUnH2wU…`](https://testnet.nearblocks.io/txns/FFUnH2wUUeR5XVKsZzZyfyM6QUEQAu4L21gsjWuyMJ6B) | funded 2.4 NEAR; release build, **no full-access key** (code locked) |
 | Phase 04 vault (retired in Phase 16, kept readable) | [`vault.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/vault.gajian-payroll.testnet) | [`Efcy6kUe…`](https://testnet.nearblocks.io/txns/Efcy6kUes8dwHcZ76v38AX4sMTemVp76znfC13J9Fs3Z) | funded 2.6 NEAR; balance moved to the final vault, 0 tUSDC left |
 | Admin signer (token owner, workflow admin) | [`admin.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/admin.gajian-payroll.testnet) | [`3pSa8YYr…`](https://testnet.nearblocks.io/txns/3pSa8YYro5zVckhVtasbG2QbNjzg9ukZt8yYut2wwTEU) | 0.5 NEAR |
 | Maker signer | [`maker.gajian-payroll.testnet`](https://testnet.nearblocks.io/address/maker.gajian-payroll.testnet) | [`BQ4H6f2t…`](https://testnet.nearblocks.io/txns/BQ4H6f2tNNgMoU26nxWGy7dcKjjRwLouVMdihfiKtR6R) | 0.4 NEAR |
@@ -338,6 +340,128 @@ Four restricted function-call keys for the public demo at `https://sentfund.my.i
 
 Balances after (`node scripts/testnet/balances.mjs`): total NEAR across our accounts **9.86991** (≈ 0.00016 NEAR for the four key additions); vault2 still 1.940000 tUSDC.
 
+## Phase 22: the SentFund deployment `sentfund-payroll.testnet` (10 Nov 2026, 07:08–07:40 UTC)
+
+Andre asked to move the live deployment to SentFund names ("continue with sentfund-payroll.testnet to make sure all align"). The `gajian-payroll.testnet` set above is the **earlier deployment**: it stays on-chain, its runs stay in `docs/evidence/testnet-runs.json` and `npm run judge:verify` re-checks them. Decision: D-123. Scripts: `scripts/testnet/phase22-setup.sh` (accounts, token, vault, recipients, funding) and `scripts/testnet/phase22-live.ts` (policy runs).
+
+### Accounts and contracts (used by the app since Phase 22)
+
+| Role | Account ID | Notes |
+| --- | --- | --- |
+| Master (faucet-funded) | [`sentfund-payroll.testnet`](https://testnet.nearblocks.io/address/sentfund-payroll.testnet) | 10 NEAR from the faucet service, created by tx [`5m68gZzi…`](https://testnet.nearblocks.io/txns/5m68gZziX7iyW2gCNL6QtfSuMS37pWLQY11Q9tG7aKoQ); full-access key in the local keychain |
+| tUSDC token | [`tusdc.sentfund-payroll.testnet`](https://testnet.nearblocks.io/address/tusdc.sentfund-payroll.testnet) | "SentFund test USDC (zero value, testnet only)", 6 decimals, owner = admin; Wasm `889ee8164f6df60ce984c2274827a272bd8403c6712c1d56521d42828c0ce697` (display name changed from the earlier `fd5a0b9a…`, logic unchanged) |
+| **Vault (used by the app)** | [`vault.sentfund-payroll.testnet`](https://testnet.nearblocks.io/address/vault.sentfund-payroll.testnet) | release commit `cf4d9a1`, Wasm sha256 `38953891dc449f13eb64a8706ff66f81d5438c86abf820edfc36cbe8996752c0`, on-chain `code_hash` `4osoZq17KezE6AfBUtma6Ciqnti4oKMPJSYcXQBxNmNP` (same bytes as vault2), **no access key at all** |
+| Admin, maker, approver 1, approver 2, worker | `admin`, `maker`, `approver1`, `approver2`, `worker` `.sentfund-payroll.testnet` | 0.5 / 0.4 NEAR each; restricted function-call keys on the vault (this server) |
+| Demo recipients | `recipient1`, `recipient2`, `recipient3` `.sentfund-payroll.testnet` | 0.05 NEAR each, registered with tUSDC |
+
+### Setup transactions
+
+| Step | Signer | Tx |
+| --- | --- | --- |
+| create admin.sentfund-payroll.testnet (0.5 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`BfkAUdWy…`](https://testnet.nearblocks.io/txns/BfkAUdWyQM1oeNksLQUUdXUHPP7bbBroZiLgi5nJbFDB) |
+| create maker.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`22ZX8Amv…`](https://testnet.nearblocks.io/txns/22ZX8Amvrv944wG1GbwPXhLzi4bxt17YbyzTVK3z3XPP) |
+| create approver1.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`363KyWCC…`](https://testnet.nearblocks.io/txns/363KyWCCFoKr5wSWz8gSPsQkjYWs8xZCmLHJpKhkhkU1) |
+| create approver2.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`HEMHPT9d…`](https://testnet.nearblocks.io/txns/HEMHPT9d1JNQ4xk3hfv3VG3xobPmcSb5qwGEsW9dQqpo) |
+| create worker.sentfund-payroll.testnet (0.4 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`3rXi85QX…`](https://testnet.nearblocks.io/txns/3rXi85QXdcs2Asj6w8FQSS3b8PBED5VtYsXhhf37Hzxv) |
+| create recipient1.sentfund-payroll.testnet (0.05 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`956v2Xwo…`](https://testnet.nearblocks.io/txns/956v2XwosXf68FaeSrpKYc9R5c1kw6xBM5jzjCtoZYzd) |
+| create recipient2.sentfund-payroll.testnet (0.05 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`C23tXN7t…`](https://testnet.nearblocks.io/txns/C23tXN7tsV1JVHYqnrjMb7YX8TPRQUBYoR7wqyEt2zL6) |
+| create recipient3.sentfund-payroll.testnet (0.05 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`7T79CymG…`](https://testnet.nearblocks.io/txns/7T79CymGjVbNgpXCvibhde1ML3X4NtqC4TWxnBapVEnV) |
+| create tusdc.sentfund-payroll.testnet (2.2 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`HQbB5dfV…`](https://testnet.nearblocks.io/txns/HQbB5dfV7xd2ZUkbspTzenndpagDebZWyYZRdTdoQnwC) |
+| create vault.sentfund-payroll.testnet (2.4 NEAR from sentfund-payroll.testnet) | `sentfund-payroll.testnet` | [`7yPDWX8h…`](https://testnet.nearblocks.io/txns/7yPDWX8hbftNrnsczu6wZAnF79vmXxPPuv2wGvPV1Cs3) |
+| deploy tUSDC + new(owner_id = admin) | `tusdc.sentfund-payroll.testnet` | [`C8iPMftB…`](https://testnet.nearblocks.io/txns/C8iPMftBHAgb6ihY526bfidfkR1KQGmhmJERTddP8asX) |
+| redeploy tUSDC with the SentFund display name (889ee816…, no init) | `tusdc.sentfund-payroll.testnet` | [`6xm2JGfr…`](https://testnet.nearblocks.io/txns/6xm2JGfrobxgosVNqn2Avu5YdtoPXvSNZxkKhHtyUEqz) |
+| deploy release Wasm 38953891… + init (revision 1) | `vault.sentfund-payroll.testnet` | [`81kemp2n…`](https://testnet.nearblocks.io/txns/81kemp2nqB2WUx62M1PbbRgScNc18UbQGEyEFB9dEo71) |
+| register the vault with tUSDC | `admin.sentfund-payroll.testnet` | [`ebJ9jqro…`](https://testnet.nearblocks.io/txns/ebJ9jqro3ZKDeYJH9dst44Nxy5kXAbpyv3u8BbsVVmT) |
+| delete the vault's only full-access key (code locked) | `vault.sentfund-payroll.testnet` | [`6Q6m9yGH…`](https://testnet.nearblocks.io/txns/6Q6m9yGHhmFNr5huKLEJv6ShJbtSL2nZ8iAmDqaem9Uz) |
+| restricted key: create_run, cancel_run, close_partial, start_release, pay_row (allowance 0.25 NEAR) for maker | `maker.sentfund-payroll.testnet` | [`4U91zPcw…`](https://testnet.nearblocks.io/txns/4U91zPcw7W7FGCEVHM6X1Ymog4nwi9BwLdeeFgZkk7hy) |
+| restricted key: approve, reject (allowance 0.25 NEAR) for approver2 | `approver2.sentfund-payroll.testnet` | [`81pXCwuW…`](https://testnet.nearblocks.io/txns/81pXCwuW2jnrWBx9xeQKNwWF5xpmsQ3ueVoE4WTZteMx) |
+| restricted key: start_release, pay_row (allowance 0.5 NEAR) for worker | `worker.sentfund-payroll.testnet` | [`E4eqeTzv…`](https://testnet.nearblocks.io/txns/E4eqeTzvSLTFC6cBzwyN3aikrEXeuRX2gfc4Sud3ENQn) |
+| restricted key: update_workflow, resolve_in_flight (allowance 0.25 NEAR) for admin | `admin.sentfund-payroll.testnet` | [`Q87kQkXT…`](https://testnet.nearblocks.io/txns/Q87kQkXTUeW9erpGWU6SDMMLFmwnYMxw1YcvVHdccFa) |
+| restricted key: approve, reject for approver1 (retry after an expired tx) | `approver1.sentfund-payroll.testnet` | [`BKMxAa1L…`](https://testnet.nearblocks.io/txns/BKMxAa1LdTw2KmeSLz5KKauSE1C3RmMW6UfnwyiHr58R) |
+| register recipient1 with tUSDC | `admin.sentfund-payroll.testnet` | [`Ap1Ff3r7…`](https://testnet.nearblocks.io/txns/Ap1Ff3r76JAMrFhnWei8pBWZJT8Z3E2wL1b6MjisZhDW) |
+| register recipient2 with tUSDC | `admin.sentfund-payroll.testnet` | [`BESMaq96…`](https://testnet.nearblocks.io/txns/BESMaq96VjbXnDU3uifUUTfnGxfQRtxnUz8JLy5V1LuN) |
+| register recipient3 with tUSDC | `admin.sentfund-payroll.testnet` | [`DCKL8gcH…`](https://testnet.nearblocks.io/txns/DCKL8gcHLyn69Uvow8tze2XastX9TJjsFxWbG3qJARKg) |
+| admin mints 2.18 test tUSDC | `admin.sentfund-payroll.testnet` | [`9kYiJKKR…`](https://testnet.nearblocks.io/txns/9kYiJKKRYLzhUGTFf1mhFhU1K5dU8QykMCE9QY3z3Asv) |
+| admin funds the vault 2.18 tUSDC (ft_transfer_call) | `admin.sentfund-payroll.testnet` | [`4MJdm5fi…`](https://testnet.nearblocks.io/txns/4MJdm5fiT39quzkamSKpZpNZaX42r5FmVLwEUAscovJU) |
+
+One key addition (approver1) first failed with "Transaction has expired" (an RPC timeout, nothing executed) and was repeated; the table lists the successful one.
+
+### Policy runs on the new vault (`phase22-live.ts`, real transactions)
+
+The Phase 04 scenarios as the new deployment's own history; every refusal is a real failed transaction:
+
+| # | Step | Signer | Tx | Result |
+| --- | --- | --- | --- | --- |
+| 1 | run1 create (2 in sequence, automatic) | `maker` | [`2MdYti3z…`](https://testnet.nearblocks.io/txns/2MdYti3zCUfRvwPPZ2n2TNSesmB5odATbSZ8XYTutLqD) | ok |
+| 2 | run1 approver2 before approver1 | `approver2` | [`A2neNKRW…`](https://testnet.nearblocks.io/txns/A2neNKRW7tnSRUofR4bmx72BkFZ7Hvc4Arc73KMEAUcN) | **refused as expected**: Approver 2 can act only after approver 1 approved |
+| 3 | run1 approver1 approves | `approver1` | [`9dH6hHfo…`](https://testnet.nearblocks.io/txns/9dH6hHfo3PFaJYaBjZMx9ZyrbNrtFGhPVsDFniGNrpZc) | ok, "PendingApproval" |
+| 4 | run1 worker release before final approval | `worker` | [`5w5bYf2b…`](https://testnet.nearblocks.io/txns/5w5bYf2bGZvgub5RkpMM7TemsEx8HRH9s5J9DWXuTN7K) | **refused as expected**: Run is not approved for release |
+| 5 | run1 approver2 approves | `approver2` | [`9z7wQ6WW…`](https://testnet.nearblocks.io/txns/9z7wQ6WWyYy4vtmfSi6yvhU5r23ALvRbesgbUNhcLNFK) | ok, "Approved" |
+| 6 | run1 maker release in automatic mode | `maker` | [`FyY6qrba…`](https://testnet.nearblocks.io/txns/FyY6qrbad9ZKTv5McmbNCHiF9m1wHvPSAzJFVLGps3nd) | **refused as expected**: Only the release worker can release this run (automatic release |
+| 7 | run1 worker reserves total | `worker` | [`HwrDLPNq…`](https://testnet.nearblocks.io/txns/HwrDLPNq6myNu6iqE5ErP7z8CuDV4rX8Wvqg7ApFaYuk) | ok, "Releasing" |
+| 8 | run1 worker pays row 0 | `worker` | [`UEJ1PEDz…`](https://testnet.nearblocks.io/txns/UEJ1PEDzaYxXxWQWez4LAassLT93Beje7jzDbS9S8fP) | ok |
+| 9 | run1 worker pays row 1 | `worker` | [`CbQSNZo8…`](https://testnet.nearblocks.io/txns/CbQSNZo8YkXVSVtfiQ8x5NNcK46s2PLc2NFtveg7KRM4) | ok |
+| 10 | run1 worker pays row 2 | `worker` | [`DMrHt1Tc…`](https://testnet.nearblocks.io/txns/DMrHt1TcQAZjkKbuNh4RwX66wA25d7cmD5Nxa84Mf4Mc) | ok |
+| 11 | run1 duplicate payout of row 0 | `worker` | [`BYpZkcQe…`](https://testnet.nearblocks.io/txns/BYpZkcQe7td5FnYHk1sqEm3M39oPQ9QjqBqWVhixX8Gv) | **refused as expected**: Run is not releasing |
+| 12 | admin: 2 in parallel + maker release (revision 2) | `admin` | [`E3FJyBKU…`](https://testnet.nearblocks.io/txns/E3FJyBKUSgfgM1c51EkgFHQjHzMyLNQaShHMmvBcSgD2) | ok |
+| 13 | run2 create at stale revision 1 | `maker` | [`EATjDLd8…`](https://testnet.nearblocks.io/txns/EATjDLd8GSg4HeGkesWL2NPiXQ26DHb5WsAru69ujzvc) | **refused as expected**: Workflow changed since review: reload and confirm again |
+| 14 | run2 create (2 in parallel, maker release) | `maker` | [`3nkcd5kK…`](https://testnet.nearblocks.io/txns/3nkcd5kKpUB4M6vTtXFVfwX5bAuu9EHzrKud1uQ8qRcM) | ok |
+| 15 | run2 approver2 approves first | `approver2` | [`7qrHVTvt…`](https://testnet.nearblocks.io/txns/7qrHVTvtHfi46MWBS8MZ4nYdQkyBrYaKo6x4pFvWYRKY) | ok, "PendingApproval" |
+| 16 | run2 approver1 approves | `approver1` | [`G94g4x3A…`](https://testnet.nearblocks.io/txns/G94g4x3AKPKFVLCrL4rTnmgfciSjMW8x3j4TpizxpQmS) | ok, "Approved" |
+| 17 | run2 worker release in maker mode | `worker` | [`Cooy8qEo…`](https://testnet.nearblocks.io/txns/Cooy8qEoNipQZhY5HM3DTJnEnWxFmrr1HjNYUxFFxTYg) | **refused as expected**: Only the maker can release this run (maker release |
+| 18 | run2 maker releases | `maker` | [`ZnpShgXj…`](https://testnet.nearblocks.io/txns/ZnpShgXjikEr5qzNRmBua9EEyPN4A4tMGfznFZQFdhL) | ok, "Releasing" |
+| 19 | run2 tampered amount | `maker` | [`GNMH8SJt…`](https://testnet.nearblocks.io/txns/GNMH8SJteSD6F836PvcAqobCatVXLBc1hxpdVeZze8sZ) | **refused as expected**: Payout proof does not match the approved run |
+| 20 | run2 maker pays row 0 | `maker` | [`huhHZnhi…`](https://testnet.nearblocks.io/txns/huhHZnhiXea9pK9WF9rgmHZzmbMXReRiztMdM3XNptU) | ok |
+| 21 | run2 worker pays row 1 | `worker` | [`F3DdLKT6…`](https://testnet.nearblocks.io/txns/F3DdLKT6deizv9Aq3dYbSBRSodAoyiyYscEZfcnmKgF8) | ok |
+| 22 | run3 create | `maker` | [`44y8FYv4…`](https://testnet.nearblocks.io/txns/44y8FYv4273e23GLuuZhmGfUZvJ9T6mHUnp93ghqEitZ) | ok |
+| 23 | run3 approver1 rejects | `approver1` | [`6dQVxBRU…`](https://testnet.nearblocks.io/txns/6dQVxBRUXWqXtRg3nSA9xgQNnsuF9To2Kume9xCHvKdz) | ok, "Rejected" |
+| 24 | run3 maker release after rejection | `maker` | [`2xdpe83T…`](https://testnet.nearblocks.io/txns/2xdpe83TvAA2uqpTUb5Xksbw4kGfAiTbr49jZMz8Mnqv) | **refused as expected**: Run is not approved for release |
+| 25 | admin: back to 2 in sequence + automatic (revision 3) | `admin` | [`5PFiMDhd…`](https://testnet.nearblocks.io/txns/5PFiMDhdSRdg4fjjNBJaL28RMoq14BNwwXGKRHQuHxT3) | ok |
+
+End state: runs `p22-seq-202611100718` and `p22-par-202611100718` **Paid** (0.15 + 0.03 tUSDC), `p22-rej-202611100718` **Rejected**; workflow **revision 3** (two in sequence, automatic release), vault **2.00 tUSDC**. `db/seed/testnet-history.json` was re-exported from these transactions (`scripts/testnet/export-history.mjs --check` matches the chain).
+
+### SentFund vault: payroll assistant draft for the Sales division (0.03 × 2), approved by both in the browser, paid automatically
+
+Vault run `gjn-1dcfe59097104a6db4ab-v1`, 2 row(s), total 0.06 tUSDC.
+
+| Step | Signer | Tx |
+| --- | --- | --- |
+| create_run (maker) | `maker.sentfund-payroll.testnet` | [`GN6CLdFB…`](https://testnet.nearblocks.io/txns/GN6CLdFBYBYaFd156d2crDgiwJhsUERYcbjVuswZzjov) |
+| approve (approver 1) | `approver1.sentfund-payroll.testnet` | [`GUtrhvYo…`](https://testnet.nearblocks.io/txns/GUtrhvYoJwmNB2DNJDVRqWFArXJSBYBgzWbs4HzeSmM) |
+| approve (approver 2) | `approver2.sentfund-payroll.testnet` | [`HG3MLgsn…`](https://testnet.nearblocks.io/txns/HG3MLgsns6GWdyPnJLKWsrSWbvBY3kHsmwjNo2rQrhAf) |
+| start_release (worker) | `worker.sentfund-payroll.testnet` | [`DjHy3vQm…`](https://testnet.nearblocks.io/txns/DjHy3vQmjrxhZUs1QuEpXjjNmksye97DhfmeScRZ5s4Z) |
+| pay_row 0 (worker) | `worker.sentfund-payroll.testnet` | [`9JssGzw6…`](https://testnet.nearblocks.io/txns/9JssGzw65SqLvc1gccZz6ik9J4yRP6a9GwxwiAe2QKCW) |
+| pay_row 1 (worker) | `worker.sentfund-payroll.testnet` | [`3zd74WMJ…`](https://testnet.nearblocks.io/txns/3zd74WMJkK9KXwc97M2GgYJRFBqLgsyvLXCj9xcwfyyn) |
+
+### Hosted demo smoke test on https://sentfund.my.id: 0.01 tUSDC to Emma Clark, approved by both in the browser, paid by the hosted worker
+
+Vault run `gjn-540d7be58be945ac9438-v1`, 1 row(s), total 0.01 tUSDC.
+
+| Step | Signer | Tx |
+| --- | --- | --- |
+| create_run (maker) | `maker.sentfund-payroll.testnet` | [`CavrPzQK…`](https://testnet.nearblocks.io/txns/CavrPzQKNyENBTs7AezmezMkcD3MgAGk8DZG6yGHfpd2) |
+| approve (approver 1) | `approver1.sentfund-payroll.testnet` | [`7P9hqL5H…`](https://testnet.nearblocks.io/txns/7P9hqL5Ht55GZQkueCU8PHpBZgCUpQCcSA13fn7wwieV) |
+| approve (approver 2) | `approver2.sentfund-payroll.testnet` | [`Av52Cbvb…`](https://testnet.nearblocks.io/txns/Av52CbvbLdSzLKpT62JscF83T1YXszNn72x2SEGjor9R) |
+| start_release (worker) | `worker.sentfund-payroll.testnet` | [`EdiSVSom…`](https://testnet.nearblocks.io/txns/EdiSVSomRGgqEJzobJDrV5y9PGzqHEMyWYhsTKjpCXUb) |
+| pay_row 0 (worker) | `worker.sentfund-payroll.testnet` | [`DpjyXcLC…`](https://testnet.nearblocks.io/txns/DpjyXcLCVMdyKdUAFd6Y9a52JwQovN3dU7G6N1QQC8sM) |
+
+### Host keys for the public demo (moved to the SentFund accounts)
+
+The four Phase 21 host keys on the gajian accounts were **deleted** ([`GLiCV8w1…`](https://testnet.nearblocks.io/txns/GLiCV8w1uWbAs7waJRCoW9gEfbaLHPKjvghvqt9hVFaa), [`2FpbhDk3…`](https://testnet.nearblocks.io/txns/2FpbhDk3jeoMvxFBNT92onRPQjRDBTDz8AnDFSVpnpwT), [`BSqABiKg…`](https://testnet.nearblocks.io/txns/BSqABiKgqWfmim2cewyLpPtHxeQwQnSdi9pdvhMhRoBh), [`CjuX2BGw…`](https://testnet.nearblocks.io/txns/CjuX2BGwKXRAtjdKaAiZFUCnS43ATppdZ5qytEX1Cbz9)) and new ones added (`hosting-keys.sh add --yes`):
+
+| Account | Public key | Methods on `vault.sentfund-payroll.testnet` | Allowance | Tx |
+| --- | --- | --- | --- | --- |
+| maker | `ed25519:5Ti71fijsJtX8v4WoJp3fo75JjDnFQF9Qe9XE9t5y5Q7` | create_run, cancel_run | 0.1 NEAR | [`GerxChjn…`](https://testnet.nearblocks.io/txns/GerxChjnyxFM2udmfLwWX69f2gjiRSFgTdpSSaZJ7q2F) |
+| approver1 | `ed25519:DpSffGqM7iUMeG4VaCLRNbLvtAx5vYSCqQcPpow56j6L` | approve, reject | 0.05 NEAR | [`Cj2pFAcC…`](https://testnet.nearblocks.io/txns/Cj2pFAcC8sTpKFue2nDvoFUQxQCmX87zqcPMXUFQ7Rfw) |
+| approver2 | `ed25519:HkuCzSaYVHPqtXoS3so7DPziucb9jmP7gnhigWhMb5xb` | approve, reject | 0.05 NEAR | [`2y9nNHN7…`](https://testnet.nearblocks.io/txns/2y9nNHN7cp7uZTBV2Viak2EuNfL5RsZW9uuv2sWcLoRn) |
+| worker | `ed25519:CPWASqgF8FXJJRLq28YEKfYWJsnJwY54StCbThYEEx4h` | start_release, pay_row | 0.25 NEAR | [`DhEgc7m7…`](https://testnet.nearblocks.io/txns/DhEgc7m7yGd6FtreHKx2BrKTJQsx2aU27H6bDnDdQck8) |
+
+### Balances (`node scripts/testnet/balances.mjs`, after the hosted smoke run)
+
+- Vault **1.930000 tUSDC** (2.18 funded − 0.18 policy runs − 0.06 assistant run − 0.01 hosted smoke run); recipient1 0.07, recipient2 0.12, recipient3 0.06 tUSDC: exactly the paid rows; tUSDC supply 2.18.
+- NEAR across the SentFund accounts: 10.00000 → **9.91138** (≈ 0.0886 NEAR of gas for 10 account creations, 3 deploys, the key deletion, 10 key additions, registrations, funding, 3 policy runs and 2 app runs; storage deposits stay inside our accounts).
+- The earlier gajian set: 9.86991 → 9.86974 NEAR (the four host-key deletions). `vault2.gajian-payroll.testnet` stays locked with **1.94 tUSDC of the earlier token** (zero value; it can only leave through an approved run of that vault).
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -351,5 +475,6 @@ Balances after (`node scripts/testnet/balances.mjs`): total NEAR across our acco
 | 10 Nov 2026 | Phase 19: vault2 top-up (mint 1.76 + `ft_transfer_call`) | — | — (vault2 0.24 → 2.00) | 0.00077 | Phase 19 table |
 | 10 Nov 2026 | Phase 19b: assistant-drafted run through the app (submit, 2 approvals, release, 2 payouts) | 2 | 0.060000 | 0.00227 | Phase 19b table |
 | 10 Nov 2026 | Phase 21: 4 host keys for the Railway demo (`add-key`, function-call only) | — | — | 0.00016 | Phase 21 table |
+| 10 Nov 2026 | Phase 22: SentFund deployment (`sentfund-payroll.testnet`): accounts, token, locked vault, keys, 3 policy runs, the assistant app run, the hosted smoke run; gajian host keys deleted | 6 | 0.250000 | 0.0886 (SentFund set) + 0.00017 (gajian set) | Phase 22 section |
 
-**Total testnet NEAR burned so far: ≈ 0.130 NEAR** (10.00000 → 9.86991 across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.130 NEAR on the earlier gajian set (10.00000 → 9.86974) + ≈ 0.089 NEAR on the SentFund set (10.00000 → 9.91138)** (across all our accounts; storage deposits and contract storage stay inside our accounts).

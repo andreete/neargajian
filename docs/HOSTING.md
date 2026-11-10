@@ -1,6 +1,8 @@
 # Hosting the public demo on Railway: runbook
 
-Status: **ready, not live.** Decided 10 Nov 2026 (D-109): SentFund goes online at submission and stays up until at least **25 Nov 2026**. Nothing has been created, deployed or added on-chain yet.
+Status: **LIVE since 10 Nov 2026 at https://sentfund.my.id** (D-109, D-121): Railway project `sunny-simplicity`, service `sentfund` (branch `release` of `discoverateagency-ops/sentfund`, Wait for CI, health `/api/health`, 1 replica, volume `/data`), Cloudflare DNS (apex CNAME to Railway, **proxied**, SSL/TLS **Full**), testnet deployment `sentfund-payroll.testnet` (Phase 22). Smoke test passed on 10 Nov (`tests/live/hosted-smoke.spec.ts`, real 0.01 run paid; `docs/TESTNET.md`). Stays up until at least **25 Nov 2026**.
+
+**How the agent operates it** (tokens in this server's `.env`, never printed): Railway's public GraphQL API (`RAILWAY_API_TOKEN`, a workspace token: `Authorization: Bearer`), Cloudflare's API (`CLOUDFLARE_API_TOKEN`, Edit zone DNS for `sentfund.my.id`), pushes to `release` with the deploy key `~/.ssh/sentfund_deploy` (`git -c core.sshCommand="ssh -i ~/.ssh/sentfund_deploy -o IdentitiesOnly=yes" push sentfund main main:release`). Not available on the Hobby plan: volume backups (Pro only); the hosted database is demo data rebuilt by a reset. Not set yet: `ANTHROPIC_API_KEY` (Andre's separate hosted key), so the payroll assistant and the KTP reader are off on the hosted site.
 
 **Phase 21 update (10 Nov 2026, D-121):** the product is **SentFund**, the repository Railway deploys from is the private **`discoverateagency-ops/sentfund`**, the domain **`sentfund.my.id`** is registered at **Sumopod**, and its DNS moves to **Cloudflare (free)**. Vercel, Cloudflare Pages/Workers and Supabase cannot host this app: it needs an always-on Node server plus the release worker, a SQLite file on a persistent disk, and native modules (better-sqlite3, onnxruntime, sharp). Railway Hobby (about $5 per month) runs it; Cloudflare only answers DNS. **Section 0** is the short path where Andre creates the accounts and the agent does the rest by API. Each step below says who does it: **Andre** (needs your accounts, card or DNS) or **agent** (only after your explicit yes).
 
@@ -67,9 +69,9 @@ scripts/testnet/hosting-keys.sh add --yes
 
 - It creates four **new** keypairs and adds them on testnet, each signed by its own role account (4 transactions, about 0.002 NEAR):
 
-  | Account | Methods on vault2 | Allowance |
+  | Account | Methods on `vault.sentfund-payroll.testnet` | Allowance |
   | --- | --- | --- |
-  | `maker.gajian-payroll.testnet` | `create_run`, `cancel_run` | 0.1 NEAR |
+  | `maker.sentfund-payroll.testnet` | `create_run`, `cancel_run` | 0.1 NEAR |
   | `approver1` and `approver2` | `approve`, `reject` | 0.05 NEAR each |
   | `worker` | `start_release`, `pay_row` | 0.25 NEAR |
 
@@ -120,13 +122,13 @@ NEAR_NETWORK=testnet
 NEAR_RPC_URL=https://rpc.testnet.fastnear.com
 APP_BASE_URL=https://sentfund.my.id
 DATABASE_URL=file:/data/sentfund.sqlite
-VAULT_CONTRACT_ID=vault2.gajian-payroll.testnet
-TUSDC_CONTRACT_ID=tusdc.gajian-payroll.testnet
-MAKER_ACCOUNT_ID=maker.gajian-payroll.testnet
-APPROVER1_ACCOUNT_ID=approver1.gajian-payroll.testnet
-APPROVER2_ACCOUNT_ID=approver2.gajian-payroll.testnet
-WORKER_ACCOUNT_ID=worker.gajian-payroll.testnet
-ADMIN_SIGNER_ACCOUNT_ID=admin.gajian-payroll.testnet
+VAULT_CONTRACT_ID=vault.sentfund-payroll.testnet
+TUSDC_CONTRACT_ID=tusdc.sentfund-payroll.testnet
+MAKER_ACCOUNT_ID=maker.sentfund-payroll.testnet
+APPROVER1_ACCOUNT_ID=approver1.sentfund-payroll.testnet
+APPROVER2_ACCOUNT_ID=approver2.sentfund-payroll.testnet
+WORKER_ACCOUNT_ID=worker.sentfund-payroll.testnet
+ADMIN_SIGNER_ACCOUNT_ID=admin.sentfund-payroll.testnet
 ASSISTANT_MODEL=claude-opus-5-5
 DEMO_RESET_TOKEN=2026-11-13
 ```
@@ -181,7 +183,8 @@ Railway issues the Let's Encrypt certificate, usually within an hour of the reco
 4. **One 0.01 run to Paid**:
    - Maker: **New run** → title `Hosted smoke test` → Upload a file → `docs/hosting/smoke-test-0.01.csv` (Emma Clark, 0.01) → Continue to review → **Submit 0.01 tUSDC for approval**.
    - Approver 1, then approver 2: **Approve**.
-   - Within a minute the run shows **Paid 1 of 1**. Click the payout link: NearBlocks shows `pay_row` signed by `worker.gajian-payroll.testnet` and 0.01 tUSDC to `recipient1`.
+   - Within a minute the run shows **Paid 1 of 1**. Click the payout link: NearBlocks shows `pay_row` signed by `worker.sentfund-payroll.testnet` and 0.01 tUSDC to `recipient1`.
+   - Automated: `npx playwright test -c playwright.hosted-live.config.ts` (steps 1–5 in a real browser, real transactions; screenshots in `docs/screenshots/phase-22/`).
 5. Negative check: upload `public/templates/sentfund-payroll-sample-1000.csv` → review → Submit is refused with "Public demo: a run can only pay recipients … Nothing was sent."
 6. On this server: `npm run judge:verify` still ends with `All testnet evidence checks passed.` The agent adds the smoke run's transactions to `docs/TESTNET.md`.
 
@@ -189,7 +192,7 @@ Railway issues the Let's Encrypt certificate, usually within an hour of the reco
 
 1. On this server, all checks pass on `main` (`npm run lint && npm run typecheck && npm test`, build, browser tests) and the commit is pushed; GitHub → **Actions** shows the run green, including **Hosted image**.
 2. Railway → **Backups** → manual backup.
-3. The agent runs `git push origin main:release` (only with your yes). Railway builds and deploys.
+3. The agent pushes `main` to `release` on `discoverateagency-ops/sentfund` (only with your yes). Railway builds and deploys once CI is green (Wait for CI); the agent can also start the deploy by API (`serviceInstanceDeployV2`).
 4. A service with a volume has a short downtime on each deploy (old and new deployments cannot mount the volume at the same time).
 5. If the new deploy fails its health check, Railway keeps the previous one running.
 
@@ -202,10 +205,10 @@ Railway → Variables → set `DEMO_RESET_TOKEN` to a **new** value (for example
 
 ## 9. Keep the vault small (at most 2 tUSDC)
 
-Vault2 holds 1.94 tUSDC on 10 Nov. To top it up to at most 2 tUSDC (agent, with your yes, on this server):
+The vault (`vault.sentfund-payroll.testnet`) holds 1.93 tUSDC on 10 Nov after the Phase 22 runs. To top it up to at most 2 tUSDC (agent, with your yes, on this server):
 
 ```sh
-node scripts/testnet/balances.mjs                   # vault2 line: current tUSDC
+node scripts/testnet/balances.mjs                   # the vault line: current tUSDC
 node scripts/testnet/phase16.ts top-up 2.00          # funds only the difference; refuses targets above 2
 ```
 

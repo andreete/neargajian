@@ -32,8 +32,38 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 20 Hosting readiness (Railway) | Done: ready, **not live** (no account, deploy, `release` branch or host key yet) | none (read-only checks only) |
 | 20b CI image check and doc gaps | Done; **CI result not checked from here** (no GitHub CLI): Andre checks the Actions tab | none |
 | 21 SentFund rebrand + KTP/face identity checks | Done locally, all suites green; pushed to `origin` and the new `discoverateagency-ops/sentfund` (see NEXT-STEPS for the push result) | none on-chain; **real Claude KTP reader** on the 4 synthetic specimen scenarios (throwaway DB) |
+| 22 Testnet migration to `sentfund-payroll.testnet` + hosted demo live | Done: https://sentfund.my.id live and smoke-tested; all suites green | **Yes**: new accounts, token, locked vault (same release Wasm), 3 policy runs, assistant app run, hosted smoke run; `judge:verify` 221/221 |
 
 ---
+
+## Phase 22 · Testnet migration to `sentfund-payroll.testnet`; the hosted demo goes live (10 Nov 2026)
+
+Andre: deploy the hosted demo ("deploy do it for me"), use the new logo ("change the logo … deploy it first"), migrate the testnet deployment to SentFund ("continue with sentfund-payroll.testnet … run all safe without mistake"), then "make sure all gaps complete … test end to end QA". Decisions D-123 to D-126.
+
+### Done, in order
+1. **Hosted demo on Railway** by API (workspace token): service on `release`, Dockerfile, health check, volume `/data`, variables (host keys from `.hosting/host-keys.env`, fresh `SESSION_SECRET`, never printed), custom domain; Cloudflare DNS by API (CNAME + TXT); HTTPS via Cloudflare proxy + SSL Full (D-126). First deploy built in Railway's cloud: the image's vision self-test printed `same person 0.912, impostor 0.090 … ok`.
+2. **Official logo** (`public/brand/sentfund-logo-source.jpg` → transparent `sentfund-logo.png` + 512 px favicon `src/app/icon.png`, `scripts/make-logo-png.py`); deployed; the live logo file's SHA-256 equals the local one.
+3. **Testnet migration** (D-123/D-124): `scripts/testnet/phase22-setup.sh` (accounts, token, vault + lock + keys, recipients, fund 2.18), `scripts/testnet/phase22-live.ts` (25 steps as expected), seed history re-exported, `signer-keys.mjs` current/earlier constants, app defaults, `.env` (`write-env.mjs`, backup in `.tmp/env-before-phase22.bak`), fixtures, tests, specimens manifest, evidence (`finalVault` → the new vault, `earlierVaults` → vault2), docs.
+4. **Hosted switch**: gajian host keys deleted on-chain, new host keys on the SentFund accounts, Railway variables switched, `DEMO_RESET_TOKEN=2026-11-10-sentfund-payroll` (the hosted DB reset once: three recipients "Ready", workflow mirrors the new vault revision 3).
+5. **SentFund prefixes** for new run IDs and references (D-125).
+6. **New tooling**: `tests/live/hosted-smoke.spec.ts` + `playwright.hosted-live.config.ts` (hosted smoke test in a real browser), `tests/fixtures/testnet-history.gajian.json` (keeps the operations-transfer rule tested), `balances.mjs` lists vault2 only for the gajian set.
+
+### Evidence (10 Nov 2026, 07:00–08:00 UTC)
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **26 files, 213 tests passed** |
+| `npm run contracts:test`, `npm run contracts:lint` | tusdc 3, vault 49, sandbox 1: pass; fmt + clippy clean |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 3.4 GB |
+| `npm run test:e2e` / `test:judge-mode` / `test:hosted` | **31** / **1** / **3 + 1** passed |
+| `npm run judge:deployment` (after `contracts:build`) | PASS code_hash = local release Wasm `38953891…`; PASS no key on `vault.sentfund-payroll.testnet` |
+| `npm run judge:verify` | **221 checks, all passed** (SentFund runs, setup operations, 16 refusals, both vault locks, earlier evidence) |
+| `node scripts/testnet/export-history.mjs --check` | the seed history matches the chain |
+| **Live, local app** `npm run live:phase19` (real Claude model) | 3 passed: directory, assistant follow-up + refusal, **assistant-drafted run approved in the browser and paid** (`gjn-1dcfe59097104a6db4ab-v1`, 2 × 0.03) |
+| **Live, hosted** `npx playwright test -c playwright.hosted-live.config.ts` | 3 passed on https://sentfund.my.id: health/banner/read-only admin/identity notice; the 1,000-row sample refused ("Nothing was sent"); **0.01 run to Emma Clark paid** (`gjn-540d7be58be945ac9438-v1`, signed by the host keys) |
+| Balances | vault 1.93 tUSDC; recipients 0.07 / 0.12 / 0.06 = the paid rows; SentFund set 9.91138 NEAR |
+
+Not done: hosted `ANTHROPIC_API_KEY` (Andre's separate key; assistant and KTP reader off on the hosted site); GitHub Actions results on the new repository are not readable with the given token (Andre checks the Actions tab); Railway volume backups (Pro only).
 
 ## Phase 21 · SentFund rebrand and KTP + face identity checks (10 Nov 2026)
 

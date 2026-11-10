@@ -116,7 +116,7 @@ export interface ValidatedRow extends ReviewRow {
 
 /** Deterministic vault run ID: stable for a given run and version number. */
 export function chainRunIdFor(runId: string, versionNo: number): string {
-  return `gjn-${runId.replace(/-/g, '').slice(0, 20)}-v${versionNo}`;
+  return `sfd-${runId.replace(/-/g, '').slice(0, 20)}-v${versionNo}`;
 }
 
 /**

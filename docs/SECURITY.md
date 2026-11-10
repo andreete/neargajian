@@ -48,7 +48,7 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 ## Recipient directory: what it does and does not guarantee
 
 - **"Pay registered recipients only" is enforced by the app and the approvers, not by the vault contract.** When it is on, the app rejects any uploaded or manual row that does not match an active recipient (same NEAR account) or is above that recipient's maximum, re-checks the whole draft on the server at submit time, and freezes the result into the submitted version (`run_versions.directory_check`, immutable by trigger). Approvers see "Every row matched the recipient directory" on the run page, and a warning if a recipient was deactivated or its maximum lowered since submission.
-- The vault does not know the directory. It enforces the approvals, the per-row and per-run caps, the committed rows (Merkle root) and the vault balance. A caller with a maker signer key outside the app could commit rows that are not in the directory; the approvers are the control for that case. A contract-level allowlist would need a contract change (frozen, D-051, and vault2 cannot be redeployed).
+- The vault does not know the directory. It enforces the approvals, the per-row and per-run caps, the committed rows (Merkle root) and the vault balance. A caller with a maker signer key outside the app could commit rows that are not in the directory; the approvers are the control for that case. A contract-level allowlist would need a contract change (frozen, D-051, and the vault cannot be redeployed: it has no access key).
 - Directory changes are admin-only, logged with who, when and field-by-field before/after values (`recipient_events`, append-only by trigger), plus a PII-free audit event. Recipients are never deleted (trigger) and a recipient's NEAR account never changes (trigger).
 - The "Ready to receive tUSDC" check is read-only testnet RPC (`view_account`, `storage_balance_of` on tUSDC), 5 s timeout, advisory only.
 
@@ -72,7 +72,7 @@ KTP numbers and face images are specific personal data under Indonesia's UU PDP 
 
 ## Hosted demo mode (Phase 20)
 
-The public demo at `<HOSTED-URL>` uses public demo passwords, so `HOSTED_DEMO=true` narrows what anyone signed in can do. Each rule is enforced on the server; the UI only mirrors it.
+The public demo at https://sentfund.my.id uses public demo passwords, so `HOSTED_DEMO=true` narrows what anyone signed in can do. Each rule is enforced on the server; the UI only mirrors it.
 - **Keys:** its own restricted function-call keys for maker, approver 1, approver 2 and worker, least privilege:
   - maker: only `create_run`, `cancel_run`;
   - worker: `start_release`, `pay_row`;

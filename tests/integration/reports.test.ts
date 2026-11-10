@@ -68,7 +68,7 @@ describe('history and exports', () => {
     expect(sum(detailed)).toBe(10_000_000n);
     expect(consolidated[0]).toMatch(/,10\.000000,tUSDC,paid$/);
     expect(new Set(detailed.map((l) => l.split(',')[0])).size).toBe(1000); // unique opaque references
-    expect(detailed[0]).toMatch(/^GJN-[A-Z2-9]{8}-0001,detailed,Uniform detailed,1,gjn-/);
+    expect(detailed[0]).toMatch(/^SFD-[A-Z2-9]{8}-0001,detailed,Uniform detailed,1,sfd-/);
     for (const l of [...consolidated, ...detailed]) expect(l.split(',').at(-4)).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/); // UTC, whole seconds
   });
 

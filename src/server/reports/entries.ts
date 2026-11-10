@@ -15,7 +15,7 @@ export function referenceBase(versionId: string): string {
   const digest = createHash('sha256').update(`gajian-report:${versionId}`).digest();
   let out = '';
   for (let i = 0; i < 8; i++) out += ALPHABET[(digest[i] ?? 0) % ALPHABET.length];
-  return `GJN-${out}`;
+  return `SFD-${out}`; // SentFund prefix since Phase 22; references already stored (report_entries) keep their GJN- prefix
 }
 
 export function createReportEntries(db: Db, versionId: string, now = new Date()): number {

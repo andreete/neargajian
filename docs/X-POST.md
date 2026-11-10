@@ -2,7 +2,7 @@
 
 Andre publishes this himself (organizer rule: the human posts). Required by the organizers: say it was built at NEAR HACKATHON, tag @NEARProtocol and #NEARHackathon, attach the demo video or screenshots. Optional tags: @NearLegion, @NearBuilders.
 
-Fill in two links before posting: `<VIDEO>` (the demo video on YouTube; or attach the video file to the post directly) and `<DEMO>` (the hosted demo, `<HOSTED-URL>` from `docs/HOSTING.md`, once it is live and smoke-tested). The repository must be public first.
+Fill in one link before posting: `<VIDEO>` (the demo video on YouTube; or attach the video file to the post directly). The hosted demo link (https://sentfund.my.id) is already in the reply: live and smoke-tested on 10 Nov 2026. The repository must be public first.
 
 ## Main post (≤ 280 characters; X counts each link as 23)
 
@@ -23,7 +23,7 @@ Character count as X counts it: 275 of 280. Attach: the demo video (2:30).
 Check it yourself: the vault has no access keys, so its code can't change; each paid time is its NearBlocks block time; `npm run judge:verify` re-checks it all, read-only.
 
 Video: <VIDEO>
-Try it (testnet, shared demo data): <DEMO>
+Try it (testnet, shared demo data): https://sentfund.my.id
 ```
 
 ## Notes

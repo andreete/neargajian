@@ -237,7 +237,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
                 <table className="ledger">
                   <caption className="sr-only">Consolidated posting example</caption>
                   <thead><tr><th scope="col">Reference</th><th scope="col">Description</th><th scope="col" className="amount">tUSDC</th></tr></thead>
-                  <tbody><tr><td className="mono">GJN-NOV-0001</td><td>November payroll</td><td className="amount">{sampleTotal}</td></tr></tbody>
+                  <tbody><tr><td className="mono">SFD-NOV-0001</td><td>November payroll</td><td className="amount">{sampleTotal}</td></tr></tbody>
                   <tfoot><tr><td colSpan={2}>Total</td><td className="amount">{sampleTotal}</td></tr></tfoot>
                 </table>
               </article>
@@ -248,7 +248,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
                   <thead><tr><th scope="col">Reference</th><th scope="col">Description</th><th scope="col" className="amount">tUSDC</th></tr></thead>
                   <tbody>
                     {sample.firstRows.slice(0, 2).map((r, i) => (
-                      <tr key={r.line}><td className="mono">GJN-NOV-0001-{String(i + 1).padStart(4, '0')}</td><td>Payout line {i + 1}</td><td className="amount">{displayAmount(r.amount)}</td></tr>
+                      <tr key={r.line}><td className="mono">SFD-NOV-0001-{String(i + 1).padStart(4, '0')}</td><td>Payout line {i + 1}</td><td className="amount">{displayAmount(r.amount)}</td></tr>
                     ))}
                     <tr className="gap"><td colSpan={3}>… {(sample.rowCount - 2).toLocaleString('en-US')} more lines …</td></tr>
                   </tbody>
