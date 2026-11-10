@@ -504,6 +504,23 @@ Both runs are in `docs/evidence/testnet-runs.json`; `npm run judge:verify`: **24
 | `recipient1.sentfund-payroll.testnet` | 0.070000 tUSDC | 0.414000 tUSDC | +0.344000 |
 | All SentFund accounts (NEAR) | 9.91138 | 9.90822 | −0.00316 (gas, 10 transactions) |
 
+## Phase 23b: vault top-up to 2.00 tUSDC (10 Nov 2026 23:17 UTC = 11 Nov 06:17 WIB)
+
+With Andre's yes, after the Phase 23b release: the vault held 1.586 tUSDC available, 0 reserved; the admin minted 0.414 test tUSDC (mock token, zero value) and funded the vault with `ft_transfer_call` (`node scripts/testnet/phase16.ts top-up 2.00`, which refuses any target above 2 tUSDC while the demo is public). The vault books **2.000000 tUSDC available, 0 reserved** (`get_balances`). No payout, no contract change.
+
+| Step | Signer | Tx | Result |
+| --- | --- | --- | --- |
+| Admin mints 0.414 test tUSDC to itself | `admin.sentfund-payroll.testnet` | [`HXNaejUF…`](https://testnet.nearblocks.io/txns/HXNaejUF2RisGSixU4h3cdsLU59Bd96xFTiSic2R7FFh) | ok |
+| Admin funds the vault with 0.414 tUSDC (`ft_transfer_call`) | `admin.sentfund-payroll.testnet` | [`3za3xT3e…`](https://testnet.nearblocks.io/txns/3za3xT3eZ9Tz3nYeHskQivPwGx8dz32asYY4CtMyDMjt) | ok, used `414000`; vault total 2.000000 |
+
+| Account (`node scripts/testnet/balances.mjs`) | Before | After |
+| --- | --- | --- |
+| `vault.sentfund-payroll.testnet` | 1.586000 tUSDC | **2.000000 tUSDC** |
+| `admin.sentfund-payroll.testnet` | 0.49304 NEAR, 0 tUSDC | 0.49226 NEAR, 0 tUSDC |
+| All SentFund accounts (NEAR) | 9.90822 | 9.90745 (−0.00077, gas) |
+
+`npm run judge:verify` afterwards: **241 PASS, 0 FAIL** (older transactions read from the testnet archival node, D-138).
+
 ## Live runs and NEAR spent
 
 | Date | Run | Rows | tUSDC paid | NEAR spent (gas) | Evidence |
@@ -519,5 +536,6 @@ Both runs are in `docs/evidence/testnet-runs.json`; `npm run judge:verify`: **24
 | 10 Nov 2026 | Phase 21: 4 host keys for the Railway demo (`add-key`, function-call only) | — | — | 0.00016 | Phase 21 table |
 | 10 Nov 2026 | Phase 22: SentFund deployment (`sentfund-payroll.testnet`): accounts, token, locked vault, keys, 3 policy runs, the assistant app run, the hosted smoke run; gajian host keys deleted | 6 | 0.250000 | 0.0886 (SentFund set) + 0.00017 (gajian set) | Phase 22 section |
 | 10 Nov 2026 | Phase 23: Payroll Advance through the app (Emma's advance 0.294 net + her November payroll with the first instalment, net 0.05) | 2 | 0.344000 | 0.00316 | Phase 23 section |
+| 10 Nov 2026 (11 Nov WIB) | Phase 23b: vault top-up (mint 0.414 + `ft_transfer_call`) | — | — (vault 1.586 → 2.00) | 0.00077 | Phase 23b section |
 
-**Total testnet NEAR burned so far: ≈ 0.130 NEAR on the earlier gajian set (10.00000 → 9.86974) + ≈ 0.092 NEAR on the SentFund set (10.00000 → 9.90822)** (across all our accounts; storage deposits and contract storage stay inside our accounts).
+**Total testnet NEAR burned so far: ≈ 0.130 NEAR on the earlier gajian set (10.00000 → 9.86974) + ≈ 0.093 NEAR on the SentFund set (10.00000 → 9.90745)** (across all our accounts; storage deposits and contract storage stay inside our accounts).

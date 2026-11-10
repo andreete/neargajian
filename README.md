@@ -50,7 +50,7 @@ A small company paying staff or contractors in stablecoins usually has one perso
 
 | Works online | Not online yet |
 | --- | --- |
-| Sign-in for the maker, the approvers and the admin, upload or manual runs to the three live recipients, submit, approve 1 → 2, payment by the vault on testnet with NearBlocks links (last checked with a real 0.01 tUSDC run on 10 Nov) | **Payroll Advance** and the employee sign-ins: built and tested (Phase 23) and proven on testnet through a local copy; they reach the hosted site with the next release |
+| Sign-in for the maker, the approvers and the admin, upload or manual runs to the three live recipients, submit, approve 1 → 2, payment by the vault on testnet with NearBlocks links (last checked with a real 0.01 tUSDC run on 10 Nov) | **Payroll Advance** and the employee sign-ins: online since the release of 11 Nov (Phase 23b); proven on testnet through a local copy (Phase 23); online checked without a transaction |
 | **Payroll assistant** (hosted Claude API key since 10 Nov 10:52 UTC, with a spend limit and 200 requests per day): the Sales request below returns a preview; nothing is created until you press Create draft | |
 | **Identity checks** on the synthetic specimens: the KTP reader and the face match run online as dry runs (checked 10 Nov: Emma's specimen Verified, face similarity 0.932) | |
 | History, consolidated and detailed reports, CSV exports; admin screens read-only (directory, workflow, identity results) | |
@@ -63,14 +63,14 @@ Do, see:
 4. **History and reports:** consolidated and detailed views, CSV exports.
 5. **Admin → Identity checks → Run check** on a specimen card. See: the KTP read with the photo covered, the face similarity and the checks; "Public demo: a dry run", so the recipient's status does not change.
 6. **Maker → New run → Payroll assistant:** "Create a disbursement for the Sales division, 0.03 tUSDC each, called November commissions". See: a preview (Daniel Hall, Emma Clark, 0.06 tUSDC); nothing is created until **Create draft**.
-7. **Payroll Advance** (after the next release; locally today): see "Payroll Advance" below.
+7. **Payroll Advance:** sign in as `emma@`, `daniel@` or `grace@sentfund.my.id`; see "Payroll Advance" below.
 
 What the online copy does **not** let you do (on purpose, because the passwords are public):
 - It pays only the three live testnet recipients. A run with any recipient not in the directory and "Ready to receive tUSDC" is refused at submit; the 1,000-row sample uploads and previews but cannot be submitted.
 - The recipient directory and the approval workflow are read-only. The host never holds the admin key.
 - The assistant has a daily cap.
 - The vault holds at most 2 tUSDC.
-- Payroll Advance (after the next release): only the three live recipients, at most 0.30 tUSDC each and one at a time per employee; the policy is read-only.
+- Payroll Advance: only the three live recipients, at most 0.30 tUSDC each and one at a time per employee; the policy is read-only.
 
 Run the app locally (step 5 below) to try everything else.
 
@@ -201,7 +201,7 @@ Example: monthly net pay 0.10, A = 0.30 → fee 0.006, receives 0.294, repays 0.
 
 **How it runs (no contract change).** The employee requests an amount (shortcuts **25%**, **50%** and **Max** fill in that share of their maximum, rounded down to 0.01) with an optional reason and must tick "I agree to these 6 salary deductions" (stored with the request); the deduction months shown are labelled **Estimated** (the first instalment is taken from the first payroll after the advance is paid, which may still be this month). While the request is still Requested the employee can **withdraw** it (with a confirmation); once the maker has submitted it, it can no longer be withdrawn. The maker sees "Payroll Advance requests" with the eligibility at the request and re-checked now, the fee, the net payout and the schedule, and either declines it with a reason or submits it: that creates the one-row run "Payroll Advance: <name>, <month year>" for A − fee through the normal `create_run`. Approvers see that the run is a Payroll Advance, with the eligibility re-checked when they open it and again on the server when they approve; then approvals in order, automatic release and payment by the vault, exactly like payroll. On the next payroll the review shows per row the gross pay, the "Payroll Advance instalment" and the net pay; the maker confirms "Apply Payroll Advance instalments" (on by default) and **the net pay is what is committed on-chain**. An append-only ledger counts the advance when its row is paid on-chain and each instalment when the payroll row that carries it is paid; a cancelled or rejected payroll releases its instalment. Reports show advances (owed by the employee), fees (income), net payouts, instalments and gross/instalment/net per payroll row, and reconcile (sum of net = paid on-chain; advances outstanding = advances − instalments repaid). An inactive employee with a balance is shown to the admin as "to settle outside SentFund".
 
-**Do, see (locally now; online after the next release).**
+**Do, see (online and locally).**
 1. Sign in as `emma@sentfund.my.id`. See: monthly net pay 0.10, "You can take now 0.30", the terms (fee 0.006, you receive 0.294, 0.05 a month) and six months marked Estimated; **25%** / **50%** / **Max** fill in 0.07 / 0.15 / 0.30. Tick the consent and press **Request 0.30 tUSDC**. See: Requested.
 2. Sign in as `maker@sentfund.my.id` → **Payroll Advance requests**. See: the request with the eligibility checks. **Submit for approval** → confirm 0.294. See: the run "Payroll Advance: Emma Clark, <month>", Awaiting approval, with the `create_run` link.
 3. `app1@`, then `app2@` → the run → **Approve**. See: the Payroll Advance note with "Eligibility re-checked now". Then Paid, with the payout link.

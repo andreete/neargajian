@@ -12,13 +12,23 @@ const ev = JSON.parse(readFileSync(new URL('../../docs/evidence/testnet-runs.jso
 let failures = 0;
 const check = (ok, what) => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${what}`); if (!ok) failures += 1; };
 
-async function rpc(method, params) {
+// Old transactions leave the regular node's history after a few epochs ("UNKNOWN_TRANSACTION", or a
+// "NOT_OBSERVED" timeout): their status is then read from a testnet ARCHIVAL node (still read-only).
+const ARCHIVAL = process.env.NEAR_ARCHIVAL_RPC_URL ?? 'https://archival-rpc.testnet.fastnear.com';
+if (!/testnet/.test(ARCHIVAL)) throw new Error('testnet archival RPC only');
+const aged = (e) => /UNKNOWN_TRANSACTION|NOT_OBSERVED|UNKNOWN_BLOCK|GARBAGE_COLLECTED|UNKNOWN_CHUNK/.test(JSON.stringify(e ?? {}));
+const HISTORY = new Set(['EXPERIMENTAL_tx_status', 'tx', 'block', 'chunk']);
+let archivalUsed = 0;
+
+async function rpc(method, params, url = RPC) {
   for (let attempt = 1; ; attempt += 1) {
-    const res = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'judge', method, params }) });
+    const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'judge', method, params }) });
     const body = await res.json().catch(() => ({ error: { message: `HTTP ${res.status}` } }));
     if (!body.error) return body.result;
-    if (attempt >= 3) throw new Error(JSON.stringify(body.error));
-    await new Promise((r) => setTimeout(r, 1000 * attempt));
+    if (HISTORY.has(method) && url === RPC && aged(body.error)) { archivalUsed += 1; return rpc(method, params, ARCHIVAL); }
+    const limited = res.status === 429 || body.error.code === -429;
+    if (attempt >= (limited ? 8 : 3)) throw new Error(JSON.stringify(body.error));
+    await new Promise((r) => setTimeout(r, (limited ? 4000 : 1000) * attempt));
   }
 }
 async function view(contract, method, args) {
@@ -105,5 +115,6 @@ for (const { reference, posting_mode: mode, paid_at_utc: paidAt } of csv('compan
   check(Boolean(expected) && paidAt === expected, `company CSV ${reference} (${mode}): ${paidAt} = ${mode === 'detailed' ? 'its payout block' : 'last payout block'} ${expected ?? 'missing'}`);
 }
 
+if (archivalUsed) console.log(`\n(${archivalUsed} older lookups were read from the archival node ${ARCHIVAL})`);
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll testnet evidence checks passed.');
 process.exitCode = failures ? 1 : 0;

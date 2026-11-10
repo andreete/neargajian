@@ -34,8 +34,8 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 21 SentFund rebrand + KTP/face identity checks | Done locally, all suites green; pushed to `origin` and the new `discoverateagency-ops/sentfund` (see NEXT-STEPS for the push result) | none on-chain; **real Claude KTP reader** on the 4 synthetic specimen scenarios (throwaway DB) |
 | 22 Testnet migration to `sentfund-payroll.testnet` + hosted demo live | Done: https://sentfund.my.id live and smoke-tested; all suites green | **Yes**: new accounts, token, locked vault (same release Wasm), 3 policy runs, assistant app run, hosted smoke run; `judge:verify` 221/221 |
 | 22b Review fixes (tunnel command, third-party licenses, live landing facts, online scope) | Done, released to https://sentfund.my.id | none (no transaction; read-only hosted checks) |
-| 23 Hosted Claude key + Payroll Advance (employee role) | Done locally, all suites green; pushed to `main` on both remotes; **not released** to the hosted site (Andre reviews first). Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
-| 23b Employee form: withdraw, estimated months, amount shortcuts | Done, all suites green; pushed to `main`; release: see the Phase 23b section | see the Phase 23b section |
+| 23 Hosted Claude key + Payroll Advance (employee role) | Done, approved by Andre 11 Nov; released with 23b. Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
+| 23b Employee form: withdraw, estimated months, amount shortcuts | Done, all suites green; **released** to https://sentfund.my.id (`e1b068b`, with Phase 23); hosted checks passed without a transaction | **Yes**: vault top-up 1.586 → 2.00 tUSDC (2 txs); `judge:verify` 241/241 (archival fallback, D-138) |
 
 ---
 
@@ -62,6 +62,16 @@ Andre approved Phase 23 (all ten transactions of the two runs verified on testne
 | `npm run secret-scan` | clean (working tree + 40 commits) |
 | `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
 | contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (0 keys; contracts unchanged) |
+
+Migration 0011 also tested on a copy of the pre-Phase-23 backup (the hosted DB's state: 0010 + 0011 in one transaction, 12 migrations, sessions kept, `foreign_key_check` clean). Local review DB backed up to `data/backups/before-phase23b-2026-11-10T23-09-31Z.sqlite`, then migrated.
+
+### Release (Andre's yes)
+- Commit `e1b068b` pushed to `origin/main`, `sentfund/main` and `sentfund/release` (`a29c514` → `e1b068b`, Phases 23 + 23b). Railway deployment `5906cf23…`: WAITING (CI) → BUILDING → DEPLOYING → **SUCCESS** (pushed 23:10 UTC, live by 23:16 UTC on 10 Nov = 06:16 WIB on 11 Nov); the old deployment `4aab2264…` REMOVED. Health `{"status":"ok", "db":"ok", "hostedDemo":true, "readOnly":false, "faceModels":true}`.
+- `npx playwright test -c playwright.hosted-live.config.ts tests/live/hosted-check.spec.ts` → **6 passed**, no NEAR transaction: health; `emma@`, `daniel@`, `grace@sentfund.my.id` sign in to "My pay and Payroll Advance", 0.30 available, 25% / 50% / Max fill 0.07 / 0.15 / 0.30, six Estimated months with the note, Request stays disabled (no consent ticked, nothing requested); admin → Payroll Advance read-only (no Save, switch disabled); assistant preview "Sales division, 2 recipients, 0.03 tUSDC each, total 0.06 tUSDC" (no draft created); Emma's specimen dry run Verified. Screenshots (1440x900) `docs/screenshots/phase-23b/`: 01 Emma's offer with 50% pressed, 02 the read-only admin settings.
+
+### Vault top-up (Andre's yes; `docs/TESTNET.md` Phase 23b)
+- `node scripts/testnet/phase16.ts top-up 2.00`: vault 1.586 available → mint 0.414 (`HXNaejUF…`) + `ft_transfer_call` 0.414 (`3za3xT3e…`) → **2.000000 available, 0 reserved**. NEAR 9.90822 → 9.90745.
+- `npm run judge:verify` first stopped on an RPC timeout for the 9 Nov transactions (aged out of the regular node; 0 FAIL until then). Fixed read-only with an archival-node fallback (D-138): **241 PASS, 0 FAIL**, 19 lookups from the archival node.
 
 ## Phase 23 · Hosted Claude key, then Payroll Advance (10 Nov 2026)
 

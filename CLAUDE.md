@@ -80,7 +80,7 @@ nice -n 19 npm run live:phase19 -- --grep p19-directory   # Phase 19 screenshots
 npx playwright test -c playwright.hosted-live.config.ts tests/live/hosted-check.spec.ts   # READ-ONLY hosted check after a release (health, employee offers, read-only policy, assistant preview, specimen dry run); no transaction
 nice -n 19 npx playwright test -c playwright.live.config.ts tests/live/phase23.spec.ts --grep p23-shots   # Phase 23 read-only recaptures; p23-advance / p23-payroll send REAL transactions (done 10 Nov)
 node --env-file=.env scripts/testnet/record-run-evidence.ts <runId> <phase> "<label>"   # add a paid app run to judge:verify
-npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json)
+npm run judge:verify             # read-only re-check of all live evidence (docs/evidence/testnet-runs.json); aged transactions are read from the testnet archival RPC (D-138)
 npm run demo:reset               # move data/sentfund.sqlite to data/backups/ (never deleted), fresh demo DB (stop app + worker first)
 nice -n 19 npm run test:judge-mode  # Playwright: fresh demo DB and no signer keys (read-only copy)
 npm run judge:deployment         # read-only: the vault's code_hash = local release Wasm, no access key (run AFTER contracts:build; contracts:test leaves a non-remapped build in target/)
