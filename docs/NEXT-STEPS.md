@@ -9,6 +9,12 @@ Updated: Tue 10 Nov 2026, 13:40 WIB, after **Phase 21** (SentFund rebrand + KTP/
 - Code is on `origin` (`andreete/neargajian`) and on the new private **`discoverateagency-ops/sentfund`** (remote `sentfund`), branch `main`. No `release` branch yet, nothing deployed, nothing on-chain changed in Phase 21.
 - **Hosting decided** (D-121): Railway Hobby runs the app; Cloudflare Free hosts the DNS of `sentfund.my.id` (registered at Sumopod; public resolvers answer SERVFAIL until the nameservers point at Cloudflare).
 
+## Progress on HOSTING section 0 (10 Nov, 14:00 WIB)
+
+- **Done: Cloudflare.** Zone `sentfund.my.id` is **Active** (Free) with nameservers `leonidas.ns.cloudflare.com` and `zelda.ns.cloudflare.com`, set at Sumopod (was `ns1/ns2.sumopod.com`); 1.1.1.1 and 8.8.8.8 answer with them. The zone has **no records yet**. `CLOUDFLARE_API_TOKEN` is in `.env` (verified active, can read the zone's DNS; given in chat, so **roll it after the deploy**).
+- **Generated:** the deploy key pair `~/.ssh/sentfund_deploy` (public key given to Andre). **Not yet added** on GitHub (`git ls-remote` with it: permission denied). Push with: `git -c core.sshCommand="ssh -i ~/.ssh/sentfund_deploy -o IdentitiesOnly=yes" push sentfund …` (the remote URL can be switched to `git@github.com:discoverateagency-ops/sentfund.git`).
+- **Still missing:** `RAILWAY_API_TOKEN` (Railway account, Hobby + card, GitHub app on `discoverateagency-ops/sentfund`), `HOSTED_ANTHROPIC_API_KEY`, the deploy key on GitHub.
+
 ## Single next action: Andre
 
 Follow **`docs/HOSTING.md` section 0** (about 20 minutes):
