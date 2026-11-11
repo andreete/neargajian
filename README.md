@@ -46,11 +46,11 @@ A small company paying staff or contractors in stablecoins usually has one perso
 - `admin@sentfund.my.id` in any window when you want the admin view. Signing in replaces the window's current role.
 - Employees (Payroll Advance): `emma@sentfund.my.id`, `daniel@sentfund.my.id`, `grace@sentfund.my.id`, in a window you are not using for another role.
 
-**What works online (checked 10 Nov 2026):**
+**What works online (checked 10–11 Nov 2026):**
 
 | Works online | Not online yet |
 | --- | --- |
-| **Camera face check at the Payroll Advance request** (Phase 24): the check runs for real on your camera; you are not the synthetic employee, so it says "This doesn't look like …" and offers **Continue as a demo** (flagged for the maker and the approvers) | |
+| **Camera face check at the Payroll Advance request** (Phase 24, online since 11 Nov): the check runs for real on your camera; you are not the synthetic employee, so it says "This doesn't look like …" and offers **Continue as a demo** (flagged for the maker and the approvers) | |
 | Sign-in for the maker, the approvers and the admin, upload or manual runs to the three live recipients, submit, approve 1 → 2, payment by the vault on testnet with NearBlocks links (last checked with a real 0.01 tUSDC run on 10 Nov) | **Payroll Advance** and the employee sign-ins: online since the release of 11 Nov (Phase 23b); proven on testnet through a local copy (Phase 23); online checked without a transaction |
 | **Payroll assistant** (hosted Claude API key since 10 Nov 10:52 UTC, with a spend limit and 200 requests per day): the Sales request below returns a preview; nothing is created until you press Create draft | |
 | **Identity checks** on the synthetic specimens: the KTP reader and the face match run online as dry runs (checked 10 Nov: Emma's specimen Verified, face similarity 0.932) | |

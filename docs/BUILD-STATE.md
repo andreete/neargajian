@@ -36,7 +36,7 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 22b Review fixes (tunnel command, third-party licenses, live landing facts, online scope) | Done, released to https://sentfund.my.id | none (no transaction; read-only hosted checks) |
 | 23 Hosted Claude key + Payroll Advance (employee role) | Done, approved by Andre 11 Nov; released with 23b. Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
 | 23b Employee form: withdraw, estimated months, amount shortcuts | Done, approved by Andre 11 Nov; all suites green; **released** to https://sentfund.my.id (`e1b068b`, with Phase 23); hosted checks passed without a transaction | **Yes**: vault top-up 1.586 → 2.00 tUSDC (2 txs); `judge:verify` 241/241 (archival fallback, D-138) |
-| 24 Face check at the Payroll Advance request | Done, all suites green; release: see the Phase 24 section | none (no contract change, no transaction) |
+| 24 Face check at the Payroll Advance request | Done, all suites green; **released** to https://sentfund.my.id (`dd782f1`); hosted check 9/9 without a transaction or a camera | none (no contract change, no transaction) |
 
 ---
 
@@ -69,6 +69,11 @@ Visual check (hosted mode, stand-in camera, 1280 and 390 px wide; no horizontal 
 | `npm run secret-scan` | clean (working tree + 42 commits) |
 | `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
 | contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (0 keys; contracts unchanged) |
+| `npm run judge:verify` | **241 PASS, 0 FAIL**, "All testnet evidence checks passed." (74 lookups from the archival node; a first run stopped at my 15-minute timeout after 193 PASS, 0 FAIL, while the archival node rate-limited) |
+
+### Release (Andre's yes in the brief)
+- Commit `dd782f1` pushed to `origin/main` and `sentfund/main`. `FACE_TEMPLATE_KEY` set on Railway by `variableUpsert` from `.env` `HOSTED_FACE_TEMPLATE_KEY` (a separate key from the local one; skip deploys; value never printed; `check` confirmed the Railway value equals it; no stand-in variable online). Then `main` → `sentfund/release` (`e1b068b` → `dd782f1`) at 02:08 UTC: Railway deployment `1e273427…` WAITING (CI) → BUILDING → DEPLOYING → **SUCCESS** at about 02:12 UTC (09:12 WIB); `5906cf23…` REMOVED. Health ok, `faceModels: true`. At start `hosted-prepare` applied migration 0012 and seeded the demo employees' templates (Daniel and Grace show no "verify your identity first" online).
+- `npx playwright test -c playwright.hosted-live.config.ts tests/live/hosted-check.spec.ts` → **9 passed**, no NEAR transaction, no camera: health; the three employees sign in; Daniel and Grace see the offer with the shortcuts and **Verify it's you** (disabled until the consent; no Request button; a template on file); **Emma has an open 0.07 request made online at 01:01 UTC today, before Phase 24** (shared demo data, left as it is), so the check now accepts an open request instead of the offer; on Daniel's page **Verify it's you** opens the panel with the notice and, with no camera, "No camera was found … The request cannot be sent without the face check." (no POST sent: no challenge, no frames, no request); the maker's queue shows Emma's request with "No face check at request …: it cannot be submitted or approved" in red and **Submit for approval** disabled; `Permissions-Policy: camera=(self)` on `/employee` and `camera=()` on `/`, `/maker`, `/approver`, `/admin`, `/admin/identity`, `/history`, `/api/health`; the admin's Payroll Advance settings read-only; the assistant preview and Emma's specimen dry run (Verified). Screenshots (1440x900) `docs/screenshots/phase-24/`: 01 Daniel's offer with Verify it's you, 02 the notice without a camera, 03 the read-only admin settings, 04 the maker's red line on the pre-Phase-24 request.
 
 ---
 

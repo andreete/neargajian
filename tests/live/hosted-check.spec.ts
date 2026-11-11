@@ -38,13 +38,25 @@ test('hosted (read-only): health', async ({ request }) => {
   expect(health).toMatchObject({ status: 'ok', service: 'sentfund', db: 'ok', hostedDemo: true, readOnly: false, faceModels: true });
 });
 
-for (const [email, name] of [['emma@sentfund.my.id', 'Emma Clark'], ['daniel@sentfund.my.id', 'Daniel Hall'], ['grace@sentfund.my.id', 'Grace Lewis']] as const) {
-  test(`hosted (read-only): ${name} signs in and sees the offer with the shortcuts; nothing is requested`, async ({ browser }) => {
+const EMPLOYEES = [['emma@sentfund.my.id', 'Emma Clark'], ['daniel@sentfund.my.id', 'Daniel Hall'], ['grace@sentfund.my.id', 'Grace Lewis']] as const;
+/** The first employee without an open request (found by the offer tests) gets the camera-notice check. */
+let cameraEmployee: (typeof EMPLOYEES)[number] | null = null;
+
+for (const [email, name] of EMPLOYEES) {
+  test(`hosted (read-only): ${name} signs in; the offer with the shortcuts and "Verify it's you", or the open request; nothing is requested`, async ({ browser }) => {
     const page = await session(browser, email, /\/employee$/);
     await expect(page.getByTestId('hosted-banner')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'My pay and Payroll Advance', level: 1 })).toBeVisible();
     await expect(page.getByText(name).first()).toBeVisible();
     await expect(page.getByTestId('advance-disclosure')).toContainText('Repaid like a loan');
+    // Shared demo data: a visitor may have an open request (one at a time). Then the request is shown instead of the offer.
+    if (await page.getByTestId('advance-current').count()) {
+      await expect(page.getByTestId('advance-offer')).toHaveCount(0);
+      await expect(page.getByTestId('advance-current').getByTestId('advance-status')).toBeVisible();
+      test.info().annotations.push({ type: 'note', description: `${name} has an open request (${await page.getByTestId('advance-current').getByTestId('advance-status').innerText()}): offer not shown` });
+      await page.context().close();
+      return;
+    }
     await expect(page.getByTestId('advance-available')).toContainText('0.30');
     const offer = page.getByTestId('advance-offer');
     const shortcuts = offer.getByRole('group', { name: 'Amount shortcuts' });
@@ -62,27 +74,49 @@ for (const [email, name] of [['emma@sentfund.my.id', 'Emma Clark'], ['daniel@sen
     await expect(offer.getByRole('button', { name: "Verify it's you" })).toBeDisabled();
     await expect(offer.getByRole('button', { name: /^Request/ })).toHaveCount(0);
     await expect(offer.getByTestId('face-blocker')).toHaveCount(0);
-    if (name === 'Emma Clark') {
-      await shortcuts.getByRole('button', { name: '50%' }).click();
-      await offer.scrollIntoViewIfNeeded();
-      await shot(page, '01-hosted-employee-offer-shortcuts');
-      const sent: string[] = [];
-      page.on('request', (r) => { if (r.method() !== 'GET') sent.push(r.url()); });
-      await offer.getByLabel('I agree to these 6 salary deductions').check();
-      await offer.getByRole('button', { name: "Verify it's you" }).click();
-      const fc = page.getByTestId('face-check');
-      await expect(fc.getByTestId('face-notice')).toContainText('Camera images are processed in memory on the SentFund server and never stored');
-      await expect(fc.getByTestId('face-notice')).toContainText('shown to the payroll maker and the approvers');
-      await expect(fc.getByTestId('face-standin')).toHaveCount(0); // no stand-in online
-      await expect(fc.getByTestId('face-camera-help')).toContainText('The request cannot be sent without the face check.');
-      await fc.scrollIntoViewIfNeeded();
-      await shot(page, '02-hosted-employee-verify-notice-no-camera');
-      await fc.getByRole('button', { name: 'Cancel' }).click();
-      expect(sent).toEqual([]); // no challenge, no frames, no request
-    }
+    cameraEmployee ??= [email, name];
     await page.context().close();
   });
 }
+
+test('hosted (read-only): "Verify it\'s you" opens the camera panel with the notice; without a camera it explains how to allow it; nothing is sent', async ({ browser }) => {
+  test.skip(!cameraEmployee, 'every demo employee has an open request right now');
+  const [email] = cameraEmployee!;
+  const page = await session(browser, email, /\/employee$/);
+  const offer = page.getByTestId('advance-offer');
+  await offer.getByRole('group', { name: 'Amount shortcuts' }).getByRole('button', { name: '50%' }).click();
+  await offer.scrollIntoViewIfNeeded();
+  await shot(page, '01-hosted-employee-offer-verify-button');
+  const sent: string[] = [];
+  page.on('request', (r) => { if (r.method() !== 'GET') sent.push(r.url()); });
+  await offer.getByLabel('I agree to these 6 salary deductions').check();
+  await offer.getByRole('button', { name: "Verify it's you" }).click();
+  const fc = page.getByTestId('face-check');
+  await expect(fc.getByTestId('face-notice')).toContainText('Camera images are processed in memory on the SentFund server and never stored');
+  await expect(fc.getByTestId('face-notice')).toContainText('shown to the payroll maker and the approvers');
+  await expect(fc.getByTestId('face-standin')).toHaveCount(0); // no stand-in online
+  await expect(fc.getByTestId('face-camera-help')).toContainText('The request cannot be sent without the face check.');
+  await fc.scrollIntoViewIfNeeded();
+  await shot(page, '02-hosted-employee-verify-notice-no-camera');
+  await fc.getByRole('button', { name: 'Cancel' }).click();
+  expect(sent).toEqual([]); // no challenge, no frames, no request
+  await page.context().close();
+});
+
+test('hosted (read-only): the maker sees the face check line on every open request (a request from before Phase 24 cannot be submitted)', async ({ browser }) => {
+  const maker = await session(browser, 'maker@sentfund.my.id', /\/maker$/);
+  await maker.goto('/maker/advances');
+  const cards = maker.getByTestId('advance-request');
+  const n = await cards.count();
+  for (let i = 0; i < n; i++) {
+    const note = cards.nth(i).getByTestId('face-check-note');
+    await expect(note).toBeVisible();
+    if ((await note.innerText()).startsWith('No face check')) await expect(cards.nth(i).getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
+  }
+  if (n) { await cards.first().scrollIntoViewIfNeeded(); await shot(maker, '04-hosted-maker-request-face-line'); }
+  test.info().annotations.push({ type: 'note', description: `${n} open request(s) in the maker's queue` });
+  await maker.context().close();
+});
 
 test('hosted (read-only): the camera is allowed only on the employee page (Permissions-Policy)', async ({ request }) => {
   expect((await request.get('/employee', { maxRedirects: 0 })).headers()['permissions-policy']).toBe('camera=(self), microphone=(self), geolocation=(), payment=(), usb=()');
