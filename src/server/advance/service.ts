@@ -25,6 +25,7 @@ import { advanceApprovalProblem, eligibilityFor, expectedMonths, failedChecks, t
 export { advanceApprovalProblem };
 import { deductionsOf, ledgerOf, repaymentOf, syncAdvances, type Advance, type DeductionRecord } from './ledger.ts';
 import { getPolicy } from './policy.ts';
+import { claimFaceCheck, faceCheckProblem } from '../identity/face-check.ts';
 import { addMonths, CONSENT_TEXT, MIN_ADVANCE, monthKey, monthLabel, termsFor, type AdvancePolicy } from './terms.ts';
 
 export const MAX_ADVANCE_REASON = 200;
@@ -56,7 +57,13 @@ export function getAdvance(db: Queryable, id: string): Advance {
 
 // ------------------------------------------------------------------ request (employee)
 
-export interface AdvanceRequestInput { amount?: unknown; reason?: unknown; consent?: unknown }
+export interface AdvanceRequestInput {
+  amount?: unknown; reason?: unknown; consent?: unknown;
+  /** Phase 24: the passed camera face check attempt (used once, within 5 minutes). */
+  faceAttemptId?: unknown;
+  /** Phase 24, public demo only: "Continue as a demo" after a failed match with a passed head turn. */
+  demoOverride?: unknown;
+}
 
 export function requestAdvance(db: Db, principal: Principal, input: AdvanceRequestInput, now = new Date()): Advance {
   const recipient = employeeRecipient(db, principal);
@@ -75,16 +82,22 @@ export function requestAdvance(db: Db, principal: Principal, input: AdvanceReque
       const amount = parsed.value;
       if (amount < MIN_ADVANCE || amount > BigInt(e.max)) throw new DomainError('invalid', `Choose an amount from 0.01 to ${formatAmountShort(BigInt(e.max))} tUSDC.`);
       const t = termsFor(amount, policy);
+      // Phase 24: the right person asks. Checked last, so a form problem does not use up the check.
+      const face = claimFaceCheck(tx, principal, fresh.id, input.faceAttemptId, input.demoOverride, now);
       tx.insert(payrollAdvances).values({
         id, recipientId: fresh.id, employeeUserId: principal.id, amount, fee: t.fee, net: t.net, instalmentCount: policy.instalments,
         instalment: t.schedule.regular, lastInstalment: t.schedule.last, reason: reason || null,
         consentText: CONSENT_TEXT(policy.instalments), consentedAt: now, expectedMonths: JSON.stringify(expectedMonths(tx, fresh, policy.instalments, now)),
         policySnapshot: JSON.stringify(policy), eligibilityAtRequest: JSON.stringify(e), status: 'requested', createdAt: now, updatedAt: now,
+        faceCheck: JSON.stringify(face), faceAttemptId: face.attemptId,
       }).run();
-      audit(tx, principal.id, 'advance.requested', id, { amount: amount.toString(), fee: t.fee.toString(), instalments: policy.instalments }, now);
+      audit(tx, principal.id, 'advance.requested', id, { amount: amount.toString(), fee: t.fee.toString(), instalments: policy.instalments, face: face.result }, now);
       return tx.select().from(payrollAdvances).where(eq(payrollAdvances.id, id)).get()!;
     }, { behavior: 'immediate' });
   } catch (error) {
+    if (error instanceof Error && /UNIQUE constraint failed: payroll_advances\.face_attempt_id/.test(error.message)) {
+      throw new DomainError('conflict', "This face check was already used for a request. Verify it's you again.");
+    }
     if (error instanceof Error && /UNIQUE constraint failed: payroll_advances\.recipient_id/.test(error.message)) {
       throw new DomainError('conflict', 'You already have a Payroll Advance open. A new one is possible after it is withdrawn, declined, rejected or fully repaid.');
     }
@@ -156,6 +169,8 @@ export async function submitAdvance(db: Db, client: VaultClient, principal: Prin
   const prepared = db.transaction((tx) => {
     const a = getAdvance(tx, id);
     if (a.status !== 'requested') throw new DomainError('conflict', `This request is ${ADVANCE_STATUS_LABEL[a.status].toLowerCase()}; only a requested advance can be submitted.`);
+    const face = faceCheckProblem(a.faceCheck);
+    if (face) throw new DomainError('invalid', face);
     const r = tx.select().from(recipients).where(eq(recipients.id, a.recipientId)).get()!;
     const policy = JSON.parse(a.policySnapshot) as AdvancePolicy;
     const e = eligibilityFor(tx, r, { now, excludeAdvanceId: a.id });

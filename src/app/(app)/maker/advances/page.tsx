@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AdvanceActions } from '@/components/advance-actions';
-import { AdvanceKindChip, AdvanceStatusChip, EligibilityList, MonthsList, TermsList } from '@/components/advance-bits';
+import { AdvanceKindChip, AdvanceStatusChip, EligibilityList, FaceCheckNote, MonthsList, TermsList } from '@/components/advance-bits';
+import { faceCheckProblem } from '@/server/identity/face-record';
 import { WalletIcon } from '@/components/icons';
 import { getDb } from '@/server/db/client';
 import { activeWorkflow } from '@/server/dashboard/queries';
@@ -44,6 +45,7 @@ export default async function AdvanceRequestsPage() {
               </div>
               <div className="panel-body stack">
                 <p className="hint">{e.division} · <span className="mono">{e.account}</span> · requested {formatDateTime(a.createdAt)}{a.reason ? <> · reason: “{a.reason}”</> : null} · consent “{a.consentText}” ticked {formatDateTime(a.consentedAt)}</p>
+                <FaceCheckNote json={a.faceCheck} status={a.status} />
                 {a.statusDetail ? <div className="callout callout-warn" role="note"><span>{a.statusDetail}</span></div> : null}
                 <div className="grid-2">
                   <div className="stack">
@@ -56,7 +58,7 @@ export default async function AdvanceRequestsPage() {
                   </div>
                 </div>
                 <AdvanceActions id={a.id} name={e.name} amount={displayAmount(a.amount)} fee={displayAmount(a.fee)} net={displayAmount(a.net)} title={advanceRunTitle(e.name, now)}
-                  approvalSummary={approvalSummary} csrfToken={session.csrfToken} canSubmit={e.eligibilityNow.eligible && a.amount <= BigInt(e.eligibilityNow.max)} />
+                  approvalSummary={approvalSummary} csrfToken={session.csrfToken} canSubmit={e.eligibilityNow.eligible && a.amount <= BigInt(e.eligibilityNow.max) && !faceCheckProblem(a.faceCheck)} />
               </div>
             </section>
           );

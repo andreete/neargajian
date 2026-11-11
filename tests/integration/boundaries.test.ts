@@ -84,24 +84,27 @@ function operations(): { name: string; method: string; path: (id: string) => str
     { name: 'advance withdraw', method: 'POST', path: (id) => `/api/employee/advances/${id}/withdraw`, h: () => route.advWithdraw!.POST!, body: () => '{}', run: () => 'adv-probe' },
     { name: 'advance decline', method: 'POST', path: (id) => `/api/advances/${id}/decline`, h: () => route.advDecline!.POST!, body: j({ reason: 'probe reason' }), run: () => 'adv-probe' },
     { name: 'advance submit', method: 'POST', path: (id) => `/api/advances/${id}/submit`, h: () => route.advSubmit!.POST!, body: () => null, run: () => 'adv-probe' },
+    // Phase 24: the employee's camera face check (challenge + attempt).
+    { name: 'face challenge', method: 'POST', path: () => '/api/employee/face-check/challenge', h: () => route.faceChallenge!.POST!, body: () => null, run: () => '' },
+    { name: 'face check', method: 'POST', path: () => '/api/employee/face-check', h: () => route.faceCheck!.POST!, body: () => { const f = new FormData(); f.set('challengeId', 'fch_probe'); f.set('nonce', 'probe'); for (const p of ['center', 'left', 'right', 'center']) f.append('frames', new File([readFileSync(`public/specimens/turn/emma-${p}.jpg`)], `${p}.jpg`, { type: 'image/jpeg' })); return f; }, run: () => '' },
     { name: 'admin payroll advance policy', method: 'POST', path: () => '/api/admin/payroll-advance', h: () => route.advPolicy!.POST!, body: j({ enabled: false, maxPercent: 100, feeBps: 100, instalments: 3, minDays: 30 }), run: () => '' },
   ];
 }
 
 const ADMIN_DIRECTORY = ['admin recipients list', 'admin recipient add', 'admin recipient edit', 'admin recipient status', 'admin recipient check', 'admin recipients import', 'admin settings read', 'admin settings change', 'identity check', 'identity specimen', 'identity review'];
 
-const ADVANCE = ['advance request', 'advance withdraw', 'advance decline', 'advance submit', 'admin payroll advance policy'];
+const ADVANCE = ['advance request', 'advance withdraw', 'advance decline', 'advance submit', 'admin payroll advance policy', 'face challenge', 'face check'];
 /** Everything an employee must never reach (all but its own request and withdraw routes; run detail and a request that is not theirs answer 404). */
-const NOT_FOR_EMPLOYEES = () => operations().map((o) => o.name).filter((n) => !['advance request', 'advance withdraw', 'run detail'].includes(n));
+const NOT_FOR_EMPLOYEES = () => operations().map((o) => o.name).filter((n) => !['advance request', 'advance withdraw', 'run detail', 'face challenge', 'face check'].includes(n));
 
 /** Who must be refused where, and with which status. */
 const DENIED: [Who, string[], number][] = [
   // Phase 23: the employee role reaches nothing but its own Payroll Advance request.
   ['emp', NOT_FOR_EMPLOYEES(), 403],
   ['emp', ['run detail', 'advance withdraw'], 404],
-  ['maker', ['advance request', 'advance withdraw', 'admin payroll advance policy'], 403],
+  ['maker', ['advance request', 'advance withdraw', 'admin payroll advance policy', 'face challenge', 'face check'], 403],
   ['app1', ADVANCE, 403],
-  ['admin', ['advance request', 'advance withdraw', 'advance decline', 'advance submit'], 403],
+  ['admin', ['advance request', 'advance withdraw', 'advance decline', 'advance submit', 'face challenge', 'face check'], 403],
   ['maker2', ['run detail', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'reconcile', 'cancel', 'release'], 404],
   ['app3', ['run detail', 'reconcile', 'decision'], 404],
   ['app1', ['create run', 'draft read', 'draft save', 'confirm subset', 'posting mode', 'upload', 'submit', 'cancel', 'release', 'admin workflow read', 'admin workflow change', 'admin workflow reconcile', 'admin audit', ...ADMIN_DIRECTORY, 'assistant', 'assistant draft'], 403],
@@ -126,6 +129,9 @@ function state() {
     identityChecks: q('select count(*) as n from identity_checks'),
     advances: q('select id, status from payroll_advances order by id'),
     advanceLedger: q('select count(*) as n from advance_ledger'),
+    faceTemplates: q('select recipient_id, status from face_templates order by recipient_id'),
+    faceChallenges: q('select count(*) as n from face_challenges'),
+    faceAttempts: q('select count(*) as n from face_check_attempts'),
   });
 }
 
@@ -197,6 +203,8 @@ beforeAll(async () => {
   route.advDecline = await load('@/app/api/advances/[advanceId]/decline/route');
   route.advSubmit = await load('@/app/api/advances/[advanceId]/submit/route');
   route.advPolicy = await load('@/app/api/admin/payroll-advance/route');
+  route.faceChallenge = await load('@/app/api/employee/face-check/challenge/route');
+  route.faceCheck = await load('@/app/api/employee/face-check/route');
 }, 60_000);
 
 afterAll(async () => {
@@ -232,7 +240,7 @@ describe('API permission boundaries', () => {
         checked += 1;
       }
     }
-    expect(checked).toBe(116); // Phase 21: + 3 identity routes × (approver, maker); Phase 23: + 34 employee, + 9 advance routes × other roles; Phase 23b: withdraw × (employee 404, maker, approver, admin)
+    expect(checked).toBe(122); // Phase 24: + 2 face check routes × (maker, approver, admin); Phase 21: + 3 identity routes × (approver, maker); Phase 23: + 34 employee, + 9 advance routes × other roles; Phase 23b: withdraw × (employee 404, maker, approver, admin)
     expect(state()).toBe(before);
     expect(fake.calls.length).toBe(calls);
   });
@@ -241,7 +249,7 @@ describe('API permission boundaries', () => {
     const before = state();
     const calls = fake.calls.length;
     for (const op of operations().filter((o) => o.method !== 'GET')) {
-      const who: Who = op.name.startsWith('admin') ? 'admin' : op.name === 'decision' ? 'app1' : op.name === 'advance request' || op.name === 'advance withdraw' ? 'emp' : 'maker';
+      const who: Who = op.name.startsWith('admin') ? 'admin' : op.name === 'decision' ? 'app1' : op.name === 'advance request' || op.name === 'advance withdraw' || op.name.startsWith('face ') ? 'emp' : 'maker';
       const noCsrf = await call(who, op.method, op.path(op.run()), op.h(), op.run(), op.body(), { csrf: false });
       expect(noCsrf.status, `${op.name} without CSRF`).toBe(403);
       const foreign = await call(who, op.method, op.path(op.run()), op.h(), op.run(), op.body(), { origin: 'https://evil.example' });
@@ -284,11 +292,11 @@ describe('API permission boundaries', () => {
   });
 
   it("Phase 23b: an employee cannot withdraw another employee's request (404, nothing changes); the owner can", async () => {
-    const { requestAdvance } = await import('@/server/advance/service');
+    const { requestAdvanceFaced } = await import('../helpers/face');
     const { recordReadiness } = await import('@/server/recipients/directory');
     const daniel = (sqlite.prepare("select id from recipients where near_account_id = 'recipient2.sentfund-payroll.testnet'").get() as { id: string }).id;
     recordReadiness(db, 'usr_admin', daniel, 'ready', new Date());
-    const theirs = requestAdvance(db, { id: 'usr_emp_daniel', role: 'employee' }, { amount: '0.10', consent: true });
+    const theirs = requestAdvanceFaced(db, { id: 'usr_emp_daniel', role: 'employee' }, { amount: '0.10', consent: true });
     const op = operations().find((o) => o.name === 'advance withdraw')!;
     const before = state();
     const res = await call('emp', 'POST', op.path(theirs.id), op.h(), theirs.id, op.body());

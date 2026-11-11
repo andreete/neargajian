@@ -4,6 +4,7 @@
  * admin policy: one advance at a time, and only active, identity-verified recipients that are
  * "Ready to receive tUSDC" on testnet.
  */
+import { faceCheckProblem } from '../identity/face-record.ts';
 import { and, eq, inArray, ne } from 'drizzle-orm';
 import type { Queryable } from '../db/client.ts';
 import { OPEN_ADVANCE_STATUSES, payrollAdvances, recipients, runVersions, payrollRuns, versionRows, workflowConfigs } from '../db/schema.ts';
@@ -97,6 +98,8 @@ export function advanceApprovalProblem(db: Queryable, runId: string, now: Date):
   if (!run || run.kind !== 'advance' || !run.advanceId) return null;
   const a = db.select().from(payrollAdvances).where(eq(payrollAdvances.id, run.advanceId)).get();
   if (!a) return 'Payroll Advance request not found.';
+  const face = faceCheckProblem(a.faceCheck);
+  if (face) return `Payroll Advance face check: ${face.replace('Decline it with a reason', 'Reject it with a reason')}`;
   const r = db.select().from(recipients).where(eq(recipients.id, a.recipientId)).get()!;
   const e = eligibilityFor(db, r, { now, excludeAdvanceId: a.id });
   if (!e.eligible) return `Payroll Advance re-checked now: not eligible any more (${failedChecks(e)}). Reject it with a reason.`;

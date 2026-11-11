@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { cameraAllowed, PERMISSIONS_POLICY } from './permissions-policy';
 
 /**
  * Per-request nonce Content-Security-Policy for pages (Next.js applies the nonce to its own
@@ -27,6 +28,7 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('Content-Security-Policy', csp);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', csp);
+  response.headers.set('Permissions-Policy', PERMISSIONS_POLICY(cameraAllowed(request.nextUrl.pathname, process.env.HOSTED_DEMO === 'true')));
   return response;
 }
 

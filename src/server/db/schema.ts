@@ -542,9 +542,18 @@ export const payrollAdvances = sqliteTable('payroll_advances', {
   repaidAt: ms('repaid_at'),
   createdAt: ms('created_at').notNull(),
   updatedAt: ms('updated_at').notNull(),
+  /**
+   * Phase 24: the live camera face check at the request (JSON FaceCheckRecord: passed or, in the
+   * public demo only, demo_override; similarity, turn order, time). Null for requests made before
+   * Phase 24. Fixed once requested (trigger), like the terms.
+   */
+  faceCheck: text('face_check'),
+  /** The face check attempt this request used (once: unique). */
+  faceAttemptId: text('face_attempt_id').references(() => faceCheckAttempts.id),
 }, (t) => [
   index('payroll_advances_recipient_ix').on(t.recipientId, t.createdAt),
   uniqueIndex('payroll_advances_run_uq').on(t.runId),
+  uniqueIndex('payroll_advances_face_attempt_uq').on(t.faceAttemptId),
   uniqueIndex('payroll_advances_one_open_uq').on(t.recipientId).where(sql`status IN ('requested', 'submitted', 'approved', 'paid')`),
   check('payroll_advances_status_ck', inList('status', ADVANCE_STATUSES)),
   check('payroll_advances_count_ck', sql`instalment_count BETWEEN 1 AND 12`),
@@ -590,4 +599,93 @@ export const advanceLedger = sqliteTable('advance_ledger', {
   uniqueIndex('advance_ledger_row_uq').on(t.versionId, t.rowIndex, t.kind),
   index('advance_ledger_recipient_ix').on(t.recipientId, t.id),
   check('advance_ledger_kind_ck', inList('kind', LEDGER_KINDS)),
+]);
+
+// ------------------------------------------------------------------ Face check at the Payroll Advance request (Phase 24)
+
+export const FACE_TEMPLATE_STATUSES = ['active', 'pending'] as const;
+export type FaceTemplateStatus = (typeof FACE_TEMPLATE_STATUSES)[number];
+export const FACE_TEMPLATE_SOURCES = ['identity_check', 'seed'] as const;
+export type FaceTemplateSource = (typeof FACE_TEMPLATE_SOURCES)[number];
+
+/**
+ * One face template per identity-verified recipient: the SFace feature vector (128 numbers) of the
+ * verified face photo, ENCRYPTED at rest (AES-256-GCM, FACE_TEMPLATE_KEY; the recipient ID is bound
+ * in as associated data). Never the photo. Used only to confirm that employee's own Payroll Advance
+ * requests. "pending": the identity check waits for the admin's review (activated on approval,
+ * deleted on failure). Deleted when the recipient is deactivated or the identity check is reset.
+ */
+export const faceTemplates = sqliteTable('face_templates', {
+  recipientId: text('recipient_id').primaryKey().references(() => recipients.id),
+  /** "v1.<iv>.<tag>.<ciphertext>" (base64url). */
+  ciphertext: text('ciphertext').notNull(),
+  /** Non-secret fingerprint of the key that encrypted it (HMAC), to tell a changed key apart. */
+  keyId: text('key_id').notNull(),
+  status: text('status', { enum: FACE_TEMPLATE_STATUSES }).notNull(),
+  source: text('source', { enum: FACE_TEMPLATE_SOURCES }).notNull(),
+  identityCheckId: text('identity_check_id'),
+  engine: text('engine').notNull(),
+  createdAt: ms('created_at').notNull(),
+}, () => [
+  check('face_templates_status_ck', inList('status', FACE_TEMPLATE_STATUSES)),
+  check('face_templates_source_ck', inList('source', FACE_TEMPLATE_SOURCES)),
+]);
+
+export const FACE_TEMPLATE_ACTIONS = ['created', 'replaced', 'activated', 'deleted'] as const;
+export type FaceTemplateAction = (typeof FACE_TEMPLATE_ACTIONS)[number];
+
+/** Append-only log of every template creation and deletion (trigger). No biometric data. */
+export const faceTemplateEvents = sqliteTable('face_template_events', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  action: text('action', { enum: FACE_TEMPLATE_ACTIONS }).notNull(),
+  /** identity_verified | identity_needs_review | review_approved | identity_failed | identity_reset | deactivated | seed */
+  reason: text('reason').notNull(),
+  actorUserId: text('actor_user_id').references(() => users.id),
+  identityCheckId: text('identity_check_id'),
+  at: ms('at').notNull(),
+}, (t) => [
+  index('face_template_events_recipient_ix').on(t.recipientId, t.at),
+  check('face_template_events_action_ck', inList('action', FACE_TEMPLATE_ACTIONS)),
+]);
+
+export const FACE_TURN_ORDERS = ['left_right', 'right_left'] as const;
+export type FaceTurnOrder = (typeof FACE_TURN_ORDERS)[number];
+
+/** One-time camera challenges: a random turn order and a nonce (only its hash), valid 60 seconds, used once. */
+export const faceChallenges = sqliteTable('face_challenges', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  nonceHash: text('nonce_hash').notNull(),
+  turnOrder: text('turn_order', { enum: FACE_TURN_ORDERS }).notNull(),
+  issuedAt: ms('issued_at').notNull(),
+  expiresAt: ms('expires_at').notNull(),
+  usedAt: ms('used_at'),
+}, (t) => [
+  index('face_challenges_user_ix').on(t.userId, t.issuedAt),
+  check('face_challenges_order_ck', inList('turn_order', FACE_TURN_ORDERS)),
+]);
+
+export const FACE_CHECK_OUTCOMES = ['passed', 'mismatch', 'no_face', 'multiple_faces', 'turn', 'changed_face', 'no_template', 'challenge_invalid', 'bad_frames'] as const;
+export type FaceCheckOutcome = (typeof FACE_CHECK_OUTCOMES)[number];
+
+/** Every camera face check attempt (append-only, trigger): the result and the score only, never an image. */
+export const faceCheckAttempts = sqliteTable('face_check_attempts', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  recipientId: text('recipient_id').notNull().references(() => recipients.id),
+  challengeId: text('challenge_id'),
+  at: ms('at').notNull(),
+  outcome: text('outcome', { enum: FACE_CHECK_OUTCOMES }).notNull(),
+  /** Cosine similarity (SFace) of the most frontal frame with the recipient's template. */
+  similarity: real('similarity'),
+  turnOrder: text('turn_order', { enum: FACE_TURN_ORDERS }),
+  /** One face in every frame, the head turned in the requested order, the same face throughout. */
+  livenessPassed: integer('liveness_passed', { mode: 'boolean' }).notNull(),
+  frames: integer('frames').notNull(),
+  engine: text('engine'),
+}, (t) => [
+  index('face_check_attempts_user_ix').on(t.userId, t.at),
+  check('face_check_attempts_outcome_ck', inList('outcome', FACE_CHECK_OUTCOMES)),
 ]);

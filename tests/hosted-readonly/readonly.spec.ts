@@ -34,6 +34,8 @@ test('kill switch: an employee can sign in but a Payroll Advance request is refu
   await page.waitForURL(/\/employee$/);
   const offer = page.getByTestId('advance-offer');
   await offer.getByLabel('I agree to these 6 salary deductions').check();
-  await offer.getByRole('button', { name: /^Request / }).click();
+  // Phase 24: the camera face check is refused first (its challenge is a mutation), so no camera frame is ever sent.
+  await offer.getByRole('button', { name: "Verify it's you" }).click();
+  await offer.getByTestId('face-check').getByRole('button', { name: 'Start' }).click(); // labelled stand-in camera on this test server
   await expect(offer.getByRole('alert')).toContainText('The hosted demo is read-only right now');
 });

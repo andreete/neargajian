@@ -9,7 +9,9 @@ import type { Eligibility } from '@/server/advance/eligibility';
 import type { ScheduleItem } from '@/server/advance/service';
 import { monthLabel } from '@/server/advance/terms';
 import { displayAmount } from '@/lib/format';
-import { AlertIcon, CheckIcon, ClockIcon, InfoIcon, SendIcon, WalletIcon, XIcon } from './icons';
+import { AlertIcon, CheckIcon, ClockIcon, InfoIcon, SendIcon, ShieldIcon, WalletIcon, XIcon } from './icons';
+import { DEMO_OVERRIDE_LABEL, parseFaceRecord } from '@/server/identity/face-record';
+import { formatDateTime } from '@/lib/format';
 
 const STATUS: Record<AdvanceStatus, { label: string; tone: string; icon: ReactNode }> = {
   requested: { label: 'Requested', tone: 'waiting', icon: <ClockIcon size={13} /> },
@@ -120,6 +122,27 @@ export function InstalmentTable({ rows, title, note }: { rows: InstalmentRow[]; 
   );
 }
 
+/**
+ * Phase 24: the camera face check carried by the request, for the maker and the approvers.
+ * Passed: "Face verified at request: 0.91 similarity, <time> UTC". Public demo override: warning
+ * style. None (requests made before Phase 24): danger style, the maker cannot submit it.
+ */
+export function FaceCheckNote({ json, status }: { json: string | null; status: AdvanceStatus }) {
+  const f = parseFaceRecord(json);
+  if (!f) {
+    // A request made before Phase 24. Still open: it cannot be submitted or approved. Already handled: said neutrally.
+    return status === 'requested' || status === 'submitted'
+      ? <p className="face-note is-missing" data-testid="face-check-note"><AlertIcon size={16} /><span>No face check at request (requested before the camera face check existed): it cannot be submitted or approved.</span></p>
+      : <p className="face-note hint" data-testid="face-check-note"><InfoIcon size={16} /><span>No face check at request: requested before the camera face check existed (Phase 24).</span></p>;
+  }
+  const when = formatDateTime(new Date(f.at));
+  const sim = f.similarity !== null ? f.similarity.toFixed(2) : '—';
+  if (f.result === 'passed') {
+    return <p className="face-note is-ok" data-testid="face-check-note"><ShieldIcon size={16} /><span><strong>Face verified at request: {sim} similarity, {when}</strong> <span className="hint">(live camera check: one face, head turned as asked, matched the employee&apos;s encrypted face template; {f.threshold} or more is a match)</span></span></p>;
+  }
+  return <p className="face-note is-override" role="note" data-testid="face-check-note"><AlertIcon size={16} /><span>{DEMO_OVERRIDE_LABEL}. Similarity {sim} (a match needs {f.threshold}), {when}; the head-turn check passed.</span></p>;
+}
+
 export const DISCLOSURE = 'Payroll Advance is a salary advance from your employer. It works like a loan: you receive the advance minus a fee now, and you repay the full advance in equal monthly instalments that are deducted from your payroll.';
 
 /** Run page (maker and approvers): this run pays a Payroll Advance. */
@@ -132,6 +155,7 @@ export function AdvanceRunNote({ view }: { view: import('@/server/advance/servic
       <div className="panel-title"><h2 id="advance-note-h">Payroll Advance for {view.name}</h2><span className="chips"><AdvanceKindChip /><AdvanceStatusChip status={a.status} /></span></div>
       <div className="panel-body stack">
         <p>This run pays a <strong>salary advance repaid like a loan</strong>: {view.name} owes {displayAmount(a.amount)} tUSDC, receives {displayAmount(a.net)} tUSDC now (the {displayAmount(a.fee)} tUSDC fee stays in the vault) and repays it in {a.instalmentCount} monthly instalments deducted from payroll.{a.reason ? ` Reason given: “${a.reason}”.` : ''} Consent “{a.consentText}” recorded with the request.</p>
+        <FaceCheckNote json={a.faceCheck} status={a.status} />
         {view.problemNow ? <div className="callout callout-warn" role="alert" data-testid="advance-problem"><AlertIcon size={18} /><span>{view.problemNow}</span></div> : null}
         <div className="grid-2">
           <div className="stack">

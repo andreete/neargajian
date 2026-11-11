@@ -79,8 +79,26 @@ test('Payroll Advance: an employee signs in, requests (at most 0.30, nothing sen
   await expect(offer.getByText('Choose from 0.01 to 0.30 tUSDC.')).toBeVisible();
   await offer.getByLabel('Amount (tUSDC)').fill('0.10');
   await offer.getByLabel('I agree to these 6 salary deductions').check();
-  await offer.getByRole('button', { name: 'Request 0.10 tUSDC' }).click();
-  await expect(page.getByTestId('advance-current').getByTestId('advance-status')).toHaveText('Requested');
+  // Phase 24: the camera face check runs for real; a visitor is not Grace, so it does not match. The
+  // labelled TEST-ONLY camera stand-in sends the impostor's synthetic head-turn frames (this test
+  // server has no camera; the online site has no stand-in). After the mismatch with a passed head
+  // turn, the public demo offers "Continue as a demo", and the request is flagged.
+  await offer.getByRole('button', { name: "Verify it's you" }).click();
+  const fc = page.getByTestId('face-check');
+  await expect(fc.getByTestId('face-notice')).toContainText('never stored');
+  await fc.getByLabel('Frames of').selectOption('impostor');
+  await fc.getByRole('button', { name: 'Start' }).click();
+  await expect(fc.getByTestId('face-result')).toContainText("This doesn't look like Grace Lewis.", { timeout: 30_000 });
+  await expect(fc.getByTestId('face-override')).toContainText('Outside the public demo a face that does not match is always refused');
+  await fc.getByRole('button', { name: 'Continue as a demo' }).click();
+  await expect(page.getByTestId('advance-current').getByTestId('advance-status')).toHaveText('Requested', { timeout: 30_000 });
+  const maker = await browser.newPage();
+  await signIn(maker, 'maker@sentfund.my.id', /\/maker$/);
+  await maker.goto('/maker/advances');
+  const card = maker.getByTestId('advance-request').filter({ hasText: 'Grace Lewis' });
+  await expect(card.getByTestId('face-check-note')).toContainText('Face check: demo override (the camera face did not match; public demo only)');
+  await expect(card.getByTestId('face-check-note')).toHaveClass(/is-override/);
+  await maker.close();
   // Phase 23b: withdrawing works in the public demo too (nothing is sent to NEAR).
   await page.getByRole('button', { name: 'Withdraw request' }).click();
   await page.getByRole('dialog', { name: 'Withdraw your Payroll Advance request?' }).getByRole('button', { name: 'Yes, withdraw request' }).click();
@@ -92,4 +110,11 @@ test('Payroll Advance: an employee signs in, requests (at most 0.30, nothing sen
   await expect(admin.getByTestId('advance-policy-read-only')).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Save policy' })).toHaveCount(0);
   await admin.close();
+});
+
+test('Phase 24: in the public demo the camera is allowed only on the employee page (not even on the admin identity page)', async ({ request }) => {
+  expect((await request.get('/employee', { maxRedirects: 0 })).headers()['permissions-policy']).toMatch(/^camera=\(self\),/);
+  for (const path of ['/', '/admin/identity', '/maker', '/api/health']) {
+    expect((await request.get(path, { maxRedirects: 0 })).headers()['permissions-policy'], path).toMatch(/^camera=\(\),/);
+  }
 });

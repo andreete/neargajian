@@ -5,6 +5,10 @@
  * instalment (gross 0.10, instalment 0.05, net 0.05) → paid → balance 0.25 with 5 left.
  * Phase 23b: the "25%", "50%" and "Max" shortcuts, the "Estimated" month tiles everywhere, and
  * withdrawing a request (possible while "Requested", refused once the maker has submitted it).
+ * Phase 24: "Verify it's you" before the request, with the labelled TEST-ONLY camera stand-in
+ * (FACE_CAMERA_STANDIN=browser-tests: synthetic specimen head-turn frames instead of a camera; the
+ * face check on the server is the real one): a mismatch is refused (no override outside the
+ * public demo), Emma's own frames pass, and the maker and the approvers see the result.
  */
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { sweep, watch } from '../e2e/layout';
@@ -74,12 +78,27 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   await shortcuts.getByRole('button', { name: 'Max' }).click();
   await expect(amountField).toHaveValue('0.30');
   await expect(shortcuts.getByRole('button', { name: '25%' })).toHaveAttribute('aria-pressed', 'false');
-  const request = offer.getByRole('button', { name: 'Request 0.30 tUSDC' });
-  await expect(request).toBeDisabled(); // consent not ticked yet
+  const verify = offer.getByRole('button', { name: "Verify it's you" });
+  await expect(verify).toBeDisabled(); // consent not ticked yet
   await offer.getByLabel('Reason (optional)').fill('Car repair');
   await offer.getByLabel('I agree to these 6 salary deductions').check();
-  await request.click();
-  await expect(emma.getByTestId('advance-current').getByTestId('advance-status')).toHaveText('Requested');
+  await verify.click();
+  // Phase 24: the camera face check (stand-in camera: synthetic frames; the check is real).
+  const fc = emma.getByTestId('face-check');
+  await expect(fc.getByTestId('face-notice')).toContainText('processed in memory on the SentFund server and never stored');
+  await expect(fc.getByTestId('face-notice')).toContainText('shown to the payroll maker and the approvers');
+  await expect(fc.getByTestId('face-standin')).toContainText('Stand-in camera (browser tests only)');
+  // Someone else in front of the "camera": refused, and no demo override outside the public demo.
+  await fc.getByLabel('Frames of').selectOption('impostor');
+  await fc.getByRole('button', { name: 'Start' }).click();
+  await expect(fc.getByTestId('face-result')).toContainText("This doesn't look like Emma Clark.", { timeout: 30_000 });
+  await expect(fc.getByTestId('face-result')).toContainText('4 attempts left this hour');
+  await expect(fc.getByRole('button', { name: 'Continue as a demo' })).toHaveCount(0);
+  // Emma herself: passed, and the request is sent with the result.
+  await fc.getByRole('button', { name: 'Try again' }).click();
+  await fc.getByLabel('Frames of').selectOption('emma');
+  await fc.getByRole('button', { name: 'Start' }).click();
+  await expect(emma.getByTestId('advance-current').getByTestId('advance-status')).toHaveText('Requested', { timeout: 30_000 });
   await expect(emma.getByTestId('advance-requests').getByTestId('advance-status').first()).toHaveText('Requested');
   const problems = watch(emma);
 
@@ -98,6 +117,7 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   await expect(card.getByTestId('advance-months').locator('li')).toHaveCount(6);
   await expect(card.getByTestId('advance-months').locator('li').first()).toContainText('Estimated');
   await expect(card.getByTestId('advance-months-note')).toBeVisible();
+  await expect(card.getByTestId('face-check-note')).toContainText(/Face verified at request: (0\.9\d|1\.00) similarity, \d+ [A-Z][a-z]{2} \d{4}, \d\d:\d\d UTC/);
   problems.push(...watch(maker));
   await sweep(maker, 'maker-advance-queue', '/maker/advances');
   await card.getByRole('button', { name: 'Submit for approval' }).click();
@@ -114,6 +134,7 @@ test('Payroll Advance: request with consent → maker submit → both approvals 
   problems.push(...watch(reviewer));
   await reviewer.goto(`/runs/${advanceRun}`);
   const note = reviewer.getByTestId('advance-run-note');
+  await expect(note.getByTestId('face-check-note')).toContainText('Face verified at request');
   await expect(note.getByTestId('advance-months').locator('li').first()).toContainText('Estimated');
   await expect(note.getByTestId('advance-months-note')).toContainText('first payroll after the advance is paid');
   await sweep(reviewer, 'approver-advance-run', `/runs/${advanceRun}`);
@@ -191,9 +212,10 @@ test('Payroll Advance: the employee withdraws a request while it is "Requested";
   await offer.getByRole('group', { name: 'Amount shortcuts' }).getByRole('button', { name: '50%' }).click();
   await expect(offer.getByLabel('Amount (tUSDC)')).toHaveValue('0.15');
   await offer.getByLabel('I agree to these 6 salary deductions').check();
-  await offer.getByRole('button', { name: 'Request 0.15 tUSDC' }).click();
+  await offer.getByRole('button', { name: "Verify it's you" }).click();
+  await daniel.getByTestId('face-check').getByRole('button', { name: 'Start' }).click(); // stand-in frames: Daniel's own
   const current = daniel.getByTestId('advance-current');
-  await expect(current.getByTestId('advance-status')).toHaveText('Requested');
+  await expect(current.getByTestId('advance-status')).toHaveText('Requested', { timeout: 30_000 });
 
   const maker = await session(browser, 'maker@sentfund.my.id');
   problems.push(...watch(maker));

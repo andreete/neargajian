@@ -13,6 +13,13 @@ export DATABASE_URL="file:./.tmp/e2e-standin/sentfund.sqlite"
 export DEMO_MODE=true VAULT_STANDIN=browser-tests HOSTED_DEMO=false
 export MAKER_SIGNER_PRIVATE_KEY= APPROVER1_SIGNER_PRIVATE_KEY= APPROVER2_SIGNER_PRIVATE_KEY= WORKER_SIGNER_PRIVATE_KEY= ADMIN_SIGNER_PRIVATE_KEY=
 export ANTHROPIC_API_KEY= ASSISTANT_STUB=browser-tests IDENTITY_STUB=browser-tests
+# Phase 24: a fresh face template key for this run (never printed); the seed stores the demo
+# employees' templates from the synthetic specimen face photos with it.
+FACE_TEMPLATE_KEY=$(node -e "process.stdout.write(require('crypto').randomBytes(32).toString('base64'))")
+export FACE_TEMPLATE_KEY APP_BASE_URL=http://127.0.0.1:8092
+# TEST-ONLY camera stand-in (this server has no camera): the employee page sends SYNTHETIC
+# specimen frames (public/specimens/turn/) instead of camera frames; the face check itself is real.
+export FACE_CAMERA_STANDIN=browser-tests
 node --env-file-if-exists=.env scripts/db.ts seed >/dev/null
 # The seed does not check testnet: mark the three live recipients "Ready" (the stand-in vault pays them).
 node --env-file-if-exists=.env -e "

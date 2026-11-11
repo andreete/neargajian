@@ -7,6 +7,9 @@
 //     read-only testnet check, the real Phase 02/04 testnet runs). The token is then remembered
 //     in /data/.demo-reset-token, so the reset happens once per token value.
 //   - Otherwise: open the database, which applies any pending migrations.
+//   - Phase 24: both paths seed the demo employees' face templates (encrypted with FACE_TEMPLATE_KEY,
+//     from the committed synthetic specimen face photos) when they are missing; the log says whether
+//     the key is set (never its value).
 // To reset the hosted demo: set DEMO_RESET_TOKEN to a new value (for example today's date) in
 // Railway Variables; Railway redeploys and the reset runs once.
 import { spawnSync } from 'node:child_process';
@@ -21,6 +24,7 @@ const marker = join(dirname(file), '.demo-reset-token');
 const token = (process.env.DEMO_RESET_TOKEN ?? '').trim();
 const last = existsSync(marker) ? readFileSync(marker, 'utf8').trim() : null;
 const firstBoot = !existsSync(file);
+log('face_templates', { key: (process.env.FACE_TEMPLATE_KEY ?? '').trim() ? 'set' : 'MISSING: employees cannot request a Payroll Advance (no face check)' });
 
 if (firstBoot || (token && token !== last)) {
   log('demo_reset', { reason: firstBoot ? 'first boot: no database on the volume' : 'new DEMO_RESET_TOKEN', file });

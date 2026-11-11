@@ -1,0 +1,54 @@
+{
+  "note": "SYNTHETIC head-turn frames for the TEST-ONLY camera stand-in (browser tests on a server without a camera). Made by scripts/make-face-turn-frames.ts from the synthetic specimen face photos (AI-generated, public domain; ../manifest.json). Not real people.",
+  "turnThreshold": 0.12,
+  "frames": {
+    "emma-center.jpg": {
+      "yaw": -0.03,
+      "sha256": "959237f8b95ca494d0c1f876c1fba3e6ad3a423f1db50912cb0b810cac83939c"
+    },
+    "emma-left.jpg": {
+      "yaw": 0.173,
+      "sha256": "3a4053ef0fa05589360b5fbb7b89b473e99add7498a653e82154b557957ad082"
+    },
+    "emma-right.jpg": {
+      "yaw": -0.275,
+      "sha256": "df823bea318a4a587b5606c63c3cdb7a516d79712d2e548bf2e7a2f09aebd85e"
+    },
+    "daniel-center.jpg": {
+      "yaw": 0.068,
+      "sha256": "af3eb15df5cb3c75a138f898519f50fe863c013c53046c4d457b61d2a8fbb8d6"
+    },
+    "daniel-left.jpg": {
+      "yaw": 0.341,
+      "sha256": "3cf31538e42681d342c6da93eabe7e8e67f736a8a2ad55841837bda0702aee05"
+    },
+    "daniel-right.jpg": {
+      "yaw": -0.265,
+      "sha256": "0b446ccf4bd88178702546a2b0419086d922ceca89f6eeaacd1612de286223cb"
+    },
+    "grace-center.jpg": {
+      "yaw": -0.04,
+      "sha256": "646b025695a14f7b6c4cf4b039b2451e072df877ec6243723012a1e03c0d0ef9"
+    },
+    "grace-left.jpg": {
+      "yaw": 0.199,
+      "sha256": "29878b61082211b56fd94dd257d4ddeb085a73e144d386bcfdfecb63da966ab9"
+    },
+    "grace-right.jpg": {
+      "yaw": -0.217,
+      "sha256": "2424d192093baf05aa2196db07fba47d9774bbe23a70b723e40d71a471bd186c"
+    },
+    "impostor-center.jpg": {
+      "yaw": 0.023,
+      "sha256": "33e14882e1bc283cd7991d621f2503134619d851d87a060d7c73cd6e73753508"
+    },
+    "impostor-left.jpg": {
+      "yaw": 0.346,
+      "sha256": "78731d40040687f9c782bbc44f7b8fd4ddcf3749ebdc37b93ab247760def723a"
+    },
+    "impostor-right.jpg": {
+      "yaw": -0.261,
+      "sha256": "a16fcae8c2ba5a6aaa9b96c0fbf1bcfcfbf636f29b5dde8205e8fb309aeb6086"
+    }
+  }
+}

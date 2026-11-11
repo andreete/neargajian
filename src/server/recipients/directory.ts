@@ -21,6 +21,7 @@ import { CURRENCY, validateRow, type DirectoryEntry, type RecipientRule } from '
 import { DomainError } from '../runs/repository.ts';
 import { READINESS_LABEL, type CheckedReadiness, type ReadinessChecker } from './readiness.ts';
 import { identityVerifiedOnly, unverifiedRows } from '../identity/service.ts';
+import { deleteTemplate } from '../identity/face-template.ts';
 
 export type Recipient = typeof recipients.$inferSelect;
 
@@ -272,6 +273,8 @@ export function setRecipientActive(db: Db, actor: Principal, id: string, active:
     tx.update(recipients).set({ active, updatedByUserId: actor.id, updatedAt: now }).where(eq(recipients.id, id)).run();
     logEvent(tx, { recipientId: id, actorId: actor.id, at: now, action: active ? 'reactivated' : 'deactivated', source: 'form', changes: { active: [r.active, active] } });
     audit(tx, actor.id, active ? 'recipient.reactivated' : 'recipient.deactivated', id, {}, now);
+    // Phase 24: a deactivated recipient's face template is deleted (a new identity check makes one again).
+    if (!active) deleteTemplate(tx, id, { reason: 'deactivated', actorUserId: actor.id, now });
     return getRecipient(tx, id);
   }, { behavior: 'immediate' });
 }

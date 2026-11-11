@@ -1,5 +1,9 @@
 /**
- * Phase 23b · READ-ONLY check of the public hosted demo after a release: NO NEAR transaction.
+ * Phase 24 (from 23b) · READ-ONLY check of the public hosted demo after a release: NO NEAR
+ * transaction and no camera (headless browser without a camera device). Phase 24: each employee
+ * sees "Verify it's you" (no way to request without it); for Emma the camera panel opens with the
+ * notice and, without a camera, explains how to allow one (no challenge is issued, nothing sent);
+ * the camera is allowed only on the employee page (Permissions-Policy).
  *   npx playwright test -c playwright.hosted-live.config.ts tests/live/hosted-check.spec.ts
  * Health; the three employees sign in and see the Payroll Advance offer with the "25%", "50%" and
  * "Max" shortcuts and the "Estimated" months (a shortcut only fills the field; nothing is
@@ -10,7 +14,7 @@ import { mkdirSync } from 'node:fs';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { shot as shotIn } from './helpers';
 
-const OUT = 'docs/screenshots/phase-23b';
+const OUT = 'docs/screenshots/phase-24';
 mkdirSync(OUT, { recursive: true });
 const shot = (page: Page, name: string) => shotIn(page, name, OUT);
 
@@ -54,15 +58,38 @@ for (const [email, name] of [['emma@sentfund.my.id', 'Emma Clark'], ['daniel@sen
     await expect(offer.getByTestId('advance-months').locator('li')).toHaveCount(6);
     await expect(offer.getByTestId('advance-months').locator('li').first()).toContainText('Estimated');
     await expect(offer.getByTestId('advance-months-note')).toContainText('which may still be this month');
-    await expect(offer.getByRole('button', { name: 'Request 0.30 tUSDC' })).toBeDisabled(); // consent never ticked
+    // Phase 24: only "Verify it's you" (disabled until the consent is ticked), and a face template is on file.
+    await expect(offer.getByRole('button', { name: "Verify it's you" })).toBeDisabled();
+    await expect(offer.getByRole('button', { name: /^Request/ })).toHaveCount(0);
+    await expect(offer.getByTestId('face-blocker')).toHaveCount(0);
     if (name === 'Emma Clark') {
       await shortcuts.getByRole('button', { name: '50%' }).click();
       await offer.scrollIntoViewIfNeeded();
       await shot(page, '01-hosted-employee-offer-shortcuts');
+      const sent: string[] = [];
+      page.on('request', (r) => { if (r.method() !== 'GET') sent.push(r.url()); });
+      await offer.getByLabel('I agree to these 6 salary deductions').check();
+      await offer.getByRole('button', { name: "Verify it's you" }).click();
+      const fc = page.getByTestId('face-check');
+      await expect(fc.getByTestId('face-notice')).toContainText('Camera images are processed in memory on the SentFund server and never stored');
+      await expect(fc.getByTestId('face-notice')).toContainText('shown to the payroll maker and the approvers');
+      await expect(fc.getByTestId('face-standin')).toHaveCount(0); // no stand-in online
+      await expect(fc.getByTestId('face-camera-help')).toContainText('The request cannot be sent without the face check.');
+      await fc.scrollIntoViewIfNeeded();
+      await shot(page, '02-hosted-employee-verify-notice-no-camera');
+      await fc.getByRole('button', { name: 'Cancel' }).click();
+      expect(sent).toEqual([]); // no challenge, no frames, no request
     }
     await page.context().close();
   });
 }
+
+test('hosted (read-only): the camera is allowed only on the employee page (Permissions-Policy)', async ({ request }) => {
+  expect((await request.get('/employee', { maxRedirects: 0 })).headers()['permissions-policy']).toBe('camera=(self), microphone=(self), geolocation=(), payment=(), usb=()');
+  for (const path of ['/', '/maker', '/approver', '/admin', '/admin/identity', '/history', '/api/health']) {
+    expect((await request.get(path, { maxRedirects: 0 })).headers()['permissions-policy'], path).toBe('camera=(), microphone=(self), geolocation=(), payment=(), usb=()');
+  }
+});
 
 test('hosted (read-only): the admin Payroll Advance settings are read-only', async ({ browser }) => {
   const admin = await session(browser, 'admin@sentfund.my.id', /\/admin$/);
@@ -70,7 +97,7 @@ test('hosted (read-only): the admin Payroll Advance settings are read-only', asy
   await expect(admin.getByTestId('advance-policy-read-only')).toBeVisible();
   await expect(admin.getByRole('button', { name: 'Save policy' })).toHaveCount(0);
   await expect(admin.getByRole('switch', { name: 'Offer Payroll Advance' })).toBeDisabled();
-  await shot(admin, '02-hosted-admin-payroll-advance-read-only');
+  await shot(admin, '03-hosted-admin-payroll-advance-read-only');
   await admin.context().close();
 });
 

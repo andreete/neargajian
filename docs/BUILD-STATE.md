@@ -35,7 +35,40 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 22 Testnet migration to `sentfund-payroll.testnet` + hosted demo live | Done: https://sentfund.my.id live and smoke-tested; all suites green | **Yes**: new accounts, token, locked vault (same release Wasm), 3 policy runs, assistant app run, hosted smoke run; `judge:verify` 221/221 |
 | 22b Review fixes (tunnel command, third-party licenses, live landing facts, online scope) | Done, released to https://sentfund.my.id | none (no transaction; read-only hosted checks) |
 | 23 Hosted Claude key + Payroll Advance (employee role) | Done, approved by Andre 11 Nov; released with 23b. Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
-| 23b Employee form: withdraw, estimated months, amount shortcuts | Done, all suites green; **released** to https://sentfund.my.id (`e1b068b`, with Phase 23); hosted checks passed without a transaction | **Yes**: vault top-up 1.586 → 2.00 tUSDC (2 txs); `judge:verify` 241/241 (archival fallback, D-138) |
+| 23b Employee form: withdraw, estimated months, amount shortcuts | Done, approved by Andre 11 Nov; all suites green; **released** to https://sentfund.my.id (`e1b068b`, with Phase 23); hosted checks passed without a transaction | **Yes**: vault top-up 1.586 → 2.00 tUSDC (2 txs); `judge:verify` 241/241 (archival fallback, D-138) |
+| 24 Face check at the Payroll Advance request | Done, all suites green; release: see the Phase 24 section | none (no contract change, no transaction) |
+
+---
+
+## Phase 24 · Face check at the Payroll Advance request (11 Nov 2026)
+
+Andre approved Phase 23b (release `e1b068b`, the vault at exactly 2.000000 tUSDC, D-138 verified on the regular and archival nodes) and asked for a live camera face check before a Payroll Advance request is sent, with no contract change (decisions D-139 to D-144).
+
+### Built
+- **Face templates** (D-139): `src/server/identity/face-template.ts`: AES-256-GCM with `FACE_TEMPLATE_KEY` (fresh IV, the recipient ID as associated data, key fingerprint), store / replace / activate / delete, each logged in `face_template_events` (append-only) and `audit_events`; `seedFaceTemplates` for the three demo employees from their synthetic specimen face photos (in `seedPayrollAdvance`: db:seed, demo:reset, every hosted start). The identity check stores the template when Verified, `pending` when it needs review (activated by the admin's approval), deletes it when Failed or withdrawn; deactivating a recipient deletes it (`setRecipientActive`). `scripts/face-template-key.mjs` writes `FACE_TEMPLATE_KEY` and `HOSTED_FACE_TEMPLATE_KEY` into `.env` without printing them (the 60 earlier lines byte-identical; backup `.tmp/env-before-phase24.bak`, mode 600). `loadConfig` refuses a malformed key.
+- **The check** (D-140): `src/server/identity/face-check.ts`: one-time challenge (random order, 192-bit nonce, 60 s, used once, hash only), `runFaceCheck` (4–16 JPEG frames ≤ 200 KB; one face per frame; yaw from YuNet's landmarks along the eye line, turn at |yaw| ≥ 0.12, requested order; the same face throughout; most frontal frame vs template ≥ 0.363; buffers zeroed), 5 attempts and 20 challenges per employee per hour, every attempt logged in `face_check_attempts` (append-only). Routes `POST /api/employee/face-check/challenge`, `POST /api/employee/face-check` (employee only, same-origin + CSRF).
+- **The request** (D-141): `requestAdvance` claims a passed attempt (same employee, ≤ 5 minutes, once: unique `face_attempt_id`) inside its transaction and stores `face_check`; `submitAdvance` and `advanceApprovalProblem` refuse a request without an acceptable check (`src/server/identity/face-record.ts`). Migration `0012_phase24_face_check.sql` (generated + hand-written triggers; tested on a copy of the local DB: Emma's paid advance kept, 18 sessions kept, `foreign_key_check` clean, the recreated "terms fixed" trigger refuses a change of `face_check`).
+- **Demo override** (D-142): only with `HOSTED_DEMO=true`, only after a mismatch whose head-turn check passed, only when asked; flagged `demo_override`.
+- **UI**: `src/components/face-check.tsx` (camera with the notice, guided turns, refusals, camera help, "Continue as a demo"); the employee form's button is now **Verify it's you** (there is no other way to request); `FaceCheckNote` on the maker's queue and the Payroll Advance run note (passed: "Face verified at request: 0.97 similarity, <time> UTC"; override: warning style; a request from before Phase 24: red while open, neutral once handled); the identity page's "How the check works" explains the template, its deletion and the limits; "Templates on file".
+- **Camera only where needed** (D-143): `src/permissions-policy.ts` + `src/proxy.ts`: `camera=(self)` on `/employee` (and `/admin/identity` off the public demo), `camera=()` everywhere else (it was `camera=(self)` on every page since Phase 21).
+- **Stand-in camera for the browser tests** (D-143): `FACE_CAMERA_STANDIN=browser-tests` (refused unless `APP_BASE_URL` is `http://127.0.0.1`), synthetic head-turn frames `public/specimens/turn/` from `scripts/make-face-turn-frames.ts` (each frame verified with the engine: yaw center −0.03..0.07, left +0.17..+0.35, right −0.22..−0.28). The e2e servers get a random `FACE_TEMPLATE_KEY` per run; the regular one marks the live recipients Ready (like the stand-in server) so the employee offer renders.
+- **Tests**: `tests/unit/face-check.test.ts` (21), `tests/integration/face-check.test.ts` (14, real face models), `tests/helpers/face.ts` (labelled fixture: a recorded passed attempt for the money-rule tests), `boundaries.test.ts` (+6 refusals, 122; state includes the face tables), `advance.test.ts` / `hosted.test.ts` (requests carry a check), `tests/e2e/face-camera.spec.ts` (2), `tests/e2e/face-camera-fake.spec.ts` (1, Chromium's fake camera through the real path), `tests/e2e-standin/advance.spec.ts` (impostor refused without override, Emma passes, the maker and the approver see the result), `tests/hosted/hosted.spec.ts` (+1 header test; the employee request uses the demo override and the maker sees the flag), `tests/hosted-readonly/readonly.spec.ts` (kill switch refuses the challenge), `tests/live/hosted-check.spec.ts` (Phase 24 read-only checks).
+- **Docs**: README (Face check at the request, online and local do/see, limits, troubleshooting incl. the `judge:verify` archival note), SECURITY v4, ACCEPTANCE A14, QA-HANDOFF A14, VIDEO (the camera moment), HOSTING (`FACE_TEMPLATE_KEY`), DECISIONS D-139..D-144, CLAUDE.md, AGENTS.md, `.env.example`.
+
+Visual check (hosted mode, stand-in camera, 1280 and 390 px wide; no horizontal scroll at 390): the notice, the mismatch with "Continue as a demo", the maker's yellow override line. Two fixes from it: a missing space before "4 attempts left", and an empty prompt gap.
+
+### Checks (11 Nov 2026)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **30 files, 281 tests passed** |
+| `npm run samples:check` | no diff |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 2.3–2.9 GB |
+| `npm run test:e2e` | **34 passed**, then the stand-in tests **2 passed** |
+| `npm run test:judge-mode` / `test:hosted` | **1** / **5 + 2** passed |
+| `npm run secret-scan` | clean (working tree + 42 commits) |
+| `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
+| contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (0 keys; contracts unchanged) |
 
 ---
 

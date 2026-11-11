@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Employee only: request a Payroll Advance for the signed-in employee's OWN linked recipient (never
- * an ID from the request). Body {amount: "0.30", reason?: string, consent: true}. The server checks
+ * an ID from the request). Body {amount: "0.30", reason?: string, consent: true, faceAttemptId, demoOverride?}.
+ * Phase 24: faceAttemptId is a PASSED camera face check of this employee (used once, within 5 minutes);
+ * demoOverride (public demo only) accepts a failed match whose head-turn check passed. The server checks
  * eligibility and the money rules again; a second open request is refused (409).
  */
 export async function POST(request: Request): Promise<Response> {

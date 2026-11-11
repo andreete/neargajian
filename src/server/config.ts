@@ -2,7 +2,8 @@
  * Server configuration from the environment, validated once. Server-only: never import
  * from client components. The app refuses any network other than NEAR testnet.
  */
-import { assertHostedKeys } from './hosted.ts';
+import { assertHostedKeys, cameraStandIn } from './hosted.ts';
+import { faceTemplateKey } from './identity/face-template.ts';
 export interface AppConfig {
   baseUrl: URL;
   demoMode: boolean;
@@ -20,6 +21,10 @@ export interface AppConfig {
   chainWritesEnabled: boolean;
   /** The admin signer key is configured (workflow changes). */
   adminWritesEnabled: boolean;
+  /** Phase 24: FACE_TEMPLATE_KEY is set (encrypted face templates; the Payroll Advance face check). */
+  faceTemplatesEnabled: boolean;
+  /** Phase 24, TEST-ONLY: the browser tests' camera stand-in (synthetic specimen frames; never on a deployment). */
+  cameraStandIn: boolean;
 }
 
 let cached: AppConfig | undefined;
@@ -33,6 +38,9 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
   const sessionSecret = env.SESSION_SECRET ?? '';
   const weakSecret = sessionSecret.length < 32 || sessionSecret === 'replace-with-random-secret';
   if (weakSecret && production) throw new Error('SESSION_SECRET must be at least 32 characters in production.');
+  // Throws on a malformed FACE_TEMPLATE_KEY, and on the camera stand-in outside a local test server.
+  const faceKey = faceTemplateKey(env);
+  const standIn = cameraStandIn(env);
   return {
     baseUrl,
     demoMode: env.DEMO_MODE === 'true',
@@ -47,6 +55,8 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>> = p
     // TEST-ONLY stand-in vault (browser tests, chain/standin.ts) signs nothing real but accepts writes.
     chainWritesEnabled: env.VAULT_STANDIN === 'browser-tests' || ['MAKER', 'APPROVER1', 'APPROVER2', 'WORKER'].every((r) => Boolean(env[`${r}_SIGNER_PRIVATE_KEY`])),
     adminWritesEnabled: Boolean(env.ADMIN_SIGNER_PRIVATE_KEY),
+    faceTemplatesEnabled: faceKey !== null,
+    cameraStandIn: standIn,
   };
 }
 

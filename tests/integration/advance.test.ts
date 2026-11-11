@@ -18,8 +18,9 @@ import { saveManualDraft } from '@/server/runs/draft-service';
 import { cancelVersion, decide, latestVersion, reconcileVersion, submitRun } from '@/server/runs/lifecycle';
 import { payRows, requestRelease } from '@/server/payouts/release';
 import {
-  advanceForRun, advanceQueue, declineAdvance, employeeView, openRequestCount, outstandingAdvances, requestAdvance, submitAdvance, withdrawAdvance,
+  advanceForRun, advanceQueue, declineAdvance, employeeView, openRequestCount, outstandingAdvances, submitAdvance, withdrawAdvance,
 } from '@/server/advance/service';
+import { requestAdvanceFaced as requestAdvance } from '../helpers/face';
 import { planDeductions, planFingerprint } from '@/server/advance/ledger';
 import { policyLog, setPolicy } from '@/server/advance/policy';
 import { companyCsv, historyFor, recipientCsv } from '@/server/reports/history';
@@ -128,7 +129,7 @@ describe('eligibility and the request', () => {
     expect((failed.reason as DomainError).message).toMatch(/already have a Payroll Advance open|Another request is already open/);
     // Even a write that skipped the service check is refused by the database.
     const one = h.db.select().from(payrollAdvances).get()!;
-    expect(() => h.db.insert(payrollAdvances).values({ ...one, id: 'dup' }).run()).toThrow(/UNIQUE constraint failed: payroll_advances\.recipient_id/);
+    expect(() => h.db.insert(payrollAdvances).values({ ...one, faceAttemptId: null, id: 'dup' }).run()).toThrow(/UNIQUE constraint failed: payroll_advances\.recipient_id/);
     expect(h.db.select().from(payrollAdvances).all()).toHaveLength(1);
   });
 });

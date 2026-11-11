@@ -17,6 +17,10 @@ import { importPayrollFile } from '../payroll/import.ts';
 import { applyImport, setRegisteredOnly, type CleanRecipient } from '../recipients/directory.ts';
 import { recipients } from './schema.ts';
 import { seedIdentity } from '../identity/service.ts';
+import { seedFaceTemplates } from '../identity/face-template.ts';
+import { getFaceEngine } from '../identity/face.ts';
+import { SPECIMEN_DIR, specimenManifest } from '../identity/ktp-reader.ts';
+import { join } from 'node:path';
 import { loadConfig } from '../config.ts';
 
 // The demo sign-ins live in their own small module so the public landing page does not import the
@@ -88,6 +92,11 @@ export async function seedPayrollAdvance(db: Db, now = new Date()): Promise<stri
     out.push(e.email);
   }
   if (fields) out.push(`Payroll Advance fields for ${fields} live recipient${fields === 1 ? '' : 's'} (net pay 0.10, maximum 0.30)`);
+  // Phase 24: their face templates from the committed SYNTHETIC specimen face photos (encrypted).
+  const people = specimenManifest().people.filter((p) => DEMO_EMPLOYEES.some((e) => e.account === p.account))
+    .map((p) => ({ account: p.account, selfie: readFileSync(join(/* turbopackIgnore: true */ SPECIMEN_DIR, `${p.key}-selfie.jpg`)) }));
+  const faces = await seedFaceTemplates(db, people, getFaceEngine(), now);
+  if (faces.created) out.push(faces.message);
   return out;
 }
 

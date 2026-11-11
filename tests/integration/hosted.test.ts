@@ -203,7 +203,9 @@ describe('Payroll Advance in the public demo (Phase 23)', () => {
     process.env.HOSTED_DEMO = 'true';
     const route = (await import('@/app/api/employee/advances/route')) as unknown as { POST: H };
     const policy = (await import('@/app/api/admin/payroll-advance/route')) as unknown as { POST: H };
-    const ask = (who: string, amount: string) => route.POST(req(who, '/api/employee/advances', 'POST', JSON.stringify({ amount, consent: true })));
+    const { recordedFaceAttempt } = await import('../helpers/face');
+    // Phase 24: each request carries a passed camera face check (test fixture; the real check: face-check.test.ts).
+    const ask = (who: string, amount: string) => route.POST(req(who, '/api/employee/advances', 'POST', JSON.stringify({ amount, consent: true, faceAttemptId: recordedFaceAttempt(db, { id: `usr_emp_${who}`, role: 'employee' }, new Date()) })));
     // Even with a higher net pay and maximum, the public demo caps an advance at 0.30.
     sqlite.prepare("update recipients set monthly_net_pay = '1000000', max_amount = '1000000' where near_account_id = 'recipient2.sentfund-payroll.testnet'").run();
     const { eligibilityFor } = await import('@/server/advance/eligibility');

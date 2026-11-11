@@ -10,6 +10,8 @@ import { HOSTED_IDENTITY_MESSAGE } from '@/server/identity/http';
 import { identityStats, identityVerifiedOnly, latestChecks, type IdentityCheckView } from '@/server/identity/service';
 import { divisions, listRecipients } from '@/server/recipients/directory';
 import { requireRole } from '@/server/web/page-auth';
+import { getConfig } from '@/server/config';
+import { templateRecipients } from '@/server/identity/face-template';
 import { formatDateTime } from '@/lib/format';
 
 export const metadata: Metadata = { title: 'Identity checks' };
@@ -32,6 +34,9 @@ export default async function IdentityPage({ searchParams }: { searchParams: Pro
   const checks = latestChecks(db, 12);
   const engine = identityEngineStatus();
   const hosted = hostedMode().demo;
+  // Phase 24: encrypted face templates (count only; never decrypted on this page).
+  const templates = templateRecipients(db);
+  const faceKeyOn = getConfig().faceTemplatesEnabled;
   const on = identityVerifiedOnly(db);
   const disabled = !engine.face
     ? 'The face engine is off on this copy: the model files are missing (npm run vision:models).'
@@ -66,8 +71,9 @@ export default async function IdentityPage({ searchParams }: { searchParams: Pro
           <li><strong>Match the name</strong> on the card with the directory.</li>
           <li><strong>Compare the faces on this server</strong> ({engine.face ?? 'off on this copy'}): the KTP photo and the employee&apos;s face photo; the same person scores 0.363 or higher (OpenCV&apos;s threshold for SFace).</li>
           <li><strong>Decide.</strong> Every check passes → Verified. Something unclear → Needs review (you decide, with a reason). Anything wrong → Failed.</li>
+          <li><strong>Keep a face template for the Payroll Advance face check.</strong> When the check is Verified, SentFund keeps one <em>face template</em> for that employee: the 128 numbers SFace computes from the verified face photo, encrypted (AES-256-GCM) with this server&apos;s key{faceKeyOn ? '' : ' (off on this copy: FACE_TEMPLATE_KEY is not set)'}. Never the photo. It is used only to confirm that employee&apos;s own Payroll Advance requests with a live camera check, and deleted when the employee is deactivated or the check is reset (marked failed, or a new check that does not verify). Every creation and deletion is logged. Templates on file: <strong data-testid="face-template-count">{templates.size.toLocaleString('en-US')}</strong>.</li>
         </ol>
-        <p className="hint"><strong>Privacy:</strong> the images are processed in memory and discarded. SentFund keeps the results, the NIK masked (first and last four digits) and a keyed hash of it to spot duplicates; never the NIK, the KTP or the face photo. Face images never leave this server. <strong>Limits:</strong> this is not a Dukcapil (government registry) check, which needs an official partnership, and not liveness detection; a printed photo of the right person can pass the face match.</p>
+        <p className="hint"><strong>Privacy:</strong> the images are processed in memory and discarded. SentFund keeps the results, the NIK masked (first and last four digits) and a keyed hash of it to spot duplicates, and for a verified employee the encrypted face template described above; never the NIK, the KTP or the face photo. Face images never leave this server. <strong>Limits:</strong> this is not a Dukcapil (government registry) check, which needs an official partnership, and the KTP check itself is not liveness detection; a printed photo of the right person can pass the face match. The Payroll Advance camera check adds a head turn in a random order, which stops photos and replayed videos, but it is not certified liveness detection either.</p>
       </section>
       <div className="section-gap sm" />
 

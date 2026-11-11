@@ -32,3 +32,12 @@ export function assertHostedKeys(env: Env = process.env): void {
     throw new Error('HOSTED_DEMO=true must not have ADMIN_SIGNER_PRIVATE_KEY: the public demo never holds the admin key. Remove the variable.');
   }
 }
+
+/** TEST-ONLY camera stand-in (browser tests on this server, which has no camera). Never on https. */
+export function cameraStandIn(env: Env = process.env): boolean {
+  if (env.FACE_CAMERA_STANDIN !== 'browser-tests') return false;
+  if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/.test(env.APP_BASE_URL ?? 'http://127.0.0.1:8092')) {
+    throw new Error('FACE_CAMERA_STANDIN is for local browser tests only (APP_BASE_URL must be http://127.0.0.1; never on a deployment).');
+  }
+  return true;
+}

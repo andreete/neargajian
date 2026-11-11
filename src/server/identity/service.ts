@@ -33,6 +33,7 @@ import { DomainError } from '../runs/repository.ts';
 import { SFACE_COSINE_THRESHOLD, cosine, decodeImage, ImageError, type FaceAnalysis, type FaceEngine, type RgbImage } from './face.ts';
 import { SPECIMEN_DIR, specimenManifest, type KtpReader, type KtpReading } from './ktp-reader.ts';
 import { compareNames, maskNik, nikHash, nikMatchesCard, parseNik } from './nik.ts';
+import { activateTemplate, deleteTemplate, storeTemplate } from './face-template.ts';
 
 export const IDENTITY_ONLY_KEY = 'identity_verified_only';
 /** Below the OpenCV threshold but this close: a person decides. */
@@ -206,7 +207,29 @@ function view(db: Queryable, id: string): IdentityCheckView {
   };
 }
 
-function record(db: Db, row: typeof identityChecks.$inferInsert, apply: boolean): IdentityCheckView {
+/**
+ * Phase 24: the face template follows the applied outcome. Verified with a face photo → the
+ * photo's feature vector is stored, encrypted (the photo itself never is). Needs review → stored
+ * as "pending" (activated if the admin approves, deleted if not). Failed, or a verification
+ * withdrawn → deleted. Manual approval of a pending check → activated.
+ */
+function applyTemplate(tx: Queryable, row: typeof identityChecks.$inferInsert, embedding: Float32Array | null, engine: string | null) {
+  const at = row.at!;
+  if (row.outcome === 'failed') {
+    deleteTemplate(tx, row.recipientId, { reason: row.source === 'manual_review' ? 'identity_reset' : 'identity_failed', actorUserId: row.actorUserId, identityCheckId: row.id!, now: at });
+  } else if (row.source === 'manual_review' && row.outcome === 'verified') {
+    activateTemplate(tx, row.recipientId, { actorUserId: row.actorUserId, identityCheckId: row.id!, now: at });
+  } else if (embedding && engine && (row.outcome === 'verified' || row.outcome === 'needs_review')) {
+    storeTemplate(tx, {
+      recipientId: row.recipientId, embedding, status: row.outcome === 'verified' ? 'active' : 'pending', source: 'identity_check', identityCheckId: row.id!,
+      engine, actorUserId: row.actorUserId, reason: row.outcome === 'verified' ? 'identity_verified' : 'identity_needs_review', now: at,
+    });
+  } else {
+    deleteTemplate(tx, row.recipientId, { reason: 'identity_reset', actorUserId: row.actorUserId, identityCheckId: row.id!, now: at });
+  }
+}
+
+function record(db: Db, row: typeof identityChecks.$inferInsert, apply: boolean, face: { embedding: Float32Array | null; engine: string | null } | null = null): IdentityCheckView {
   db.transaction((tx) => {
     tx.insert(identityChecks).values(row).run();
     if (apply) {
@@ -214,6 +237,7 @@ function record(db: Db, row: typeof identityChecks.$inferInsert, apply: boolean)
         identityStatus: row.outcome, identityCheckedAt: row.at, identityCheckId: row.id,
         ...(row.nikHash ? { nikMasked: row.nikMasked, nikHash: row.nikHash } : {}),
       }).where(eq(recipients.id, row.recipientId)).run();
+      if (row.source !== 'seed') applyTemplate(tx, row, face?.embedding ?? null, face?.engine ?? null);
     }
     tx.insert(auditEvents).values({ at: row.at!, actorUserId: row.actorUserId, action: row.source === 'manual_review' ? 'identity.reviewed' : 'identity.checked', entityType: 'recipient', entityId: row.recipientId, detail: JSON.stringify({ check: row.id, outcome: row.outcome, source: row.source, dryRun: row.dryRun ?? false }) }).run();
   }, { behavior: 'immediate' });
@@ -252,7 +276,7 @@ export async function runIdentityCheck(
     id: `idc_${randomUUID()}`, recipientId, actorUserId: actor.id, at: now, source: opts.source, dryRun: opts.dryRun,
     outcome: result.outcome, nikMasked: result.nik ? maskNik(result.nik) : null, nikHash: hash, faceScore: result.faceScore,
     checks: JSON.stringify(result.checks), reader: deps.reader.id, faceEngine: deps.face.id, note: opts.note ?? null,
-  }, !opts.dryRun);
+  }, !opts.dryRun, { embedding: selfie.primary?.embedding ?? null, engine: deps.face.id });
 }
 
 /** The admin decides a "Needs review" check, or withdraws a verification, with a reason. */

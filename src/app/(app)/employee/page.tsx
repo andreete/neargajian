@@ -7,6 +7,11 @@ import { getDb } from '@/server/db/client';
 import { employeeView } from '@/server/advance/service';
 import { monthLabel } from '@/server/advance/terms';
 import { requireRole } from '@/server/web/page-auth';
+import { getConfig } from '@/server/config';
+import { hostedMode } from '@/server/hosted';
+import { getFaceEngine } from '@/server/identity/face';
+import { faceCheckBlocker } from '@/server/identity/face-check';
+import { specimenManifest } from '@/server/identity/ktp-reader';
 import { displayAmount, formatDateTime, formatUtcCell } from '@/lib/format';
 import { TestnetChip, TxLink } from '../history-bits';
 
@@ -23,6 +28,14 @@ export default async function EmployeePage() {
   const r = v.recipient;
   const cur = v.current;
   const canRequest = v.eligibility.eligible && !cur;
+  const db = getDb();
+  // Phase 24: the live camera face check before a request.
+  const face = {
+    name: r.name,
+    blocker: getFaceEngine() ? faceCheckBlocker(db, r.id) : 'The face check is off on this copy: the face models are missing (npm run vision:models).',
+    demo: hostedMode().demo,
+    standIn: getConfig().cameraStandIn ? { defaultKey: specimenManifest().people.find((p) => p.account === r.nearAccountId)?.key ?? 'impostor' } : null,
+  };
 
   return (
     <>
@@ -46,7 +59,7 @@ export default async function EmployeePage() {
           <div className="panel-body stack">
             <div className="callout" role="note" data-testid="advance-disclosure"><InfoIcon size={18} /><span><strong>Repaid like a loan.</strong> {DISCLOSURE} Up to {v.policy.maxPercent}% of your monthly net pay, a {(v.policy.feeBps / 100).toFixed(2).replace(/\.?0+$/, '')}% fee taken at payout, {v.policy.instalments} equal monthly instalments, one advance at a time. A payroll deducts at most half of that month&apos;s gross pay; the rest carries over.</span></div>
             {canRequest ? (
-              <AdvanceRequestForm max={v.eligibility.max} feeBps={v.policy.feeBps} instalments={v.policy.instalments} months={v.expectedMonths} csrfToken={session.csrfToken} />
+              <AdvanceRequestForm max={v.eligibility.max} feeBps={v.policy.feeBps} instalments={v.policy.instalments} months={v.expectedMonths} csrfToken={session.csrfToken} face={face} />
             ) : cur ? (
               <div className="callout" role="note"><WalletIcon size={18} /><span>You have a Payroll Advance {cur.status === 'paid' ? 'to repay' : 'in progress'}. A new one is possible once {cur.status === 'paid' ? 'it is fully repaid' : cur.status === 'requested' ? 'you withdraw it, or once it is declined, rejected or fully repaid' : 'it is rejected or fully repaid'}.</span></div>
             ) : (

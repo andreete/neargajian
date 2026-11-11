@@ -145,6 +145,7 @@ The secrets, one per line, each value from where the table says:
 | `APPROVER2_SIGNER_PRIVATE_KEY` | same file |
 | `WORKER_SIGNER_PRIVATE_KEY` | same file |
 | `ANTHROPIC_API_KEY` | the **second** Anthropic key from step 1.3 |
+| `FACE_TEMPLATE_KEY` | Phase 24: 32 random bytes in base64, **not** the local copy's key (the agent generated it into this server's `.env` as `HOSTED_FACE_TEMPLATE_KEY` with `node scripts/face-template-key.mjs --hosted` and set it by API; never printed). Without it no employee can request a Payroll Advance online. A new value makes the stored templates unreadable; the next start re-seeds the demo employees' templates |
 
 **Never set `ADMIN_SIGNER_PRIVATE_KEY`.** The service refuses to start with it ("the public demo never holds the admin key").
 
