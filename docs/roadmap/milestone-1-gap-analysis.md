@@ -18,7 +18,7 @@
 
 | Req | Built | Partly | Missing |
 | --- | --- | --- | --- |
-| **F0** QA bugs | Part A automated (this phase, `qa-part-a-results.md`); 5 bugs fixed | Human items (camera spoofing, light, skin tones) | The kit's "U1–U5" refer to a QA report not in the kit; we mapped them to A1-01/02/06/08 |
+| **F0** QA bugs | Part A automated (this phase, `qa-part-a-results.md`); 11 bugs found, 6 fixed (both High), 5 open for Milestone 1 | Human items (camera spoofing, light, skin tones) | The kit's "U1–U5" refer to a QA report not in the kit; we mapped them to A1-01/02/06/08 |
 | **F1** Payout proofs | F1.3 proof per row, once, within the reserved total; F1.4 a failed transfer leaves the row `Failed` and retryable on-chain; F1.5 paid state from the vault's outcomes (`settle.ts`, "Paid only when the vault says so") | F1.4 the app retries 3× then shows "Needs attention"; later retries need the operator (`docs/RECOVERY.md`, BUG-26-05) | F1.1 per-run salt and on-chain `file_hash`; F1.2 duplicate-root refusal and `DUPLICATE_FILE`; F1.3 permissionless batches of 10 (ours: one row per call, worker or maker only) |
 | **F2** Self-custody | Distinct on-chain accounts per role; sequential order and "assigned approver only" on-chain; every server key is function-call only | Keys are method-restricted, but the server holds all of them | F2.1 Wallet Selector / FastAuth signing; F2.2 owner multisig; F2.3 no fund-moving server key; F2.5 separate demo vault |
 | **F3** Passkey step-up | Session + CSRF + origin checks; a camera face check gates one action (Payroll Advance, D-140) | — | WebAuthn registration, action-bound grants, counters, reset |
@@ -32,8 +32,8 @@
 | Ticket | Status | Note |
 | --- | --- | --- |
 | M1-001 | **Done** (Phase 26) | Part A run; human items listed |
-| M1-002 | **Done for Critical/High found** | BUG-26-01..04 fixed; Medium/Low left open |
-| M1-003 | Partly | U1 wording and live stats exist (D-127); U4 email obfuscation: no hydration error found at 375–1280 px |
+| M1-002 | **Done for Critical/High found** | No Critical; both High (BUG-26-02, 04) fixed. Also fixed: BUG-26-01, 03, 08, 11 (Medium). Left for Milestone 1 (D-150): BUG-26-05, 06, 10 (Medium), 07, 09 (Low) |
+| M1-003 | Partly | U1 wording and live stats exist (D-127). U4 email obfuscation: not seen locally (no Cloudflare), but **found on the hosted site** after the first fix release (React hydration error #418) and **fixed as BUG-26-11** (`no-transform` on pages; Cloudflare's feature stays on, D-150) |
 | M1-010 | Partly | Our vault has proofs; vault-guard features need a v2 vault (new account) |
 | M1-011 | Partly | Vault unit tests (49) and a near-sandbox test (`contracts/vault/tests`); no batch-gas or vault-guard tests |
 | M1-012 | Partly | Commitment built and stored at submit; no salt, no `file_hash` on-chain |
@@ -50,6 +50,19 @@
 | M1-071, M1-072 | Missing | |
 | M1-080, M1-081 | Missing | |
 | CI-001, CI-002 | Not started | Out of scope until after judging (Andre: nothing for Confidential Intents now) |
+
+## Added by Andre's review (D-150)
+
+Not in the kit's backlog; part of Milestone 1 (none of it is built, and nothing changes before judging):
+
+| Item | What | Where it fits |
+| --- | --- | --- |
+| BUG-26-06 | The per-client sign-in limit takes the client address only from the proxy's own client-address header (for example Cloudflare's `cf-connecting-ip`, named by a Railway variable), never from `X-Forwarded-For` as the client sent it | F3 / Step 4 |
+| QA-A5-05 | An alternative to the camera for a Payroll Advance: an admin verifies the employee in person and records it (who, when, how), with an audit entry; the maker and the approvers see it like a face check result | F3 / Step 4 |
+| BUG-26-05 | Retries after 3 failed transfers without the operator | M1-013 |
+| BUG-26-07 | A malformed percent-encoding answers 400, not 500/502 | Step 4 |
+| BUG-26-09 | The face-attempt count holds under a parallel burst | Step 4 |
+| BUG-26-10 | A well-formed account that does not exist is found before submit, not at payout | F6 / F7 |
 
 ## vault-guard vs our vault (tech spec §2.4)
 

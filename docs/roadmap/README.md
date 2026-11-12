@@ -5,7 +5,7 @@ What SentFund is today (the hackathon demo, live at https://sentfund.my.id) and 
 | File | What it is |
 | --- | --- |
 | [milestone-1-gap-analysis.md](milestone-1-gap-analysis.md) | Step 0: each Milestone 1 requirement and backlog ticket against SentFund's code (built / partly / missing), our vault vs the kit's `vault-guard`, porting notes |
-| [qa-part-a-results.md](qa-part-a-results.md) | Step 1: QA Part A on the live demo and locally, Pass / Fail / Blocked per item, the bug list (BUG-26-01..10) and what needs a human |
+| [qa-part-a-results.md](qa-part-a-results.md) | Step 1: QA Part A on the live demo and locally, Pass / Fail / Blocked per item, the bug list (BUG-26-01..11: 6 fixed, 5 open for Milestone 1) and what needs a human |
 | [prd-milestone-1-safe-to-pilot.md](prd-milestone-1-safe-to-pilot.md) | Milestone 1 PRD (kit) |
 | [tech-spec-milestone-1.md](tech-spec-milestone-1.md) | Milestone 1 tech spec (kit) |
 | [qa-checklist.md](qa-checklist.md) | QA checklist Parts A–E (kit) |

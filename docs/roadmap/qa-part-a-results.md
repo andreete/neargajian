@@ -66,7 +66,7 @@
 | A5-02 Employee history matches the chain | Pass | Phase 23 runs in `judge:verify`. |
 | A5-03 Advance limits and precision | Pass | `advance.test.ts`. |
 | A5-04 Repayment line, both posting modes | Pass | `advance.test.ts` (deduction, approver view, both CSVs). |
-| A5-05 Consent before the camera; another way if declined | **Partly**: consent and notice come first (Pass); **no other way** to request (decision needed) | By design (D-140, D-141): an advance needs the face check. The kit expects an alternative. The employee's normal pay is unaffected. |
+| A5-05 Consent before the camera; another way if declined | **Partly**: consent and notice come first (Pass); **no other way** to request (kept for the hackathon, D-150) | By design (D-140, D-141): an advance needs the face check. The kit expects an alternative. The employee's normal pay is unaffected. Andre's decision (D-150): Milestone 1 adds an admin's in-person verification, recorded with an audit entry. |
 | A5-06 Spoofing (photo, screen, video, virtual camera) | **Human** | D-144 already says a replayed video in the right order, a deepfake stream or a 3D mask may pass. |
 | A5-07 Denied camera, low light, glasses, skin tones | Denied camera: Pass (`face-camera.spec.ts`, hosted check). The rest: **human** | |
 | A5-08 Face data storage | Pass | Template only, AES-256-GCM (`face-check.test.ts`); no images stored; no logging of face data (code review). |
@@ -95,13 +95,13 @@
 | BUG-26-02 | **High** | QA-A1-03 | A parallel burst of sign-ins passed the 5-per-email and 20-per-client limits (the check ran before the slow password check, the record after) | **Fixed** |
 | BUG-26-03 | Medium | QA-A4/A7-07 | The maker's release returned a bare 500 when this copy has no maker signer or the vault was switched | **Fixed** |
 | BUG-26-04 | **High** | QA-A2-07 | A mainnet `.near` account was accepted on testnet (it would fail only at payout) | **Fixed** |
-| BUG-26-05 | Medium | QA-A4-03 | After 3 failed transfers the app stops retrying; the retry needs the operator | Open (RECOVERY.md; M1-013) |
-| BUG-26-06 | Medium | QA-A1-03 | The per-client sign-in limit uses the first `X-Forwarded-For` entry, which the client controls. The per-email limit still holds off the public demo; the demo passwords are public | Open: needs a trusted-proxy setting (decision) |
-| BUG-26-07 | Low | QA-A7-07 | A malformed percent-encoding in a path answers 500 (502 at the proxy), not 400; no stack trace, the server stays up | Open |
+| BUG-26-05 | Medium | QA-A4-03 | After 3 failed transfers the app stops retrying; the retry needs the operator | Open: Milestone 1 (RECOVERY.md; M1-013; D-150) |
+| BUG-26-06 | Medium | QA-A1-03 | The per-client sign-in limit uses the first `X-Forwarded-For` entry, which the client controls. The per-email limit still holds off the public demo; the demo passwords are public | Open: Milestone 1 (D-150): trust only the proxy's client-address header; no Railway change before judging |
+| BUG-26-07 | Low | QA-A7-07 | A malformed percent-encoding in a path answers 500 (502 at the proxy), not 400; no stack trace, the server stays up | Open: Milestone 1 (D-150) |
 | BUG-26-08 | Medium | QA-A7-04 | No HSTS header | **Fixed** |
-| BUG-26-09 | Low | QA-A5-10 | A parallel burst of face attempts can pass 5 per hour, bounded by 20 single-use challenges | Open |
+| BUG-26-09 | Low | QA-A5-10 | A parallel burst of face attempts can pass 5 per hour, bounded by 20 single-use challenges | Open: Milestone 1 (D-150) |
+| BUG-26-10 | Medium | QA-A2-08 | Off the public demo, a well-formed account that does not exist is found only at payout | Open: Milestone 1 (F6/F7; D-150) |
 | BUG-26-11 | Medium | QA-A1-01 (kit U4) | Cloudflare Email Address Obfuscation rewrote the demo emails on the landing page (Fill rows) and the admin's directory pages; the injected decoder script was blocked by the CSP; React hydration error #418 | **Fixed** (pages send `Cache-Control: … no-transform`, which Cloudflare honours) |
-| BUG-26-10 | Medium | QA-A2-08 | Off the public demo, a well-formed account that does not exist is found only at payout | Open (M1 F6/F7) |
 
 ### Bug reports (kit template)
 
@@ -144,6 +144,7 @@ Steps: 1. Pay a row to an account not registered with tUSDC. 2. Register it more
 Expected: the app can retry the row.
 Actual: after 3 attempts (30 s apart) the run stays "Needs attention"; retry or close_partial is an operator step (docs/RECOVERY.md).
 Evidence: src/server/payouts/release.ts MAX_ROW_ATTEMPTS; tests/integration/release.test.ts (bounded retries).
+Plan: Milestone 1 (M1-013; D-150).
 
 ID: BUG-26-06   Severity: Medium   Checklist item: QA-A1-03
 Role + account: signed out   Browser/device: API   Time (UTC): code review
@@ -151,6 +152,7 @@ Steps: 1. Send failed sign-ins with a different X-Forwarded-For value each time.
 Expected: the per-client limit (20 / 15 min) still applies.
 Actual: each value counts as a new client. The per-email limit (5 / 15 min) still applies off the public demo; on the public demo it is per email and client, and the passwords are public there.
 Evidence: src/server/web/api.ts clientKey().
+Plan: Milestone 1 (D-150): take the client address only from the proxy's own client-address header (e.g. cf-connecting-ip). No Railway change before judging.
 
 ID: BUG-26-07   Severity: Low   Checklist item: QA-A7-07
 Role + account: signed out   Browser/device: curl   Time (UTC): 2026-11-12 07:19
@@ -158,6 +160,7 @@ Steps: 1. GET https://sentfund.my.id/api/runs/%E0%A4%A
 Expected: 400.
 Actual: 502 (hosted), 500 "Internal Server Error" (local); no stack; health ok afterwards.
 Evidence: tests/live/qa-part-a.spec.ts (QA-A7-07).
+Plan: Milestone 1 (D-150).
 
 ID: BUG-26-08   Severity: Medium   Checklist item: QA-A7-04
 Role + account: signed out   Browser/device: curl   Time (UTC): 2026-11-12 07:10
@@ -172,14 +175,7 @@ Steps: 1. Request several challenges, then send their face checks in parallel.
 Expected: at most 5 attempts per hour.
 Actual: the count is read before the analysis and written after it, so a parallel burst can reach the 20-challenge bound.
 Evidence: src/server/identity/face-check.ts runFaceCheck.
-
-ID: BUG-26-11   Severity: Medium   Checklist item: QA-A1-01 (kit U4)
-Role + account: signed out; admin@sentfund.my.id   Browser/device: Chromium 375x812   Time (UTC): 2026-11-12 07:45
-Steps: 1. Open https://sentfund.my.id (release 878fb65) with the console open.
-Expected: no console errors.
-Actual: "Loading the script '…/cdn-cgi/scripts/…/email-decode.min.js' violates … script-src" and "Minified React error #418". The HTML had 7 __cf_email__ links (the Fill rows); /admin and /admin/recipients had them too.
-Evidence: tests/live/qa-part-a.spec.ts (QA-A1-01) on 878fb65.
-Fix: src/proxy.ts adds no-transform to the pages' Cache-Control (Cloudflare docs: Email Obfuscation does not apply with Cache-Control: no-transform); e2e header test.
+Plan: Milestone 1 (D-150).
 
 ID: BUG-26-10   Severity: Medium   Checklist item: QA-A2-08
 Role + account: maker   Browser/device: local copy, "Pay registered recipients only" off   Time (UTC): code review
@@ -187,6 +183,15 @@ Steps: 1. Upload a row for a well-formed account that does not exist. 2. Submit 
 Expected: flagged before payout.
 Actual: found at payout (Failed, retried, Needs attention). The public demo refuses the submit unless the directory recipient is Ready.
 Evidence: src/server/recipients/readiness.ts, src/server/recipients/directory.ts hostedSubmitProblem.
+Plan: Milestone 1 (F6/F7; D-150).
+
+ID: BUG-26-11   Severity: Medium   Checklist item: QA-A1-01 (kit U4)
+Role + account: signed out; admin@sentfund.my.id   Browser/device: Chromium 375x812   Time (UTC): 2026-11-12 07:45
+Steps: 1. Open https://sentfund.my.id (release 878fb65) with the console open.
+Expected: no console errors.
+Actual: "Loading the script '…/cdn-cgi/scripts/…/email-decode.min.js' violates … script-src" and "Minified React error #418". The HTML had 7 __cf_email__ links (the Fill rows); /admin and /admin/recipients had them too.
+Evidence: tests/live/qa-part-a.spec.ts (QA-A1-01) on 878fb65.
+Fix: src/proxy.ts adds no-transform to the pages' Cache-Control (Cloudflare docs: Email Obfuscation does not apply with Cache-Control: no-transform); e2e header test. Cloudflare's feature stays on (D-150).
 ```
 
 ## Needs a human

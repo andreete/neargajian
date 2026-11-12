@@ -693,3 +693,10 @@ Asked before building because KTP numbers and face images are specific personal 
 
 ### D-149 · Key inventory from the chain
 - `scripts/testnet/key-inventory.mjs` (read-only) lists every key on the 22 accounts of both deployments and where its private half is kept, by checking only that a key file of that public key exists (it never opens a key file and never reads `.env`). Result in `docs/KEY-INVENTORY.md`: the app and Railway hold only function-call keys (QA-A7-06 passes as worded), but together the role keys can create, approve and pay a new run up to the vault balance; that is the Milestone 1 F2 gap, not something to change during judging.
+
+### D-150 · Andre's Phase 26 review: four answers, freeze until the submission
+- Andre approved Phase 26 on 12 Nov 2026 after checking it himself: HSTS and `no-transform` on the live site, no sideways scroll at 375 px and no console errors, the vault's code hash unchanged with 0 keys and 2.000000 tUSDC, no private key in `docs/KEY-INVENTORY.md`.
+- **BUG-26-06** (per-client sign-in limit trusts `X-Forwarded-For`): left as it is for the hackathon; **no Railway change before judging**. Fixed in Milestone 1: the client address comes only from the proxy's own client-address header (for example Cloudflare's `cf-connecting-ip`), never from a header the client can set.
+- **QA-A5-05** (the camera is the only way to request a Payroll Advance): kept for the hackathon (D-140). Milestone 1 adds an alternative: an admin verifies the employee in person and records it, with an audit entry.
+- **BUG-26-05, 07, 09 and 10** are left for Milestone 1. The **feature freeze** stays: no code change and no new release before the submission; the live release stays `f25e00b`.
+- **Cloudflare Email Address Obfuscation** stays on: the pages' `no-transform` header (BUG-26-11, D-148) already stops it.
