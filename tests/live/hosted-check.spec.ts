@@ -16,7 +16,7 @@ import { mkdirSync } from 'node:fs';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { shot as shotIn } from './helpers';
 
-const OUT = 'docs/screenshots/phase-24';
+const OUT = 'docs/screenshots/phase-25'; // Phase 24's shots stay in phase-24/
 mkdirSync(OUT, { recursive: true });
 const shot = (page: Page, name: string) => shotIn(page, name, OUT);
 
@@ -67,7 +67,7 @@ test('hosted (read-only): Fill on each of the seven demo accounts fills both fie
   }
   await expect(dialog).toBeVisible(); // Fill never signs in
   await dialog.getByRole('button', { name: 'Fill app2@sentfund.my.id' }).click();
-  await shotIn(page, '01-signin-fill-app2', 'docs/screenshots/phase-25');
+  await shot(page, '00-signin-fill-app2');
   await page.keyboard.press('Enter');
   await page.waitForURL(/\/approver$/);
   await expect(page.getByRole('banner').getByText('Riley Reviewer')).toBeVisible();

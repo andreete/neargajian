@@ -64,10 +64,11 @@ Andre approved Phase 24 (he verified release `dd782f1`: `camera=(self)` only on 
 | `npm run secret-scan` | clean (working tree + 44 commits) |
 | `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
 | contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (0 keys; contracts unchanged) |
-| `npm run judge:verify` | JUDGE_RESULT |
+| `npm run judge:verify` | **241 PASS, 0 FAIL**, "All testnet evidence checks passed." (153 lookups from the archival node; about 50 minutes, it rate-limits) |
 
 ### Release (Andre's yes in the brief)
-RELEASE_RESULT
+- Commit `81417b3` pushed to `origin/main` and `sentfund/main`, then `main` → `sentfund/release` (`dd782f1` → `81417b3`) at 05:28 UTC: Railway deployment `28c220ec…` WAITING (CI) → BUILDING → DEPLOYING → **SUCCESS** at about 05:35 UTC (12:35 WIB); `1e273427…` removed. No Railway variable changed. Health ok (`hostedDemo: true`, `readOnly: false`, `faceModels: true`); the landing HTML has the seven `Fill <email>` labels.
+- `npx playwright test -c playwright.hosted-live.config.ts tests/live/hosted-check.spec.ts` → **10 passed**, no NEAR transaction, no camera: health; **Fill on each of the seven accounts** (order and "role · name" checked) fills Email and Password, marks the row, focuses Sign in and stays on `/`; Fill app2 + Enter → `/approver` with Riley Reviewer; then the Phase 24 checks (three employees' offers with **Verify it's you**, the camera notice without a camera, camera only on `/employee`, the admin settings read-only, assistant preview and specimen dry run). The maker's queue has **no open request** now (Emma's pre-Phase-24 request is no longer open; not touched by the agent). Screenshots `docs/screenshots/phase-25/` 00 (Fill app2 online, 1280x720) and 01–03 (the Phase 24 shots, retaken; `phase-24/` kept).
 
 ---
 
