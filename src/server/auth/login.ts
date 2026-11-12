@@ -27,7 +27,7 @@ export function keyed(secret: string, kind: string, value: string): string {
   return createHmac('sha256', secret).update(`${kind}:${value}`).digest('hex');
 }
 
-function recentFailures(db: Db, column: typeof loginAttempts.emailHash | typeof loginAttempts.clientHash, hash: string, since: Date, alsoClient?: string): number {
+function recentFailures(db: Pick<Db, 'select'>, column: typeof loginAttempts.emailHash | typeof loginAttempts.clientHash, hash: string, since: Date, alsoClient?: string): number {
   const row = db.select({ n: count() }).from(loginAttempts)
     .where(and(eq(column, hash), eq(loginAttempts.succeeded, false), gt(loginAttempts.attemptedAt, since), ...(alsoClient ? [eq(loginAttempts.clientHash, alsoClient)] : []))).get();
   return row?.n ?? 0;
@@ -41,10 +41,16 @@ export async function login(db: Db, input: {
   const clientHash = keyed(input.secret, 'client', input.clientKey);
   const since = new Date(input.now.getTime() - WINDOW_MS);
   const perEmailScope = hostedMode().demo ? clientHash : undefined;
-  if (recentFailures(db, loginAttempts.emailHash, emailHash, since, perEmailScope) >= MAX_FAILURES_PER_EMAIL
-    || recentFailures(db, loginAttempts.clientHash, clientHash, since) >= MAX_FAILURES_PER_CLIENT) {
-    return { ok: false, reason: 'rate_limited', retryAfterSeconds: Math.ceil(WINDOW_MS / 1000) };
-  }
+  // Phase 26 (QA-A1-03): check the limits AND record this attempt as a failure in one synchronous
+  // transaction, BEFORE the slow password check. Concurrent requests therefore see each other's
+  // attempts, so a burst cannot get past the limit while earlier guesses are still being verified.
+  // A correct password turns the row into a success afterwards.
+  const attemptId = db.transaction((tx) => {
+    if (recentFailures(tx, loginAttempts.emailHash, emailHash, since, perEmailScope) >= MAX_FAILURES_PER_EMAIL
+      || recentFailures(tx, loginAttempts.clientHash, clientHash, since) >= MAX_FAILURES_PER_CLIENT) return null;
+    return tx.insert(loginAttempts).values({ emailHash, clientHash, succeeded: false, attemptedAt: input.now }).returning({ id: loginAttempts.id }).get().id;
+  }, { behavior: 'immediate' });
+  if (attemptId === null) return { ok: false, reason: 'rate_limited', retryAfterSeconds: Math.ceil(WINDOW_MS / 1000) };
 
   const wellFormed = EMAIL_RE.test(email) && input.password.length >= 1 && input.password.length <= 256;
   const user = wellFormed ? db.select().from(users).where(eq(users.email, email)).get() : undefined;
@@ -52,11 +58,11 @@ export async function login(db: Db, input: {
   const succeeded = Boolean(user && valid && !user.disabledAt);
 
   return db.transaction((tx) => {
-    tx.insert(loginAttempts).values({ emailHash, clientHash, succeeded, attemptedAt: input.now }).run();
     if (!succeeded || !user) {
       tx.insert(auditEvents).values({ at: input.now, action: 'auth.login_failed', detail: JSON.stringify({ emailKey: emailHash.slice(0, 12) }) }).run();
       return { ok: false as const, reason: 'invalid' as const };
     }
+    tx.update(loginAttempts).set({ succeeded: true }).where(eq(loginAttempts.id, attemptId)).run();
     const session = createSession(tx, user.id, input.now);
     tx.insert(auditEvents).values({ at: input.now, actorUserId: user.id, action: 'auth.login', entityType: 'user', entityId: user.id }).run();
     return {

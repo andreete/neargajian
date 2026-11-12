@@ -54,7 +54,7 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm test` | `Test Files 23 passed (23)`, `Tests 179 passed (179)` |
 | `npm run samples:check` | regenerates the sample files; `git diff` is empty |
 | `npm run secret-scan` | `secret-scan: clean (working tree + N commits)` |
-| `npm run judge:verify` | about 210 `PASS` lines and `All testnet evidence checks passed.` |
+| `npm run judge:verify` | quick mode: about 77 `PASS` lines and `All testnet evidence checks passed.` (`-- --full`: about 240) |
 | `npm audit --audit-level=high` | exit 0 (14 moderate advisories known; none high or critical) |
 | `npx playwright install chromium && npm run build && npm run test:e2e` | `29 passed` (isolated DB, test-only fixture, stand-in vault, labelled assistant test stub; no testnet writes, no API key) |
 | `npm run test:hosted` (after the build) | `3 passed`, then `1 passed` (hosted demo mode, then the kill switch; fresh database like the hosted service; no admin key; no transactions) |
@@ -226,8 +226,8 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 13. **Sample employees share some names with the live recipients** (for example a second "Daniel Hall" in Engineering). The assistant asks which division instead of guessing.
 14. **Adding a recipient makes one read-only RPC call** to FastNEAR; offline it shows "Could not reach NEAR testnet: check again".
 15. **The Payroll Advance face check is not certified liveness detection** (Phase 24): a random head turn stops a held-up photo and a replayed video of the wrong order; a replay with the right order (1 in 2), a deepfake stream or a mask could pass. The demo employees' templates are synthetic, so a real person never matches them; online a mismatch may **Continue as a demo** (flagged), locally never.
-16. **`judge:verify` reads transactions older than a day or two from the testnet archival node** (D-138), whose free tier rate-limits; the script waits and retries, so a full run takes a few minutes.
-17. **The landing page scrolls sideways on a phone-width window (390 px)**: the upload summary and the drop zone in the hero card are wider than the screen (seen in Phase 25; the sign-in dialog itself fits). Desktop widths are not affected (item 7).
+16. **`judge:verify -- --full` reads transactions older than a day or two from the testnet archival node** (D-138), whose free tier rate-limits; the script waits and retries, so a full run is slow. The default quick mode (Phase 26) takes about 5 minutes.
+17. ~~The landing page scrolls sideways on a phone-width window~~: **fixed in Phase 26** (BUG-26-01; checked at 320–640 px). On phones under 480 px the header shows only **Try the demo**, which opens the same sign-in dialog as **Sign in**.
 
 ## 6. Out of scope
 

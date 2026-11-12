@@ -1,0 +1,32 @@
+ID,Epic,Title,Type,Priority,Estimate_days,Depends_on,Acceptance,Kit_reference
+M1-001,F0 QA bugs,Run QA Part A on the current app and file bugs,QA,P0,3,,QA-A1..A8,docs/qa-checklist.md
+M1-002,F0 QA bugs,Fix Critical and High bugs from Part A (re-estimate after triage),Bug,P0,5,M1-001,QA-A re-run clean,docs/qa-checklist.md
+M1-003,F0 QA bugs,Landing page fixes U1-U5 (payout wording; live stats; demo reset; email obfuscation; copy),Task,P1,1,,QA-A1-01 QA-A1-02 QA-A1-06 QA-A1-08,docs/qa-checklist.md
+M1-010,F1 Payout proofs,Deploy vault-guard v2 to a new testnet account (or merge into v1),Story,P0,2,,QA-F1-02 QA-F1-04..08,contracts/vault-guard
+M1-011,F1 Payout proofs,near-workspaces integration tests for vault-guard incl. ft_transfer failure and gas per batch,Story,P0,3,M1-010,QA-C-02,contracts/vault-guard/src/tests.rs
+M1-012,F1 Payout proofs,Build and store the run commitment after file validation; return submit_run args,Story,P0,2,M1-010,QA-F1-01 QA-F1-03,services/src/merkle/run-commitment.ts
+M1-013,F1 Payout proofs,Payout worker: batches of 10; NEP-145 storage check; retries; idempotent,Story,P0,4,M1-012,QA-F1-04..09,docs/tech-spec-milestone-1.md#5-payout-worker
+M1-014,F1 Payout proofs,Event indexer and per-run paid/failed/pending UI,Story,P1,3,M1-013,QA-F1-10,docs/tech-spec-milestone-1.md
+M1-020,F2 Self-custody,Wallet Selector signing for maker submit and approver approve/reject,Story,P0,3,M1-010,QA-F2-01 QA-F2-04..06,docs/tech-spec-milestone-1.md
+M1-021,F2 Self-custody,FastAuth option for approvers (testnet first),Story,P1,2,M1-020,QA-F2-02,docs/prd-milestone-1-safe-to-pilot.md
+M1-022,F2 Self-custody,Set up owner multisig and hand vault ownership to it,Task,P0,1,M1-010,QA-F2-07 QA-C-03,docs/prd-milestone-1-safe-to-pilot.md
+M1-023,F2 Self-custody,Remove server fund-moving keys; write key inventory,Task,P0,1,M1-013 M1-020,QA-F2-03 QA-C-04,docs/tech-spec-milestone-1.md#93-admin-key-for-register_payees
+M1-024,F2 Self-custody,Separate demo vault that keeps server-signed demo accounts,Task,P1,1,M1-023,,docs/prd-milestone-1-safe-to-pilot.md
+M1-030,F3 Passkeys,Passkey registration and management UI,Story,P0,3,,QA-F3-01,services/src/passkey/step-up.ts
+M1-031,F3 Passkeys,Step-up endpoints and grant enforcement on protected actions,Story,P0,3,M1-030,QA-F3-02..06,services/src/passkey/step-up.ts
+M1-032,F3 Passkeys,Passkey reset with owner approval and audit entry,Story,P1,2,M1-030,,docs/prd-milestone-1-safe-to-pilot.md
+M1-040,F4 Wallet changes,Payee directory (tables and admin UI),Story,P0,3,,QA-F4-01,db/migrations/001_milestone1_safe_to_pilot.sql
+M1-041,F4 Wallet changes,Wallet change flow: request / verify / cooldown / cancel with notices,Story,P0,4,M1-040 M1-031,QA-F4-02..06 QA-F4-08 QA-F4-09,services/src/wallet-directory/cooldown.ts
+M1-042,F4 Wallet changes,register_payees on verification and scheduled activation job,Story,P0,2,M1-041 M1-010,QA-F4-07,docs/tech-spec-milestone-1.md#8-wallet-changes
+M1-050,F5 Limits,Guardian role; admin limits and freeze UI,Story,P0,2,M1-010,QA-F5-05 QA-F5-06 QA-F5-08,contracts/vault-guard/src/lib.rs
+M1-051,F5 Limits,Per-customer default limits applied through the owner multisig,Task,P0,1,M1-022,QA-F5-01..04 QA-F5-07,contracts/vault-guard/src/policy.rs
+M1-060,F6 Screening,Screening service: denylist + vendor adapter + 24h cache,Story,P0,3,,QA-F6-01 QA-F6-03..05,services/src/screening/provider.ts
+M1-061,F6 Screening,Choose screening vendor and confirm NEAR coverage in writing,Task,P0,2,,QA-F6-06,docs/prd-milestone-1-safe-to-pilot.md
+M1-062,F6 Screening,Compliance review queue with named sign-off,Story,P0,2,M1-060,QA-F6-02,db/migrations/001_milestone1_safe_to_pilot.sql
+M1-070,F7 Pre-flight,Pre-flight API and report storage,Story,P0,2,M1-040 M1-060,QA-F7-01 QA-F7-02 QA-F7-09 QA-F7-10,services/src/preflight/check.ts
+M1-071,F7 Pre-flight,Approver UI: findings; per-approver acknowledgements; gated Approve button,Story,P0,3,M1-070,QA-F7-03..05,docs/prd-milestone-1-safe-to-pilot.md
+M1-072,F7 Pre-flight,LLM approver note with redaction and 8s fallback,Story,P1,2,M1-070,QA-F7-06..08,services/src/preflight/llm-summary.ts
+M1-080,Gate,External security review of contract and step-up flow; fix findings,Task,P0,10,M1-011 M1-023 M1-031,QA-C-01 QA-C-07 QA-C-10,docs/qa-checklist.md
+M1-081,Gate,Incident runbook and freeze drill on testnet,Task,P0,1,M1-050,QA-C-05 QA-C-06,docs/qa-checklist.md
+CI-001,Confidential C0,Discovery: partner JWT; NEAR open questions; asset list; legal check,Task,P1,3,,QA-D-01 QA-D-07,roadmap.md
+CI-002,Confidential C1,Mainnet spike with small USDC amounts; visibility write-up,Spike,P1,5,CI-001,QA-D-02..06,roadmap.md

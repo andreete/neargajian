@@ -31,10 +31,11 @@ npm run test:hosted                    # 3 passed, then 1 passed: hosted demo mo
 ## 3. Verify the live testnet evidence (read-only RPC)
 
 ```sh
-npm run judge:verify
+npm run judge:verify              # quick (default): about 5 minutes
+npm run judge:verify -- --full    # every transaction, as below (slow: the archival node rate-limits)
 ```
 
-It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
+Quick mode (Phase 26) checks both locked vaults' code hash and keys, every run's state from the vault's own views, and every transaction of the two latest runs, then says how many older lookups it skipped. Full mode reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
 
 ```
 == Phase 22: SentFund vault: two approvers in sequence, automatic release (3 recipients)

@@ -172,3 +172,34 @@ test('admin workflow editor: live preview, distinct reviewers, nothing saved wit
   if (await page.getByTestId('workflow-read-only').isVisible()) await expect(save).toBeDisabled();
   else await expect(save).toBeEnabled();
 });
+
+test('Phase 26 (QA-A1-01): the landing page never scrolls sideways on a phone; the header keeps "Try the demo" on screen', async ({ page }) => {
+  for (const [width, height] of [[320, 640], [360, 740], [375, 812], [390, 844], [430, 932], [640, 900]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto('/');
+    const problems = await page.evaluate(() => {
+      const w = document.documentElement.clientWidth;
+      const out: string[] = [];
+      if (document.documentElement.scrollWidth > w) out.push(`page ${document.documentElement.scrollWidth} > ${w}`);
+      for (const el of document.querySelectorAll('.site-header *, .upload-mock, .upload-mock > *, .dropzone, .upload-summary')) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.right > w + 0.5) out.push(`${el.className || el.tagName} ends at ${Math.round(r.right)}`);
+      }
+      return out;
+    });
+    expect(problems, `${width}x${height}`).toEqual([]);
+    const tryDemo = page.locator('.site-header').getByRole('button', { name: 'Try the demo' });
+    await expect(tryDemo).toBeInViewport({ ratio: 1 });
+  }
+});
+
+test('Phase 26 (QA-A7-04): security headers on pages, APIs and the 404 page, HSTS included', async ({ request }) => {
+  for (const path of ['/', '/maker', '/api/health', '/api/runs', '/qa-does-not-exist']) {
+    const h = (await request.get(path, { maxRedirects: 0 })).headers();
+    expect(h['strict-transport-security'], path).toBe('max-age=31536000; includeSubDomains');
+    expect(h['content-security-policy'], path).toContain("frame-ancestors 'none'");
+    expect(h['x-frame-options'], path).toBe('DENY');
+    expect(h['x-content-type-options'], path).toBe('nosniff');
+    expect(h['referrer-policy'], path).toBe('strict-origin-when-cross-origin');
+  }
+});

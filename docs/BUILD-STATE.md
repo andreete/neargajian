@@ -37,6 +37,39 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 23 Hosted Claude key + Payroll Advance (employee role) | Done, approved by Andre 11 Nov; released with 23b. Hosted key set and checked online | **Yes**: Emma's advance (0.294 paid, fee 0.006 kept) and her November payroll with the first instalment (gross 0.10, instalment 0.05, net 0.05 paid) through the local app; `judge:verify` 241/241 |
 | 23b Employee form: withdraw, estimated months, amount shortcuts | Done, approved by Andre 11 Nov; all suites green; **released** to https://sentfund.my.id (`e1b068b`, with Phase 23); hosted checks passed without a transaction | **Yes**: vault top-up 1.586 → 2.00 tUSDC (2 txs); `judge:verify` 241/241 (archival fallback, D-138) |
 | 24 Face check at the Payroll Advance request | Done, all suites green; **released** to https://sentfund.my.id (`dd782f1`); hosted check 9/9 without a transaction or a camera | none (no contract change, no transaction) |
+| 25 Fill buttons in the sign-in dialog | Done, approved by Andre (release `81417b3`) | none |
+| 26 Milestone 1 step 0 + QA Part A (roadmap, key inventory, QA fixes) | Done, all suites green; release: see the Phase 26 section | none (read-only key inventory and `judge:verify`; no transaction) |
+
+---
+
+## Phase 26 · Milestone 1, step 0 and QA Part A (12 Nov 2026)
+
+Andre approved Phase 25 (he verified release `81417b3` and the seven Fill rows) and added the product milestone kit "Safe to pilot" (`.tmp/sentfund-milestone-kit.zip`, extracted to `.tmp/milestone-kit/`). Before the submission: Step 0 (gap analysis) and Step 1 (QA Part A), fixes for every Critical/High bug plus three named fixes, the kit's planning documents as the roadmap. No new vault, no change to the live vault or its data, no Steps 2–5 (D-146).
+
+### Built
+- **Roadmap** `docs/roadmap/`: `README.md`, `milestone-1-gap-analysis.md` (F0–F7 and all 31 tickets: built / partly / missing; where the kit is wrong about SentFund; our vault vs `vault-guard`; porting notes), `qa-part-a-results.md` (every A1–A8 item Pass / Fail / Blocked / human with evidence; BUG-26-01..10 in the kit's template), and the kit's PRD, tech spec, QA checklist, backlog and Confidential Intents roadmap (copied, relative links fixed, a note on each). The kit's reference code is not in the repository. README section "Roadmap: from demo to pilot".
+- **Key inventory** `docs/KEY-INVENTORY.md` from `scripts/testnet/key-inventory.mjs` (read-only; checks only that a key file of each public key exists; never opens one, never reads `.env`): 22 accounts, every key, access, methods, allowance, where the private half lives, whether it can move funds.
+- **QA Part A automation:** `tests/live/qa-part-a.spec.ts` (11 checks, read-only on the shared demo: layout and console, generic sign-in error, cookie flags and sign-out, two profiles, explorer links and anchors, 401/403 sweep, IDOR with real run IDs, CSRF/origin refusals on IDs that do not exist, security headers, key-material scan of every client script of five roles, error pages without stack traces; `QA_BASE_URL` runs it against a local build). `tests/integration/qa-part-a.test.ts` (15: upload edge cases, sign-in burst, role change in open sessions, simultaneous approvals, maker release without a signer).
+- **Fixes:** BUG-26-01 landing on phones (`globals.css`; e2e 320–640 px); BUG-26-02 sign-in limit under a parallel burst (`login.ts`: check + provisional attempt in one immediate transaction before argon2; the test fails on the old code); BUG-26-03 maker release route 500 → 409 (`release/route.ts`); BUG-26-04 `.near` refused on testnet (`near-account.ts`, `validate.ts`); BUG-26-08 HSTS (`next.config.ts`; e2e header test). D-148.
+- **`judge:verify` quick by default** (`-- --full` for everything; D-147); README, JUDGE, QA-HANDOFF, CLAUDE updated.
+
+### Checks (12 Nov 2026)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **32 files, 297 tests passed** (+15) |
+| `npm run samples:check` | no diff |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 2.6–3.1 GB |
+| `npm run test:e2e` | **41 passed** (+2), stand-in **2 passed**, demo mode off **1 passed** |
+| `npm run test:judge-mode` / `test:hosted` | **1** / **5 + 2** passed |
+| `tests/live/qa-part-a.spec.ts` | local build **11/11**; hosted before the release **7/11** (A1-01, A7-04 = bugs, fixed; A7-03 my expectation, corrected; A7-07 = BUG-26-07) |
+| `npm run secret-scan` | clean (working tree + 46 commits) |
+| `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
+| contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (contracts unchanged) |
+| `npm audit` | production deps 0; dev deps 13 moderate, 0 high, 0 critical |
+| `npm run judge:verify` (quick) | **77 PASS, 0 FAIL**, 4 min 41 s (10 lookups from the archival node) |
+| `npm run judge:verify -- --full` | see the release section |
+| client bundle (`.next/static`, 25 chunks) | no key material, no secret names, no source maps |
 
 ---
 

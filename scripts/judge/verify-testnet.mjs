@@ -3,8 +3,19 @@
 // READ-ONLY RPC calls (no keys, no transactions): each vault run's status, total and rows
 // (receiver + amount) from the contract's own views, each transaction's final outcome and
 // signer, and the ft_transfer event of every payout. Prints PASS/FAIL per check.
-//   node scripts/judge/verify-testnet.mjs        (or: npm run judge:verify)
+//   npm run judge:verify             QUICK (default, a few minutes at most): every vault's code_hash and
+//                                    access keys, every run's state from the vault's own views (status,
+//                                    total, each row's receiver and amount), and every transaction of the
+//                                    latest runs (the last LATEST entries of the evidence file).
+//   npm run judge:verify -- --full   FULL: also every other transaction (older runs, setup operations,
+//                                    on-chain refusals, exported paid times vs block times). Older
+//                                    transactions are read from the archival node, which rate-limits:
+//                                    expect up to about an hour.
 import { readFileSync } from 'node:fs';
+
+const FULL = process.argv.includes('--full');
+const LATEST = 2;
+const started = Date.now();
 
 const RPC = process.env.NEAR_RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 if (!/testnet/.test(RPC)) throw new Error('testnet RPC only');
@@ -37,8 +48,13 @@ async function view(contract, method, args) {
 }
 const tusdc = (base) => `${BigInt(base) / 1_000_000n}.${(BigInt(base) % 1_000_000n).toString().padStart(6, '0')}`;
 
-for (const run of ev.runs) {
-  console.log(`\n== Phase ${run.phase}: ${run.label}\n   vault ${run.vault} · run ${run.runId}`);
+console.log(FULL
+  ? 'FULL mode: every run, transaction, refusal and exported paid time.'
+  : `QUICK mode: vault code and keys, every run's state from the vault's views, and every transaction of the latest ${LATEST} runs.\n(Run with --full for every transaction; it reads older ones from the archival node and can take up to about an hour.)`);
+let skippedTx = 0;
+for (const [runIndex, run] of ev.runs.entries()) {
+  const withTx = FULL || runIndex >= ev.runs.length - LATEST;
+  console.log(`\n== Phase ${run.phase}: ${run.label}\n   vault ${run.vault} · run ${run.runId}${withTx ? '' : ' (state only; transactions with --full)'}`);
   const r = await view(run.vault, 'get_run', { run_id: run.runId });
   check(r?.status === run.status, `run status ${r?.status} (expected ${run.status})`);
   check(r?.total === run.total, `run total ${tusdc(r?.total ?? 0)} tUSDC (expected ${tusdc(run.total)})`);
@@ -48,6 +64,7 @@ for (const run of ev.runs) {
     check(onChain?.status === 'Paid' && onChain.receiver_id === row.receiver && onChain.amount === row.amount,
       `row ${row.index}: ${onChain?.status} ${tusdc(onChain?.amount ?? 0)} tUSDC → ${onChain?.receiver_id}`);
   }
+  if (!withTx) { skippedTx += run.txs.length; continue; }
   for (const tx of run.txs) {
     const out = await rpc('EXPERIMENTAL_tx_status', { tx_hash: tx.hash, sender_account_id: tx.signer, wait_until: 'FINAL' });
     const failed = JSON.stringify(out.status).includes('Failure') || out.receipts_outcome.some((o) => 'Failure' in (o.outcome.status ?? {}));
@@ -62,7 +79,7 @@ for (const run of ev.runs) {
     check(!failed && out.transaction.signer_id === tx.signer && out.transaction.receiver_id === (tx.receiver ?? run.vault), `${tx.step} ${tx.hash.slice(0, 8)}… final, signed by ${out.transaction.signer_id}`);
   }
 }
-for (const op of ev.operations ?? []) {
+for (const op of FULL ? ev.operations ?? [] : []) {
   const out = await rpc('EXPERIMENTAL_tx_status', { tx_hash: op.hash, sender_account_id: op.signer, wait_until: 'FINAL' });
   const failed = JSON.stringify(out.status).includes('Failure') || out.receipts_outcome.some((o) => 'Failure' in (o.outcome.status ?? {}));
   check(!failed && out.transaction.signer_id === op.signer && (!op.receiver || out.transaction.receiver_id === op.receiver), `${op.step} ${op.hash.slice(0, 8)}… final, signed by ${out.transaction.signer_id}`);
@@ -74,8 +91,8 @@ for (const [i, fv] of [ev.finalVault, ...(ev.earlierVaults ?? [])].filter(Boolea
   const { keys } = await rpc('query', { request_type: 'view_access_key_list', finality: 'final', account_id: fv.account });
   check(!keys.some((k) => k.access_key.permission === 'FullAccess'), `no full-access key (${keys.length} keys): the code can never change`);
 }
-console.log('\n== On-chain refusals');
-for (const f of ev.expectedFailures ?? []) {
+if (FULL) console.log('\n== On-chain refusals');
+for (const f of FULL ? ev.expectedFailures ?? [] : []) {
   const out = await rpc('EXPERIMENTAL_tx_status', { tx_hash: f.hash, sender_account_id: f.signer, wait_until: 'FINAL' });
   const text = JSON.stringify(out.status) + JSON.stringify(out.receipts_outcome.map((o) => o.outcome.status));
   check(text.includes(f.error), `${f.step} ${f.hash.slice(0, 8)}… refused on-chain: "${f.error}"`);
@@ -102,19 +119,24 @@ const blockSecond = async (hash, signer) => {
   const block = await rpc('block', { block_id: tx.transaction_outcome.block_hash });
   return { at: new Date(Number(BigInt(block.header.timestamp_nanosec) / 1_000_000n)).toISOString().replace(/\.\d{3}Z$/, 'Z'), height: block.header.height };
 };
-console.log('\n== Exported paid times equal the chain block time of each payout');
+if (FULL) console.log('\n== Exported paid times equal the chain block time of each payout');
 const byRef = new Map();
-for (const { reference, paid_at_utc: paidAt, tx_hash: txHash } of csv('recipients.csv')) {
+for (const { reference, paid_at_utc: paidAt, tx_hash: txHash } of FULL ? csv('recipients.csv') : []) {
   const b = await blockSecond(txHash, ev.exportsWorker ?? 'worker.gajian-payroll.testnet'); // exports of the earlier deployment's runs
   byRef.set(reference, b.at);
   check(paidAt === b.at, `recipient CSV ${reference}: ${paidAt} = block ${b.height} at ${b.at} (${txHash.slice(0, 8)}…)`);
 }
-for (const { reference, posting_mode: mode, paid_at_utc: paidAt } of csv('company.csv')) {
+for (const { reference, posting_mode: mode, paid_at_utc: paidAt } of FULL ? csv('company.csv') : []) {
   const times = mode === 'detailed' ? [byRef.get(reference)] : [...byRef].filter(([r]) => r.startsWith(`${reference}-`)).map(([, t]) => t);
   const expected = times.filter(Boolean).sort().at(-1);
   check(Boolean(expected) && paidAt === expected, `company CSV ${reference} (${mode}): ${paidAt} = ${mode === 'detailed' ? 'its payout block' : 'last payout block'} ${expected ?? 'missing'}`);
 }
 
 if (archivalUsed) console.log(`\n(${archivalUsed} older lookups were read from the archival node ${ARCHIVAL})`);
+if (!FULL) {
+  const more = skippedTx + (ev.operations ?? []).length + (ev.expectedFailures ?? []).length;
+  console.log(`\nQUICK mode skipped ${more} older transaction lookups (${skippedTx} run transactions, ${(ev.operations ?? []).length} operations, ${(ev.expectedFailures ?? []).length} refusals) and the exported paid times: npm run judge:verify -- --full`);
+}
+console.log(`Took ${Math.round((Date.now() - started) / 1000)} s.`);
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll testnet evidence checks passed.');
 process.exitCode = failures ? 1 : 0;

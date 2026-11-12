@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 import { PERMISSIONS_POLICY } from './src/permissions-policy';
 
-// Security headers for every response. The Content-Security-Policy with a per-request
+// Security headers for every response (Phase 26: + HSTS). The Content-Security-Policy with a per-request
 // nonce is set by src/proxy.ts for pages; API responses get a locked-down CSP here.
 // Phase 24: the camera is blocked everywhere (camera=()); src/proxy.ts allows it for our own origin
 // only on the pages that use it: /employee (the Payroll Advance face check) and, off the public
@@ -13,6 +13,9 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: PERMISSIONS_POLICY(false) },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
+  // Phase 26 (QA-A7-04): HSTS, one year, subdomains included, no preload. Browsers ignore it over plain
+  // HTTP (RFC 6797 §8.1), so the local http://127.0.0.1 copy is unaffected; the public site is HTTPS-only.
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
 ];
 
 const nextConfig: NextConfig = {

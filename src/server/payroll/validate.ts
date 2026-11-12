@@ -4,7 +4,7 @@
  * browser only mirrors the same rules for instant feedback.
  */
 import { formatAmountShort, parseAmount, U128_MAX } from '../money.ts';
-import { isValidAccountId } from '../near-account.ts';
+import { isMainnetAccountId, isValidAccountId, MAINNET_ACCOUNT_MESSAGE } from '../near-account.ts';
 
 export const FIELDS = ['near_account_id', 'receiver_name', 'currency', 'amount', 'mobile_phone', 'email'] as const;
 export type Field = (typeof FIELDS)[number];
@@ -73,8 +73,9 @@ export function validateRow(raw: Partial<RawRow>, index: number, limits: Limits,
   if (!account) err('near_account_id', 'NEAR account ID is required.');
   else if (account !== account.toLowerCase() && isValidAccountId(account.toLowerCase())) err('near_account_id', 'NEAR account IDs are lowercase.');
   else if (!isValidAccountId(account)) err('near_account_id', 'Invalid NEAR account ID.');
-  const entry = directory && isValidAccountId(account) ? directory.lookup(account) : undefined;
-  if (directory && isValidAccountId(account)) {
+  else if (isMainnetAccountId(account)) err('near_account_id', MAINNET_ACCOUNT_MESSAGE);
+  const entry = directory && isValidAccountId(account) && !isMainnetAccountId(account) ? directory.lookup(account) : undefined;
+  if (directory && isValidAccountId(account) && !isMainnetAccountId(account)) {
     if (!entry) err('near_account_id', NOT_IN_DIRECTORY);
     else if (!entry.active) err('near_account_id', INACTIVE_IN_DIRECTORY);
   }

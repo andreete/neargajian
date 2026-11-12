@@ -347,7 +347,8 @@ progress.bar::-moz-progress-bar { background: linear-gradient(90deg, var(--navy)
 .check-list li svg { color: var(--success); flex: none; margin-top: 3px; }
 .check-list li span { color: var(--muted); }
 .check-list li strong { display: block; }
-.upload-mock { display: grid; gap: 16px; }
+.upload-mock { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.upload-mock > * { min-width: 0; } /* Phase 26 (QA-A1-01): the sample table scrolls inside its card, never the page */
 .dropzone { display: flex; align-items: center; gap: 16px; padding: 20px; border: 2px dashed #9fc2f5; border-radius: var(--radius-lg); background: var(--sky-50); }
 .dropzone .file-icon { width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--surface); color: var(--navy); border: 1px solid var(--sky-100); flex: none; }
 .dropzone .file-name { font-weight: 800; font-family: var(--mono); font-size: 14px; overflow-wrap: anywhere; }
@@ -606,6 +607,20 @@ dialog.modal.signin-demo { width: min(820px, calc(100vw - 32px)); }
   .page-head { flex-direction: column; align-items: flex-start; }
   .page-head-actions { align-items: flex-start; }
   .user-chip .meta, .btn-label-long { display: none; }
+  /* Phase 26 (QA-A1-01): no sideways scroll at 375 px */
+  .site-header .container { gap: 12px; }
+  .header-end { gap: 8px; }
+  .dropzone { flex-wrap: wrap; padding: 16px; gap: 12px; }
+  .dropzone > span:nth-child(2) { min-width: 0; flex: 1 1 140px; }
+  .dropzone .chip { margin-left: 0; }
+  .run-total-row { flex-wrap: wrap; }
+  .posting-card { padding: 18px; }
+  .ledger th, .ledger td { padding: 8px 6px; }
+}
+
+/* Phase 26 (QA-A1-01): on small phones the header keeps "Try the demo" only (it opens the same sign-in dialog). */
+@media (max-width: 480px) {
+  .header-end .btn-secondary { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

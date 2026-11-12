@@ -47,7 +47,7 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 ## Credentials and login
 
 - argon2id (Node `crypto.argon2`, 19 MiB, t=2, p=1, PHC format). Unknown emails verify against a dummy hash (same timing). One generic error: "Email or password is incorrect."
-- Rate limit: 5 failures per email and 20 per client in 15 minutes → 429 with `Retry-After`. Attempts store HMAC-SHA256 of email and client address (keyed with `SESSION_SECRET`), never raw values.
+- Rate limit: 5 failures per email and 20 per client in 15 minutes → 429 with `Retry-After`. Since Phase 26 the limit check and the attempt record are one transaction **before** the password check, so a parallel burst cannot get past the limit (BUG-26-02). Known gap (BUG-26-06): the client is the first `X-Forwarded-For` entry, which a client can set; the per-email limit does not depend on it. Attempts store HMAC-SHA256 of email and client address (keyed with `SESSION_SECRET`), never raw values.
 - Demo users exist only when `DEMO_MODE=true` (the seed refuses otherwise); the demo password is shown only in demo mode.
 
 ## CSRF and origin
@@ -59,7 +59,7 @@ Responses: 401 without a session; 403 when the role can never use an endpoint or
 
 - Pages: per-request nonce CSP from `src/proxy.ts`: `default-src 'self'; script-src 'self' 'nonce-…' 'strict-dynamic'; style-src 'self' 'nonce-…'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` (+ `upgrade-insecure-requests` on https). No inline scripts or style attributes of our own (the e2e suite fails on any CSP violation).
 - API: `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, `Cache-Control: no-store`.
-- All responses: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation, payment and USB off; microphone for our own origin only, for voice input; **camera off, `camera=()`, except** `camera=(self)` on `/employee` (the Payroll Advance face check) and, off the public demo, `/admin/identity` (the admin's face photo capture); set per page by `src/proxy.ts`, `src/permissions-policy.ts`), `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`. No `X-Powered-By`. The public site is HTTPS-only: plain HTTP answers 301 to the HTTPS URL at Cloudflare (checked 11 Nov 2026; no HSTS header is sent), and browsers offer `getUserMedia` only in a secure context (HTTPS or localhost) anyway.
+- All responses: `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation, payment and USB off; microphone for our own origin only, for voice input; **camera off, `camera=()`, except** `camera=(self)` on `/employee` (the Payroll Advance face check) and, off the public demo, `/admin/identity` (the admin's face photo capture); set per page by `src/proxy.ts`, `src/permissions-policy.ts`), `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy: same-origin`. No `X-Powered-By`. The public site is HTTPS-only: plain HTTP answers 301 to the HTTPS URL at Cloudflare (checked 11 Nov 2026), and since Phase 26 every response carries `Strict-Transport-Security: max-age=31536000; includeSubDomains` (no preload; browsers ignore it over plain HTTP, so the local copy is unaffected), and browsers offer `getUserMedia` only in a secure context (HTTPS or localhost) anyway.
 
 ## Recipient directory: what it does and does not guarantee
 

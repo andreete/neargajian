@@ -97,10 +97,13 @@ npm run secret-scan                   # secret-scan: clean (working tree + N com
 ### 2. Verify the live testnet evidence (read-only)
 
 ```sh
-npm run judge:verify
+npm run judge:verify              # quick (default): about 5 minutes
+npm run judge:verify -- --full    # every transaction: FULL_TIME
 ```
 
-See: about 210 lines starting with `PASS`, ending with `All testnet evidence checks passed.` It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
+**Quick mode** (the default; 4 min 41 s on 12 Nov 2026, 77 `PASS`) checks both locked vaults' code hash and keys, every run's state from the vault's own views (status, total, each row's receiver and amount), and every transaction of the two latest runs. It ends with `All testnet evidence checks passed.` and says how many older lookups it skipped.
+
+**Full mode** (`-- --full`; FULL_RESULT) adds every other transaction, the eight on-chain refusals and the exported paid times. Older transactions are read from the testnet archival node, which rate-limits, so it is slow. It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
 - every run's status, total and paid rows;
 - every transaction's signer, receiver and success;
 - every payout's `ft_transfer` event (receiver and amount);
@@ -238,7 +241,7 @@ Do, see:
 
 - **Real on testnet:** the vault contract, every approval and payout, refusals by the contract, balances. The app's main flow uses the real contract, database and validation; there is no mock path in it.
 - **Test token:** `tUSDC` is our zero-value NEP-141 token, not a real stablecoin. The admin can mint it.
-- **Trust model (prototype):** the server holds restricted, function-call-only testnet keys for the maker, approvers, worker and admin, and signs for the signed-in user. Each key can only call that role's vault methods, without deposits. The contract checks which account signed each action. This is fine for a testnet demo; it is **not** production custody. A mainnet version would use user-held wallets or a multisig/MPC signer.
+- **Trust model (prototype):** the server holds restricted, function-call-only testnet keys (every key listed in `docs/KEY-INVENTORY.md`) for the maker, approvers, worker and admin, and signs for the signed-in user. Each key can only call that role's vault methods, without deposits. The contract checks which account signed each action. This is fine for a testnet demo; it is **not** production custody. A mainnet version would use user-held wallets or a multisig/MPC signer.
 - **Limits enforced by the vault:** at most 1 tUSDC per row and 100 tUSDC per run (workflow caps), at most 1,000 rows per run, only funds the vault holds.
 - **Tested only locally or in the sandbox (not on testnet):** an unknown transaction outcome reconciled before any retry; two release workers at once; a failed token transfer retried a bounded number of times; a worker crash between claim and signing. These need fault injection that testnet does not allow safely. Tests: `tests/integration/release.test.ts`, `tests/integration/run-page-states.test.tsx`, contract sandbox tests, `docs/RECOVERY.md`.
 - **Recipient directory: an app guardrail, not a contract rule.** "Pay registered recipients only" is enforced by the app (upload, manual draft, a server re-check at submit) and shown to the approvers, who see "Every row matched the recipient directory" on the run page. The vault contract does not know the directory: it enforces approvals, caps, the committed rows and the vault balance. Someone holding a maker key outside the app could submit rows that are not in the directory; the approvers are the check for that.
@@ -251,6 +254,14 @@ Do, see:
   - A kill switch, `HOSTED_READONLY=true`, makes everything read-only and pauses the worker.
   - Runbook, cost and shutdown: `docs/HOSTING.md`. Tests: `npm run test:hosted`, `tests/integration/hosted.test.ts`.
 - **Synthetic data only.** Phones use the reserved `+44 7700 900xxx` range and emails use `example.com`. The 1,000 sample employees' NEAR accounts (`gjn-emp-NNNN.testnet`) do not exist on testnet; they are in the directory so the 1,000-row sample upload passes the directory check, and are never paid.
+
+## Roadmap: from demo to pilot
+
+SentFund is a **testnet demo**. What is built is above: approvals and caps enforced by a locked vault, Merkle-proven payouts paid once each, the recipient directory, identity checks, Payroll Advance with a face check, reports, the hosted demo. What a first paying pilot needs is **planned, not built**: Milestone 1 "Safe to pilot" (`docs/roadmap/`).
+
+- **Built for the plan (Phase 26):** a gap analysis of every Milestone 1 requirement against the code (`docs/roadmap/milestone-1-gap-analysis.md`), a QA pass of the kit's Part A on the live demo and locally, with the bugs found and fixed (`docs/roadmap/qa-part-a-results.md`), and a key inventory (`docs/KEY-INVENTORY.md`).
+- **Planned (Milestone 1, after the hackathon):** approvers sign with their own NEAR wallets and no server key can move funds; an owner multisig; passkey step-up for approvals and other sensitive actions; wallet changes with a cooldown and notices; a rolling spending limit and an emergency freeze; wallet screening; a pre-flight check with approver acknowledgements. It needs a new vault (the live one is locked by design) on a new account, built on a separate branch; the live demo stays as it is until judging ends.
+- **Research only:** confidential payroll with NEAR Confidential Intents (`docs/roadmap/roadmap.md`). Nothing is built for it.
 
 ## Hackathon window and diff (Q-003)
 
@@ -289,7 +300,7 @@ npm run demo:reset             # move the current database to data/backups/ (nev
 npm run db:seed | db:migrate | db:status
 npm test | npm run test:e2e | npm run lint | npm run typecheck
 npm run test:hosted            # browser tests in hosted demo mode, then with the kill switch
-npm run judge:verify           # read-only testnet evidence check
+npm run judge:verify           # read-only testnet evidence check (quick; -- --full for every transaction)
 npm run judge:deployment       # read-only: local vault Wasm equals the deployed code, no access keys
 npm run secret-scan            # credential scan of the working tree and the full Git history
 npm run contracts:build | contracts:test | contracts:lint
@@ -308,7 +319,7 @@ Commands that send real testnet transactions (operators only, with keys): `npm r
 - **"The payroll assistant is off on this copy (no API key)":** expected without a key. To try it, add `ANTHROPIC_API_KEY=…` to `.env` (optionally `ASSISTANT_MODEL=`) and restart the server. "The payroll assistant is unavailable right now" means the Claude API did not answer (timeout 20 s, one retry); nothing was created.
 - **No microphone button:** the browser has no speech recognition (for example Firefox); type the request instead.
 - **RPC errors in `judge:verify`:** the public FastNEAR endpoint rate-limits briefly; rerun, or set `NEAR_RPC_URL` to another **testnet** RPC.
-- **`judge:verify` pauses, or takes a few minutes:** the regular testnet RPC node keeps only recent blocks, so older transactions (for example those of 9 Nov 2026) are read from the testnet **archival** node (`https://archival-rpc.testnet.fastnear.com`, D-138). Its free tier rate-limits: the script waits and retries on its own. Let it finish.
+- **`judge:verify -- --full` pauses, or takes a long time:** the regular testnet RPC node keeps only recent blocks, so older transactions (for example those of 9 Nov 2026) are read from the testnet **archival** node (`https://archival-rpc.testnet.fastnear.com`, D-138). Its free tier rate-limits: the script waits and retries on its own. Let it finish.
 - **"Verify it's you" says the camera is blocked or not found:** allow the camera for the site (the camera or lock icon in the address bar → Allow) and press **Try again**; it needs a phone or a computer with a camera and HTTPS (or `http://127.0.0.1`). "The face check is not set up on this copy (FACE_TEMPLATE_KEY is missing)": run `node scripts/face-template-key.mjs`, then `npm run demo:reset` (the demo employees get their templates) and restart. "Ask your admin to verify your identity first": the employee has no face template (not verified, deactivated, or the identity check was reset): run the identity check again.
 - **Contracts:** `rustup` installs the pinned toolchain from `contracts/rust-toolchain.toml`; cargo-near 0.23.0 from https://github.com/near/cargo-near/releases. On small machines use `CARGO_BUILD_JOBS=2`.
 
@@ -333,6 +344,7 @@ public/          logo and payroll templates          docs/         evidence, dec
 - `docs/SAMPLE-DATA.md`: sample files and checksums.
 - `docs/VIDEO.md`, `docs/SUBMISSION.md`, `docs/QA-HANDOFF.md`: demo video runbook, submission checklist, QA handoff. `docs/HOSTING.md`: Railway runbook for the public demo (deploy, variables, domain, smoke test, updates, backups, reset, kill switch, cost, shutdown).
 - `docs/BUILD-STATE.md`, `docs/DECISIONS.md`: what was built, with evidence, and why.
+- `docs/roadmap/`: the plan from demo to pilot (gap analysis, QA Part A results, the Milestone 1 PRD, tech spec, QA checklist and backlog). `docs/KEY-INVENTORY.md`: every access key and what it can do.
 
 ## License
 
