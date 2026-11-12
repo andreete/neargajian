@@ -26,7 +26,7 @@
     "db:seed": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts seed",
     "db:status": "./scripts/with-tmp.sh node --env-file-if-exists=.env scripts/db.ts status",
     "db:generate": "./scripts/with-tmp.sh drizzle-kit generate",
-    "test:e2e": "./scripts/with-tmp.sh sh -c 'playwright test && playwright test -c playwright.standin.config.ts'",
+    "test:e2e": "./scripts/with-tmp.sh sh -c 'playwright test && playwright test -c playwright.standin.config.ts && playwright test -c playwright.nodemo.config.ts'",
     "screenshots": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase09.spec.ts",
     "templates:xlsx": "./scripts/with-tmp.sh node scripts/generate-xlsx-template.mjs",
     "screenshots:06b": "SCREENSHOTS=1 ./scripts/with-tmp.sh playwright test tests/e2e/screenshots-phase06b.spec.ts",

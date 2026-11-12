@@ -40,6 +40,37 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 
 ---
 
+## Phase 25 · Fill buttons in the sign-in dialog (12 Nov 2026); feature freeze
+
+Andre approved Phase 24 (he verified release `dd782f1`: `camera=(self)` only on `/employee`, `camera=()` on `/`, `/maker` and `/admin/identity`; `FACE_TEMPLATE_KEY` in `.env`; the vault at 2.000000 tUSDC) and asked for one last feature before the freeze (D-145).
+
+### Built
+- `src/server/db/demo-users.ts`: `demoAccounts()` (email, role label, name) in the order maker, app1, app2, admin, Emma, Daniel, Grace; `demoEmails()` now derives from it. The landing page passes the accounts to the dialog only when `DEMO_MODE=true` (otherwise `demo: null`: nothing in the HTML).
+- `src/components/login-dialog.tsx`: one row per account ("Maker · Maya Maker", "Approver 1 · Alex Approver", …) with a **Fill** button (`aria-label="Fill <email>"`, type button). Fill sets the email and the demo password, clears any error and focuses **Sign in**; it never sends anything. The selected row (derived from the fields) gets `aria-current`, `aria-pressed` on its button, a check mark and a highlighted border. Sign-in lockout, CSRF, origin checks and CSP unchanged (no inline style, no new script).
+- `src/app/globals.css`: compact rows; in demo mode the dialog is 820 px wide with the form beside the accounts from 780 px; it stacks and scrolls inside below that. Focus outline: the global `:focus-visible` (3 px).
+- Tests: `tests/unit/demo-accounts.test.ts` (order, labels), `tests/e2e/signin-fill.spec.ts` (5: Fill app1 fills both fields and the dashboard still redirects to sign-in; Fill app2 replaces both, even an edited password; Enter → approver 2's Review queue; an earlier error cleared; Tab + Space/Enter, outline ≥ 2 px; every row fills its account; 1280x720 and 1440x900 fit without inner scroll, 390x844 no sideways scroll in the dialog), `tests/e2e-nodemo/signin.spec.ts` (1, new `playwright.nodemo.config.ts` + `scripts/e2e-server-nodemo.sh`: seeded with demo users, served with `DEMO_MODE=false`: no box, no Fill, no demo email in the page; typed sign-in works). `npm run test:e2e` now runs it third (CI too). `tests/live/hosted-check.spec.ts` + a read-only Fill check for the seven accounts and one sign-in (app2); also fixed a typing error in that spec from Phase 24 (`cameraEmployee`), which `npm run typecheck` reported.
+- Docs: README (Try it online: Fill), VIDEO (0:10 uses Fill; profiles B–D signed in with Fill), QA-HANDOFF (A01 Fill checks; known issue 17), ACCEPTANCE A01, DECISIONS D-145, CLAUDE.md, AGENTS.md. Screenshots `docs/screenshots/phase-25/` (1280x720 empty and with app2 filled, 1440x900, 390x844).
+- Seen, not changed (freeze): the landing page behind the dialog scrolls sideways at 390 px (hero upload card); QA-HANDOFF known issue 17.
+
+### Checks (12 Nov 2026)
+| Command | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | clean |
+| `nice -n 19 npm test` | **31 files, 282 tests passed** |
+| `npm run samples:check` | no diff |
+| `nice -n 19 npm run build` (watchdog) | pass, lowest MemAvailable 2.98–3.05 GB |
+| `npm run test:e2e` | **39 passed** (34 + 5 Fill), stand-in **2 passed**, demo mode off **1 passed** |
+| `npm run test:judge-mode` / `test:hosted` | **1** / **5 + 2** passed |
+| `npm run secret-scan` | clean (working tree + 44 commits) |
+| `npm run vision:selftest` | same person 0.912, impostor 0.090: ok |
+| contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (0 keys; contracts unchanged) |
+| `npm run judge:verify` | JUDGE_RESULT |
+
+### Release (Andre's yes in the brief)
+RELEASE_RESULT
+
+---
+
 ## Phase 24 · Face check at the Payroll Advance request (11 Nov 2026)
 
 Andre approved Phase 23b (release `e1b068b`, the vault at exactly 2.000000 tUSDC, D-138 verified on the regular and archival nodes) and asked for a live camera face check before a Payroll Advance request is sent, with no contract change (decisions D-139 to D-144).

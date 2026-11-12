@@ -543,10 +543,22 @@ dialog.modal::backdrop { background: rgb(6 31 77 / 55%); backdrop-filter: blur(3
 .field-error { font-size: 13px; color: var(--danger); font-weight: 600; }
 .form-error { display: flex; gap: 10px; padding: 12px 14px; margin-bottom: 16px; border-radius: var(--radius-sm); background: var(--danger-bg); color: var(--danger); font-size: 14px; font-weight: 600; border: 1px solid #f2c4c4; }
 .demo-accounts { margin-top: 20px; padding: 14px 16px; border-radius: var(--radius); background: var(--canvas); border: 1px solid var(--border); font-size: 13px; color: var(--muted); }
-.demo-accounts h3 { font-size: 13px; color: var(--ink); margin-bottom: 6px; letter-spacing: 0; }
-.demo-accounts ul { margin: 0 0 6px; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
-.demo-accounts li { font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+.demo-accounts h3 { font-size: 13px; color: var(--ink); margin-bottom: 8px; letter-spacing: 0; }
+.demo-accounts ul { margin: 0 0 8px; padding: 0; list-style: none; display: grid; gap: 4px; }
+.demo-accounts li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 6px 5px 10px; border-radius: 8px; border: 1px solid transparent; }
+.demo-accounts li.is-selected { background: var(--sky-50); border-color: var(--blue); }
+.demo-account { display: grid; min-width: 0; }
+.demo-account .mono { font-size: 12.5px; color: var(--ink); overflow-wrap: anywhere; }
+.demo-account-role { font-size: 12px; color: var(--muted); }
+.demo-accounts .btn-fill { flex: none; min-height: 32px; padding: 0 14px; font-size: 13px; gap: 4px; }
+.demo-accounts .btn-fill[aria-pressed='true'] { border-color: var(--navy); }
 .demo-accounts p { font-size: 12.5px; }
+/* Phase 25: in demo mode the dialog is wider, form beside the Fill rows, so it fits 1280x720. */
+dialog.modal.signin-demo { width: min(820px, calc(100vw - 32px)); }
+@media (min-width: 780px) {
+  .signin-demo .signin-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; align-items: start; }
+  .signin-demo .demo-accounts { margin-top: 0; }
+}
 
 /* -------------------------------------------------------- status pages */
 .status-page { min-height: 70vh; display: grid; place-items: center; text-align: center; padding: 48px 16px; }
@@ -594,7 +606,6 @@ dialog.modal::backdrop { background: rgb(6 31 77 / 55%); backdrop-filter: blur(3
   .page-head { flex-direction: column; align-items: flex-start; }
   .page-head-actions { align-items: flex-start; }
   .user-chip .meta, .btn-label-long { display: none; }
-  .demo-accounts ul { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -9,7 +9,7 @@ import { Chip } from '@/components/status-chip';
 import { getConfig } from '@/server/config';
 import { getDb } from '@/server/db/client';
 import { homeFor } from '@/server/auth/policy';
-import { DEMO_PASSWORD, demoEmails } from '@/server/db/demo-users';
+import { DEMO_PASSWORD, demoAccounts } from '@/server/db/demo-users';
 import { samplePreview, testnetFacts } from '@/server/landing';
 import { currentSession } from '@/server/web/page-auth';
 import { displayAmount, formatDateTime } from '@/lib/format';
@@ -32,7 +32,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
 
   return (
     <LoginDialogProvider
-      demo={config.demoMode ? { emails: demoEmails(), password: DEMO_PASSWORD } : null}
+      demo={config.demoMode ? { accounts: demoAccounts(), password: DEMO_PASSWORD } : null}
       autoOpen={signinRequired}
       notice={signinRequired ? 'Please sign in to continue.' : null}
     >

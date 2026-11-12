@@ -13,7 +13,7 @@ SentFund is a payroll approval and payout app on NEAR testnet. A finance team pr
 | Earlier deployment (retired, readable) | `gajian-payroll.testnet` (the project's earlier name): `vault.gajian-payroll.testnet` (Phases 04–13) and `vault2.gajian-payroll.testnet` (Phases 16–21, same release Wasm, locked). Its runs stay in the evidence and are re-checked by `npm run judge:verify` |
 | Live proof | `docs/TESTNET.md`: every transaction with explorer links, balances before and after. Re-check without keys: `npm run judge:verify` |
 | Try it online | **https://sentfund.my.id** (live since 10 Nov 2026; online until at least 25 Nov 2026). See "Try it online" below |
-| Demo sign-in (demo mode) | `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, and the employees `emma@sentfund.my.id`, `daniel@sentfund.my.id`, `grace@sentfund.my.id` (Payroll Advance), password `12345678` |
+| Demo sign-in (demo mode) | `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, and the employees `emma@sentfund.my.id`, `daniel@sentfund.my.id`, `grace@sentfund.my.id` (Payroll Advance), password `12345678`. The sign-in dialog has a **Fill** button for each account (demo mode only) |
 | Stack | Next.js 16 + React 19 (TypeScript), SQLite (Drizzle), Rust contracts with near-sdk 5.30.1, near-api-js 7.4.0 |
 | Recipient directory | Admin page "Recipients": name, division, NEAR account, email, phone, maximum per payout, active/inactive, change log. With "Pay registered recipients only" on (the demo default), every payroll row must match an active recipient within its maximum. **Enforced by the app and the approvers, not by the vault contract** |
 | Payroll assistant | Optional, maker only: turns a typed or spoken request into a **draft** from the directory, via the Claude API (`ANTHROPIC_API_KEY`). Off without a key; never submits, approves or pays |
@@ -38,6 +38,8 @@ A small company paying staff or contractors in stablecoins usually has one perso
 ## Try it online
 
 **https://sentfund.my.id** (status in `docs/HOSTING.md`). It is a **public demo on NEAR testnet** with a zero-value test token and **shared demo data**: everyone uses the same demo accounts (password `12345678`) and sees the same runs.
+
+**Signing in:** press **Try the demo**. The **Demo accounts** box in the sign-in dialog lists every account with its role and name. Press **Fill** on a row (for example `app1@sentfund.my.id`, *Approver 1 · Alex Approver*): the Email and Password fields are filled and the row is marked; nothing is signed in yet. Press **Sign in** (or Enter: the focus is already on it). **Fill** on another row replaces both values. See: the dashboard for that role. The box and the Fill buttons appear only in demo mode, never in a normal (non-demo) setup; typed credentials work as before.
 
 **Use separate browser windows for the roles.** A sign-in belongs to one browser profile, so:
 - **Window 1, normal window:** `maker@sentfund.my.id`

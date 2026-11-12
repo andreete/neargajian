@@ -1,6 +1,8 @@
 /**
- * Phase 24 (from 23b) · READ-ONLY check of the public hosted demo after a release: NO NEAR
- * transaction and no camera (headless browser without a camera device). Phase 24: each employee
+ * Phase 25 (from 23b, 24) · READ-ONLY check of the public hosted demo after a release: NO NEAR
+ * transaction and no camera (headless browser without a camera device). Phase 25: "Fill" on each
+ * of the seven demo accounts fills both sign-in fields without signing in; one sign-in (app2) works.
+ * Phase 24: each employee
  * sees "Verify it's you" (no way to request without it); for Emma the camera panel opens with the
  * notice and, without a camera, explains how to allow one (no challenge is issued, nothing sent);
  * the camera is allowed only on the employee page (Permissions-Policy).
@@ -38,9 +40,43 @@ test('hosted (read-only): health', async ({ request }) => {
   expect(health).toMatchObject({ status: 'ok', service: 'sentfund', db: 'ok', hostedDemo: true, readOnly: false, faceModels: true });
 });
 
+const DEMO_ACCOUNTS: ReadonlyArray<readonly [string, string]> = [
+  ['maker@sentfund.my.id', 'Maker · Maya Maker'], ['app1@sentfund.my.id', 'Approver 1 · Alex Approver'],
+  ['app2@sentfund.my.id', 'Approver 2 · Riley Reviewer'], ['admin@sentfund.my.id', 'Admin · Adam Admin'],
+  ['emma@sentfund.my.id', 'Employee · Emma Clark'], ['daniel@sentfund.my.id', 'Employee · Daniel Hall'],
+  ['grace@sentfund.my.id', 'Employee · Grace Lewis'],
+];
+
+test('hosted (read-only): Fill on each of the seven demo accounts fills both fields without signing in; Sign in as app2 works', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Try the demo' }).first().click();
+  const dialog = page.getByRole('dialog', { name: 'Sign in to SentFund' });
+  const rows = dialog.getByRole('region', { name: 'Demo accounts' }).getByRole('listitem');
+  await expect(rows).toHaveCount(DEMO_ACCOUNTS.length);
+  const signIn = dialog.getByRole('button', { name: 'Sign in', exact: true });
+  for (const [i, [email, who]] of DEMO_ACCOUNTS.entries()) {
+    await expect(rows.nth(i)).toContainText(who);
+    await dialog.getByRole('button', { name: `Fill ${email}`, exact: true }).click();
+    await expect(dialog.getByLabel('Email')).toHaveValue(email);
+    await expect(dialog.getByLabel('Password')).toHaveValue('12345678');
+    await expect(rows.nth(i)).toHaveAttribute('aria-current', 'true');
+    await expect(signIn).toBeFocused();
+    expect(new URL(page.url()).pathname).toBe('/');
+  }
+  await expect(dialog).toBeVisible(); // Fill never signs in
+  await dialog.getByRole('button', { name: 'Fill app2@sentfund.my.id' }).click();
+  await shotIn(page, '01-signin-fill-app2', 'docs/screenshots/phase-25');
+  await page.keyboard.press('Enter');
+  await page.waitForURL(/\/approver$/);
+  await expect(page.getByRole('banner').getByText('Riley Reviewer')).toBeVisible();
+  await ctx.close();
+});
+
 const EMPLOYEES = [['emma@sentfund.my.id', 'Emma Clark'], ['daniel@sentfund.my.id', 'Daniel Hall'], ['grace@sentfund.my.id', 'Grace Lewis']] as const;
 /** The first employee without an open request (found by the offer tests) gets the camera-notice check. */
-let cameraEmployee: (typeof EMPLOYEES)[number] | null = null;
+let cameraEmployee: readonly [string, string] | null = null;
 
 for (const [email, name] of EMPLOYEES) {
   test(`hosted (read-only): ${name} signs in; the offer with the shortcuts and "Verify it's you", or the open request; nothing is requested`, async ({ browser }) => {

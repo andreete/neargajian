@@ -20,6 +20,7 @@ The standing rules are in **`CLAUDE.md`**. They apply to every agent (Codex incl
 - No PII on-chain or in logs.
 - Payroll Advance (Phase 23, 23b) is an app feature on top of the frozen vault: never change the contract for it. The stand-in vault mode (`VAULT_STANDIN=browser-tests`) is for browser tests under `.tmp/` only.
 - Phase 24 face check at the Payroll Advance request: face templates are encrypted with `FACE_TEMPLATE_KEY` (never print, log or commit it; `node scripts/face-template-key.mjs` writes it to `.env` and keeps every other line); camera frames are never stored. The stand-in camera (`FACE_CAMERA_STANDIN=browser-tests`) is for local browser tests only (refused unless `APP_BASE_URL` is `http://127.0.0.1`). The demo override exists only with `HOSTED_DEMO=true`.
+- Phase 25 (feature freeze afterwards): the sign-in dialog's **Fill** buttons exist only with `DEMO_MODE=true` and only fill the Email and Password fields; they never sign in. Keep the sign-in lockout, CSRF and CSP unchanged. After Phase 25, only fixes, docs, the video and the submission.
 - `nice -n 19` for heavy commands, `CARGO_BUILD_JOBS=2`, never a Rust build and a Node install/build/test at the same time.
 - Temp files go to the repo's git-ignored `.tmp/`, never the shared `/tmp` tmpfs: use the npm scripts (they run through `scripts/with-tmp.sh`), or prefix other commands with `./scripts/with-tmp.sh` or `TMPDIR=$PWD/.tmp`.
 

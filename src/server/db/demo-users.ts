@@ -30,7 +30,19 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
   { id: 'usr_emp_grace', email: 'grace@sentfund.my.id', displayName: 'Grace Lewis', account: `recipient3.${MASTER}`, monthlyNetPay: 100_000n, startDate: '2026-03-02', maxAmount: 300_000n },
 ];
 
-/** Every demo email for the sign-in dialog and the landing page. */
+/** Every demo email (maker, approvers, admin, then the employees). */
 export function demoEmails(env: SeedEnv = process.env): string[] {
-  return [...demoUsers(env).map((u) => u.email), ...DEMO_EMPLOYEES.map((e) => e.email)];
+  return demoAccounts(env).map((a) => a.email);
+}
+
+/** Phase 25: one row per demo sign-in for the sign-in dialog's "Fill" buttons (DEMO_MODE only). */
+export interface DemoAccount { email: string; role: string; name: string }
+
+const ROLE_LABELS: Readonly<Record<string, string>> = { usr_maker: 'Maker', usr_app1: 'Approver 1', usr_app2: 'Approver 2', usr_admin: 'Admin' };
+
+export function demoAccounts(env: SeedEnv = process.env): DemoAccount[] {
+  return [
+    ...demoUsers(env).map((u) => ({ email: u.email, role: ROLE_LABELS[u.id] ?? u.role, name: u.displayName })),
+    ...DEMO_EMPLOYEES.map((e) => ({ email: e.email, role: 'Employee', name: e.displayName })),
+  ];
 }

@@ -1,6 +1,6 @@
 # QA handoff (Phase 18, updated for Phases 20, 21, 23 and 24)
 
-For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built SentFund. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11); Phase 21 the SentFund rebrand and the KTP + face identity check (A12); Phase 23 Payroll Advance and the employee role (A13); Phase 24 the camera face check at the Payroll Advance request (A14).
+For the team's **human QA pass** after Phase 19, and for an independent reviewer (Codex QA: planned, not scheduled for now) working **without** the conversation that built SentFund. Everything needed is in this file and in the repository. Phase 19 added the recipient directory (A09) and the payroll assistant (A10); Phase 20 the hosted demo mode (A11); Phase 21 the SentFund rebrand and the KTP + face identity check (A12); Phase 23 Payroll Advance and the employee role (A13); Phase 24 the camera face check at the Payroll Advance request (A14); Phase 25 the **Fill** buttons in the sign-in dialog (A01).
 
 ## 0. Your role and rules
 
@@ -63,7 +63,7 @@ Expected results (9 Nov 2026, on the build machine):
 | `npm run judge:deployment` (after the build) | `PASS deployed code_hash equals the locally built Wasm`, `PASS no full-access key on vault.sentfund-payroll.testnet (0 keys in total)` |
 | `npm run contracts:lint`, `npm run contracts:test` | pass; 3 + 49 unit tests and a sandbox flow (downloads nearcore 2.14.0 on first run) |
 
-Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, employees `emma@sentfund.my.id`, `daniel@sentfund.my.id`, `grace@sentfund.my.id`, password `12345678`. Use separate browser profiles for different roles. All times are UTC.
+Manual app check: `npm run demo:reset && npm run build && npm run start`, then open http://127.0.0.1:8092. Demo accounts: `maker@sentfund.my.id`, `app1@sentfund.my.id`, `app2@sentfund.my.id`, `admin@sentfund.my.id`, employees `emma@sentfund.my.id`, `daniel@sentfund.my.id`, `grace@sentfund.my.id`, password `12345678` (or **Fill** on the account's row in the sign-in dialog). Use separate browser profiles for different roles. All times are UTC.
 
 ## 3. What to test (acceptance checks with expected results)
 
@@ -72,6 +72,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 **A01: landing, login, role dashboards, unauthorized access fails**
 - The landing page shows the product, the "NEAR testnet" badge and "Try the demo". The login dialog takes focus, traps Tab, Escape closes it and focus returns.
 - Each demo account lands on its dashboard: maker `/maker`, approvers `/approver`, admin `/admin`.
+- **Fill buttons (Phase 25, demo mode only).** Do: **Try the demo**. See: a **Demo accounts** box with seven rows in this order, each with the email, "role · name" and a **Fill** button: `maker@` (Maker · Maya Maker), `app1@` (Approver 1 · Alex Approver), `app2@` (Approver 2 · Riley Reviewer), `admin@` (Admin · Adam Admin), `emma@` (Employee · Emma Clark), `daniel@` (Employee · Daniel Hall), `grace@` (Employee · Grace Lewis). Do: **Fill** on `app1@…`. See: Email `app1@sentfund.my.id` and Password filled, the row marked, the focus on **Sign in**, and still signed out (no page change). Do: **Fill** on `app2@…`. See: both values replaced, only that row marked. Do: press **Enter**. See: Riley Reviewer's **Review queue**. Also: a wrong password's error disappears after **Fill**; Tab reaches each Fill button with a visible focus outline and Space/Enter fills; screen readers announce "Fill app1@sentfund.my.id" and so on; the dialog fits without scrolling at 1280x720 and 1440x900 and scrolls inside on a phone. With `DEMO_MODE` off there is no box and no Fill button. Sign-in lockout, CSRF and CSP are unchanged (Fill only fills the fields). Reference: `tests/e2e/signin-fill.spec.ts` (5), `tests/e2e-nodemo/signin.spec.ts` (1), `tests/unit/demo-accounts.test.ts`.
 - Opening another role's page shows 403; signed-out page requests redirect to sign-in.
 - Every `/api/*` route: signed-out 401; wrong role 403; another maker's run or an unassigned approver 404; mutations without the `x-csrf-token` header or from a foreign `Origin` 403. No state changes. Reference: `tests/integration/boundaries.test.ts`, `tests/e2e/auth.spec.ts`.
 - Exports: the admin gets the company CSV only (recipient CSV: 403). Maker and assigned approvers get both.
@@ -226,6 +227,7 @@ Mark each **Pass / Fail / Blocked**, with evidence. "Live" items are already pro
 14. **Adding a recipient makes one read-only RPC call** to FastNEAR; offline it shows "Could not reach NEAR testnet: check again".
 15. **The Payroll Advance face check is not certified liveness detection** (Phase 24): a random head turn stops a held-up photo and a replayed video of the wrong order; a replay with the right order (1 in 2), a deepfake stream or a mask could pass. The demo employees' templates are synthetic, so a real person never matches them; online a mismatch may **Continue as a demo** (flagged), locally never.
 16. **`judge:verify` reads transactions older than a day or two from the testnet archival node** (D-138), whose free tier rate-limits; the script waits and retries, so a full run takes a few minutes.
+17. **The landing page scrolls sideways on a phone-width window (390 px)**: the upload summary and the drop zone in the hero card are wider than the screen (seen in Phase 25; the sign-in dialog itself fits). Desktop widths are not affected (item 7).
 
 ## 6. Out of scope
 
