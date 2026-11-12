@@ -202,4 +202,8 @@ test('Phase 26 (QA-A7-04): security headers on pages, APIs and the 404 page, HST
     expect(h['x-content-type-options'], path).toBe('nosniff');
     expect(h['referrer-policy'], path).toBe('strict-origin-when-cross-origin');
   }
+  // BUG-26-11: pages carry no-transform so Cloudflare does not rewrite the demo emails (hydration #418).
+  for (const path of ['/', '/maker']) {
+    expect((await request.get(path, { maxRedirects: 0 })).headers()['cache-control'], path).toContain('no-transform');
+  }
 });

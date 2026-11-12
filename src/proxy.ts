@@ -28,6 +28,10 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('Content-Security-Policy', csp);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', csp);
+  // Phase 26 (BUG-26-11): `no-transform` stops proxies from rewriting the page. Cloudflare's Email
+  // Address Obfuscation otherwise replaces the demo emails in the HTML (sign-in Fill rows, directory)
+  // and injects a decoder script that this CSP blocks, which breaks React hydration (#418).
+  response.headers.set('Cache-Control', 'private, no-cache, no-store, max-age=0, must-revalidate, no-transform');
   response.headers.set('Permissions-Policy', PERMISSIONS_POLICY(cameraAllowed(request.nextUrl.pathname, process.env.HOSTED_DEMO === 'true')));
   return response;
 }

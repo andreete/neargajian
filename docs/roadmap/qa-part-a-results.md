@@ -12,13 +12,14 @@
 
 - Hosted before the fix release (release `81417b3`): **7 of 11 passed**. Failed: A1-01 (BUG-26-01); A7-04 (no HSTS, BUG-26-08); A7-03 (a test expectation, corrected: a 400 for an empty body is also a refusal); A7-07 (malformed percent-encoding gave 502, BUG-26-07).
 - Local after the fixes: **11 of 11**; `qa-part-a.test.ts` **15 of 15**.
-- Hosted after the fix release: see "Hosted re-run after the release" at the end.
+- Hosted after the first fix release (`878fb65`): **20 of 21** (with `hosted-check.spec.ts`); A1-01 failed on console errors (BUG-26-11, fixed in the second release).
+- Hosted after the second release: see "Hosted re-run after the release" at the end.
 
 ## Results
 
 | Item | Result | Evidence |
 | --- | --- | --- |
-| A1-01 No sideways scroll at 375 px; no console or hydration errors | **Fail → fixed** (BUG-26-01) | Hosted: scroll width 484 at 375 px. Fixed and checked locally at 320–640 px (`tests/e2e/auth.spec.ts` "Phase 26 (QA-A1-01)"). No console or hydration errors at 375, 390 or 1280 px. |
+| A1-01 No sideways scroll at 375 px; no console or hydration errors | **Fail → fixed** (BUG-26-01, BUG-26-11) | Hosted: scroll width 484 at 375 px. Fixed and checked locally at 320–640 px (`tests/e2e/auth.spec.ts` "Phase 26 (QA-A1-01)"). After the first fix release the hosted page showed the kit's U4: Cloudflare Email Address Obfuscation rewrote the seven demo emails, its decoder script was blocked by our CSP, and React reported hydration error #418 (BUG-26-11). Locally there were no console errors. |
 | A1-02 All 7 demo accounts readable and sign in | Pass | Phase 25 Fill buttons; `hosted-check.spec.ts` checks all seven. |
 | A1-03 Generic error; rate limit | **Fail → fixed** (BUG-26-02); BUG-26-06 open | The generic message is the same for a wrong password and an unknown email (hosted and local). The limit is 5 failures per email and 20 per client in 15 min. A burst of parallel guesses got past it; fixed, `qa-part-a.test.ts` (10 parallel → 5 checked). |
 | A1-04 Back after sign-out; cookie flags | Pass | `sentfund_session` is `HttpOnly; SameSite=Lax; Secure` on HTTPS. After sign-out, `/maker` → sign-in and `/api/runs` → 401 (hosted and local). |
@@ -99,6 +100,7 @@
 | BUG-26-07 | Low | QA-A7-07 | A malformed percent-encoding in a path answers 500 (502 at the proxy), not 400; no stack trace, the server stays up | Open |
 | BUG-26-08 | Medium | QA-A7-04 | No HSTS header | **Fixed** |
 | BUG-26-09 | Low | QA-A5-10 | A parallel burst of face attempts can pass 5 per hour, bounded by 20 single-use challenges | Open |
+| BUG-26-11 | Medium | QA-A1-01 (kit U4) | Cloudflare Email Address Obfuscation rewrote the demo emails on the landing page (Fill rows) and the admin's directory pages; the injected decoder script was blocked by the CSP; React hydration error #418 | **Fixed** (pages send `Cache-Control: … no-transform`, which Cloudflare honours) |
 | BUG-26-10 | Medium | QA-A2-08 | Off the public demo, a well-formed account that does not exist is found only at payout | Open (M1 F6/F7) |
 
 ### Bug reports (kit template)
@@ -170,6 +172,14 @@ Steps: 1. Request several challenges, then send their face checks in parallel.
 Expected: at most 5 attempts per hour.
 Actual: the count is read before the analysis and written after it, so a parallel burst can reach the 20-challenge bound.
 Evidence: src/server/identity/face-check.ts runFaceCheck.
+
+ID: BUG-26-11   Severity: Medium   Checklist item: QA-A1-01 (kit U4)
+Role + account: signed out; admin@sentfund.my.id   Browser/device: Chromium 375x812   Time (UTC): 2026-11-12 07:45
+Steps: 1. Open https://sentfund.my.id (release 878fb65) with the console open.
+Expected: no console errors.
+Actual: "Loading the script '…/cdn-cgi/scripts/…/email-decode.min.js' violates … script-src" and "Minified React error #418". The HTML had 7 __cf_email__ links (the Fill rows); /admin and /admin/recipients had them too.
+Evidence: tests/live/qa-part-a.spec.ts (QA-A1-01) on 878fb65.
+Fix: src/proxy.ts adds no-transform to the pages' Cache-Control (Cloudflare docs: Email Obfuscation does not apply with Cache-Control: no-transform); e2e header test.
 
 ID: BUG-26-10   Severity: Medium   Checklist item: QA-A2-08
 Role + account: maker   Browser/device: local copy, "Pay registered recipients only" off   Time (UTC): code review
