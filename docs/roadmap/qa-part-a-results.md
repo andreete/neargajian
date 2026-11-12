@@ -199,4 +199,4 @@ Evidence: src/server/recipients/readiness.ts, src/server/recipients/directory.ts
 
 ## Hosted re-run after the release
 
-(Filled in after the release below.)
+Release `f25e00b` (Railway deployment `6ba0c513…` SUCCESS, live 07:51 UTC on 12 Nov 2026). `npx playwright test -c playwright.hosted-live.config.ts tests/live/qa-part-a.spec.ts tests/live/hosted-check.spec.ts` → **21 passed** (QA Part A 11/11 + the Phase 25 hosted check 10/10). No NEAR transaction, no camera, no change to the demo data. Confirmed with `curl`: `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `Cache-Control: … no-transform`, no `__cf_email__` left on `/` or `/admin/recipients`, health ok. BUG-26-07 (malformed percent-encoding → 502) is still open, as expected.

@@ -98,12 +98,12 @@ npm run secret-scan                   # secret-scan: clean (working tree + N com
 
 ```sh
 npm run judge:verify              # quick (default): about 5 minutes
-npm run judge:verify -- --full    # every transaction: FULL_TIME
+npm run judge:verify -- --full    # every transaction: about an hour
 ```
 
 **Quick mode** (the default; 4 min 41 s on 12 Nov 2026, 77 `PASS`) checks both locked vaults' code hash and keys, every run's state from the vault's own views (status, total, each row's receiver and amount), and every transaction of the two latest runs. It ends with `All testnet evidence checks passed.` and says how many older lookups it skipped.
 
-**Full mode** (`-- --full`; FULL_RESULT) adds every other transaction, the eight on-chain refusals and the exported paid times. Older transactions are read from the testnet archival node, which rate-limits, so it is slow. It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
+**Full mode** (`-- --full`; 56 min 30 s on 12 Nov 2026, 241 `PASS`, 153 lookups from the archival node) adds every other transaction, the eight on-chain refusals and the exported paid times. Older transactions are read from the testnet archival node, which rate-limits, so it is slow. It reads `docs/evidence/testnet-runs.json` and checks, from the vault contract's own views and the final transaction outcomes:
 - every run's status, total and paid rows;
 - every transaction's signer, receiver and success;
 - every payout's `ft_transfer` event (receiver and amount);

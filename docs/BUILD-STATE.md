@@ -68,8 +68,13 @@ Andre approved Phase 25 (he verified release `81417b3` and the seven Fill rows) 
 | contracts (`contracts:test`, `contracts:lint`, `contracts:build`, `judge:deployment`) | 3 + 49 + 1 sandbox passed; fmt + clippy clean; build ok; PASS code_hash = local release Wasm, PASS no key (contracts unchanged) |
 | `npm audit` | production deps 0; dev deps 13 moderate, 0 high, 0 critical |
 | `npm run judge:verify` (quick) | **77 PASS, 0 FAIL**, 4 min 41 s (10 lookups from the archival node) |
-| `npm run judge:verify -- --full` | see the release section |
+| `npm run judge:verify -- --full` | **241 PASS, 0 FAIL**, "All testnet evidence checks passed.", 56 min 30 s (153 lookups from the archival node) |
 | client bundle (`.next/static`, 25 chunks) | no key material, no secret names, no source maps |
+
+### Release (Andre's yes in the brief)
+- `878fb65` pushed to `origin/main`, `sentfund/main` and `sentfund/release` (`81417b3` → `878fb65`) at 07:38 UTC: Railway `35cfcd5a…` SUCCESS, live 07:42 UTC with HSTS. Hosted re-run: **20 of 21**. QA-A1-01 failed on console errors: Cloudflare's Email Address Obfuscation rewrote the seven demo emails in the Fill rows, its decoder script was blocked by the CSP, and React reported hydration error #418 (BUG-26-11, the kit's U4; /admin and /admin/recipients were affected too). The local copy had none, because it is not behind Cloudflare.
+- Fix: `src/proxy.ts` adds `no-transform` to the pages' `Cache-Control` (Cloudflare does not obfuscate such responses); e2e header test. Checks re-run on the new build: lint, typecheck, e2e 41 + 2 + 1, hosted 5 + 2, judge mode 1. `f25e00b` released at 07:48 UTC: Railway `6ba0c513…` **SUCCESS**, live 07:51 UTC (14:51 WIB); `35cfcd5a…` removed. No Railway variable changed.
+- Hosted re-run (read-only, no NEAR transaction): `tests/live/qa-part-a.spec.ts` + `tests/live/hosted-check.spec.ts` → **21 passed**. No `__cf_email__` left on `/` or `/admin/recipients`. Screenshots from the hosted check: `docs/screenshots/phase-25/` (retaken).
 
 ---
 
