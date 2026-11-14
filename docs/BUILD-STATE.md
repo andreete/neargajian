@@ -39,6 +39,29 @@ Per phase: changed files, exact commands and real results, sandbox vs live-testn
 | 24 Face check at the Payroll Advance request | Done, all suites green; **released** to https://sentfund.my.id (`dd782f1`); hosted check 9/9 without a transaction or a camera | none (no contract change, no transaction) |
 | 25 Fill buttons in the sign-in dialog | Done, approved by Andre (release `81417b3`) | none |
 | 26 Milestone 1 step 0 + QA Part A (roadmap, key inventory, QA fixes) | Done, **approved by Andre** (release `f25e00b`; D-150) | none (read-only key inventory and `judge:verify`; no transaction) |
+| 27 CI green: contracts job in a clean checkout | Done (workflow only; no contract, app, release or Railway change) | none (sandbox only; no transaction) |
+
+---
+
+## Phase 27 · CI green: contracts job in a clean checkout (14 Nov 2026)
+
+GitHub Actions on `discoverateagency-ops/sentfund` had been red on every push since the repository's first run (10 Nov, Phase 21): only the job "Contracts (fmt, clippy, unit + sandbox tests)" failed, at `cargo test --workspace --locked` (exit 101; the public jobs API showed the step, the log needs a login).
+
+### Cause (reproduced)
+
+- Clean clone into `.tmp/ci-repro` (no target cache, no `.env`), the contracts job's commands run as written with `nice -n 19`: `cargo fmt` OK, `cargo clippy` OK, `cargo test` **exit 101**. The tusdc (3) and vault unit tests (49) passed; the sandbox test `committed_payouts_end_to_end` panicked at `vault/tests/sandbox.rs:154` (the Wasm build): `No such file or directory (os error 2) at path ".../contracts/../.tmp/optimized-….wasm"`.
+- `contracts/.cargo/config.toml` forces `TMPDIR=<repo>/.tmp` (shared-host rule). That folder is git-ignored, so a fresh checkout has none; locally `scripts/with-tmp.sh` (behind every npm script) runs `mkdir -p .tmp`, which is why it always passed here. CI calls `cargo` directly. cargo-near-build's wasm-opt temp file (and near-sandbox's `tempfile::tempdir()` node home after it) need the folder to exist.
+- Not a contract bug: no contract code, test or behaviour involved.
+
+### Fix
+
+- `.github/workflows/ci.yml`, contracts job: a step "Repo-local temp folder (TMPDIR target)" runs `mkdir -p ../.tmp` before fmt/clippy/test, with a comment explaining why. Nothing else changed.
+
+### Checks (14 Nov 2026)
+
+- Clean clone with the folder created: `cargo test --workspace --locked` **exit 0**: tusdc 3 passed, vault 49 passed, sandbox `committed_payouts_end_to_end` passed (141.6 s, local nearcore 2.14.0 on 127.0.0.1).
+- App (main repo): `npm run lint` clean, `npm run typecheck` clean, `nice -n 19 npm test` 32 files / 297 passed, `npm run samples:check` no diff, `npm run secret-scan` clean (working tree + 50 commits). Workflow YAML parses. Not rerun locally: `next build`, Playwright suites, `npm audit` (app files unchanged; they pass in CI).
+- No release, no Railway change, no testnet transaction, no tag.
 
 ---
 

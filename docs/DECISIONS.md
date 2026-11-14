@@ -700,3 +700,6 @@ Asked before building because KTP numbers and face images are specific personal 
 - **QA-A5-05** (the camera is the only way to request a Payroll Advance): kept for the hackathon (D-140). Milestone 1 adds an alternative: an admin verifies the employee in person and records it, with an audit entry.
 - **BUG-26-05, 07, 09 and 10** are left for Milestone 1. The **feature freeze** stays: no code change and no new release before the submission; the live release stays `f25e00b`.
 - **Cloudflare Email Address Obfuscation** stays on: the pages' `no-transform` header (BUG-26-11, D-148) already stops it.
+
+### D-151 · CI creates the repo-local temp folder before the contracts job
+- `contracts/.cargo/config.toml` keeps forcing `TMPDIR=<repo>/.tmp` (shared-host rule); the CI contracts job now runs `mkdir -p ../.tmp` first, as `scripts/with-tmp.sh` does locally. Without it the sandbox test's Wasm build failed in every clean checkout (Phase 27). Chosen over dropping the `[env]` override (it protects this host's shared `/tmp`) and over routing CI through the npm scripts (the job has no Node setup).

@@ -129,6 +129,12 @@ jobs:
           workspaces: contracts
       - name: Install cargo-near 0.23.0
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.23.0/cargo-near-installer.sh | sh
+      # contracts/.cargo/config.toml forces TMPDIR=<repo>/.tmp for rustc, build scripts and
+      # test binaries. That folder is git-ignored, so a fresh checkout lacks it; locally
+      # scripts/with-tmp.sh creates it. Without it the sandbox test's Wasm build (wasm-opt temp
+      # file) and near-sandbox's node home (tempdir) fail with "No such file or directory".
+      - name: Repo-local temp folder (TMPDIR target)
+        run: mkdir -p ../.tmp
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --locked
