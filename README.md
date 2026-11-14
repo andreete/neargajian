@@ -265,7 +265,9 @@ SentFund is a **testnet demo**. What is built is above: approvals and caps enfor
 
 ## Hackathon window and diff (Q-003)
 
-All code in this repository was written during NEAR HACKATHON, on and after 9 Nov 2026 (after the 2026-10-19 announcement). The first commit (`ba205f7`) contains only planning documents and sample-data scripts. **There is no pre-hackathon code, so there is no `pre-hackathon` tag**: the whole history is hackathon work. The team adds one tag, `hackathon-submission`, on the submitted commit at submission time: `https://github.com/andreete/neargajian/tree/hackathon-submission` (full history: `https://github.com/andreete/neargajian/commits/hackathon-submission`).
+All code in this repository was written during NEAR HACKATHON, on and after 9 Nov 2026 (after the 2026-10-19 announcement). The first commit (`ba205f7`) contains only planning documents and sample-data scripts. **There is no pre-hackathon code, so there is no `pre-hackathon` tag**: the whole history is hackathon work. The team adds one tag, `hackathon-submission`, on the submitted commit at submission time: `https://github.com/discoverateagency-ops/sentfund/tree/hackathon-submission` (full history: `https://github.com/discoverateagency-ops/sentfund/commits/hackathon-submission`).
+
+**Second project (Q-015).** One team member, Andre, also submitted a second, independent project to NEAR HACKATHON: **Residentstart**, property crowdfunding on NEAR (https://github.com/discoverateagency-ops/residentstart, demo https://residentstart.biz.id). As the rules ask, each project's README names the other.
 
 ## Third-party software
 
